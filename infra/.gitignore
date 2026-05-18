@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# Commit .terraform.lock.hcl for reproducible CI (remove this line if you prefer local-only lockfiles).
+
+# Local vars (never commit secrets)
+**/terraform.tfvars
+**/backend.tf
+**/backend.hcl
+**/backend.ci.hcl
+**/ci.auto.tfvars
+**/local.auto.tfvars
+
+# OS
+.DS_Store
+Thumbs.db

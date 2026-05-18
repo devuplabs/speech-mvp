@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars (gitignored) for local runs.
+# CI (Cloud Build) generates ci.auto.tfvars from trigger substitutions — see infra/ci/.
+
+project_id  = "project-a625d19b-de99-48e9-9a9"
+region      = "europe-west2"
+environment = "dev"
+name_prefix = "sona"
+
+gcs_bucket_force_destroy = true
+
+db_tier                = "db-f1-micro"
+db_disk_size_gb        = 10
+db_high_availability   = false
+db_deletion_protection = false
+db_backup_enabled      = true
+db_pitr_enabled        = true
