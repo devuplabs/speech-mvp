@@ -1,0 +1,51 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Env and secrets (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+*-credentials.json
+
+# Terraform (see also infra/.gitignore)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+**/terraform.tfvars
+**/backend.tf
+**/backend.hcl
+**/backend.ci.hcl
+**/ci.auto.tfvars
+**/local.auto.tfvars
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Node / Next (when application code is added)
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Review assets with possible PII (per mvp-brief)
+_review/

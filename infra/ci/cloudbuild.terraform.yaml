@@ -1,0 +1,46 @@
+# Deprecated for new setups — use:
+#   cloudbuild.terraform.plan.yaml   (PR / plan-only)
+#   cloudbuild.terraform.apply.yaml  (main + approvals)
+#
+# Kept for a single-trigger workflow: set _RUN_APPLY=true only when you intend to apply.
+
+substitutions:
+  _TERRAFORM_DIR: infra/terraform/environments/dev
+  _STATE_BUCKET: project-a625d19b-de99-48e9-9a9-terraform-state
+  _STATE_PREFIX: sona/core
+  _TARGET_PROJECT_ID: project-a625d19b-de99-48e9-9a9
+  _REGION: europe-west2
+  _ENVIRONMENT: dev
+  _GCS_BUCKET_FORCE_DESTROY: "true"
+  _DB_TIER: db-f1-micro
+  _RUN_APPLY: "false"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE
+
+timeout: 5400s
+
+steps:
+  - id: terraform-plan-or-apply
+    name: hashicorp/terraform:1.9.8
+    dir: /workspace/${_TERRAFORM_DIR}
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        printf '%s\n' "bucket = \"${_STATE_BUCKET}\"" "prefix = \"${_STATE_PREFIX}\"" > backend.ci.hcl
+        {
+          echo "project_id = \"${_TARGET_PROJECT_ID}\""
+          echo "region = \"${_REGION}\""
+          echo "environment = \"${_ENVIRONMENT}\""
+          echo "gcs_bucket_force_destroy = ${_GCS_BUCKET_FORCE_DESTROY}"
+          echo "db_tier = \"${_DB_TIER}\""
+        } > ci.auto.tfvars
+        terraform init -input=false -backend-config=backend.ci.hcl
+        terraform validate
+        terraform plan -input=false -out=tfplan
+        if [ "${_RUN_APPLY}" = "true" ]; then
+          terraform apply -input=false -auto-approve tfplan
+        fi
