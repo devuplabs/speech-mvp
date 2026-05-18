@@ -54,3 +54,13 @@ variable "db_pitr_enabled" {
   type    = bool
   default = true
 }
+
+variable "jurisdiction" {
+  description = "Data residency jurisdiction for this stack: uk or us. One jurisdiction per GCP project and Cloud SQL instance."
+  type        = string
+
+  validation {
+    condition     = contains(["uk", "us"], var.jurisdiction)
+    error_message = "jurisdiction must be uk or us; deploy separate stacks per jurisdiction."
+  }
+}

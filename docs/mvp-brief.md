@@ -161,6 +161,8 @@ The Figma file is built with auto-layout; components are not yet extracted into 
 
 The detail goes into ADR-001…N. This is the headline:
 
+**Data residency (v1):** **Separate databases per jurisdiction** — UK stack (`europe-west2`) and US stack (`us-central1`). No single global Postgres mixing UK health data and US PHI. See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-data-residency-jurisdiction-stacks.md) and [`docs/architecture-gcp-hipaa.md`](architecture-gcp-hipaa.md).
+
 ```
 ┌──────────────────┐      ┌──────────────────────────────┐
 │  Parent (mobile) │──→  │  /parents/[token]            │
@@ -175,22 +177,21 @@ The detail goes into ADR-001…N. This is the headline:
                                        │
                                        ▼
                           ┌──────────────────────────────┐
-                          │  Sona API                    │
-                          │  (TypeScript · Hono or Next) │
+                          │  Sona API (tenant→jurisdiction)│
                           └──────────────────────────────┘
                                        │
-              ┌────────────────────────┼──────────────────────────┐
-              ▼                        ▼                          ▼
-   ┌──────────────────┐    ┌────────────────────┐    ┌──────────────────────┐
-   │  Postgres (UK)   │    │  Object store (UK) │    │  LLM provider (EU/UK)│
-   │  (Neon/Supabase  │    │  PDFs, exports     │    │  no-training DPA     │
-   │   europe-west2)  │    │                    │    │                      │
-   └──────────────────┘    └────────────────────┘    └──────────────────────┘
+              ┌────────────────────────┴──────────────────────────┐
+              ▼ (UK tenants only)                    ▼ (US tenants only)
+   ┌──────────────────┐                   ┌──────────────────┐
+   │ Postgres + GCS   │                   │ Postgres + GCS   │
+   │ europe-west2     │                   │ us-central1      │
+   │ + LLM (same reg) │                   │ + LLM (same reg) │
+   └──────────────────┘                   └──────────────────┘
 ```
 
 ### Likely picks (to be confirmed in ADRs)
 - **Frontend & API.** Next.js 14 app router + TypeScript + Tailwind. Server actions for clinician writes; route handlers for the parent magic-link surface.
-- **Database.** Postgres in `europe-west2` (or AWS `eu-west-2`). Drizzle ORM. Field-level encryption on PII columns (parent name/email, child name/DOB, free-text concerns).
+- **Database.** **One Postgres (Cloud SQL) per jurisdiction** — UK in `europe-west2`, US in `us-central1`; never a shared global instance. Drizzle ORM. Field-level encryption on PII columns.
 - **Auth.** Magic link for parents (no account). WebAuthn / passkeys for clinicians. NextAuth.js or Lucia.
 - **LLM.** Single swappable provider behind an interface. First pick: **Azure OpenAI UK South** or **AWS Bedrock EU** with no-training DPA. Vertex AI (GCP `europe-west2`) is the fallback so we stay aligned with the [`speech-train`](../../speech-train) infra.
 - **PDF generation.** Server-side React → PDF (e.g., `@react-pdf/renderer`) for parent summaries.

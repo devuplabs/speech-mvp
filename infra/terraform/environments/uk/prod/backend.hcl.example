@@ -1,4 +1,4 @@
 # Copy to backend.hcl (gitignored) or generate in Cloud Build from substitutions.
 
-bucket = "your-sona-stage-project-id-terraform-state"
-prefix = "sona/core"
+bucket = "your-sona-prod-project-id-terraform-state"
+prefix = "sona/uk/prod"

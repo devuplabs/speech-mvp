@@ -46,60 +46,54 @@ UK law does not use the term HIPAA. For health-related personal data you typical
 | **International transfers** | If US services process UK personal data, ensure **UK GDPR transfer tools** (e.g. **IDTA / Addendum**) and **transfer risk assessment** as required. |
 | **Clinical / sector norms** | **HCPC**, **RCSLT** professional standards; **NHS DSPT** if you later sell into NHS contexts (out of MVP scope per brief, but architecture should not block it). |
 
-### 2.3 Serving **both** US and UK
+### 2.3 Serving **both** US and UK (v1 — **no global database**)
 
-**Recommendation:** **Jurisdiction-aware tenancy** — logically (and preferably physically) **separate US PHI** from **UK/EU personal data**:
+**Decision (ADR-001):** A **single global database** mixing US PHI and UK health data is **forbidden** in v1. Each jurisdiction gets its **own** Cloud SQL instance, GCS buckets, KMS keys, and (for production) **separate GCP project(s)**.
 
-- **US tenants:** Deploy workloads and primary **Cloud SQL** in a **US** region (e.g. `us-central1`), under BAA + US subprocessors list.
-- **UK/EU tenants:** Deploy in **`europe-west2` (London)** or **`europe-west4` (Netherlands)** per your residency promise; keep **LLM inference and object storage** in the same **data residency** boundary unless a documented transfer mechanism applies.
+| Jurisdiction | Region (default) | Who lands here |
+|--------------|------------------|----------------|
+| **UK** | `europe-west2` (London) | UK/EU tenants; UK GDPR + pilot (Monal) |
+| **US** | `us-central1` | US tenants; HIPAA + BAA |
 
-A **single global database** mixing US PHI and UK health data is a **compliance and incident-response anti-pattern**; avoid it for v1.
+**Routing:** At signup (or invite), each **tenant** is assigned immutable `jurisdiction = uk | us`. The API layer connects only to that jurisdiction’s data plane — no cross-jurisdiction SQL, backups, or analytics on raw clinical data.
+
+**Marketing / docs site** may use a global CDN; **regulated payloads** never pass through a shared database.
+
+See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-data-residency-jurisdiction-stacks.md) and [`infra/gcp-projects.yaml`](../infra/gcp-projects.yaml).
 
 ---
 
 ## 3. High-level architecture
 
+**Two parallel stacks** (UK and US). Diagram shows one jurisdiction; the other is a **mirror** in its region.
+
 ```
-                                    ┌─────────────────────────────────────┐
-                                    │         Global HTTPS / TLS          │
-                                    │   External HTTPS Load Balancing     │
-                                    │   (optional Cloud Armor WAF)        │
-                                    └──────────────────┬──────────────────┘
-                                                       │
-              ┌────────────────────────────────────────┼────────────────────────────────────────┐
-              │                                        │                                        │
-              ▼                                        ▼                                        ▼
-    ┌──────────────────┐                   ┌──────────────────┐                    ┌──────────────────┐
-    │  Static + SSR    │                   │   REST / JSON    │                    │  Webhooks /      │
-    │  Next.js (React) │                   │   API service    │                    │  async workers    │
-    │  Cloud Run       │                   │   Cloud Run      │                    │  Cloud Run jobs   │
-    └────────┬─────────┘                   └────────┬─────────┘                    └────────┬─────────┘
-             │                                      │                                       │
-             │         ┌────────────────────────────┼────────────────────────────┐        │
-             │         │                            │                            │        │
-             ▼         ▼                            ▼                            ▼        ▼
-    ┌──────────────┐  ┌──────────────┐    ┌──────────────────┐         ┌─────────────────────────┐
-    │ Cloud CDN    │  │ Identity     │    │ Cloud SQL        │         │ Cloud Storage (CMEK)  │
-    │ (front door) │  │ Platform     │    │ (PostgreSQL)     │         │ PDFs, exports, avatars│
-    └──────────────┘  └──────────────┘    └────────┬─────────┘         └─────────────────────────┘
-                                                    │
-                    ┌───────────────────────────────┼───────────────────────────────┐
-                    │                               │                               │
-                    ▼                               ▼                               ▼
-           ┌────────────────┐              ┌────────────────┐              ┌────────────────────┐
-           │ Cloud Memorystore│             │ Cloud Tasks /  │              │ Vertex AI          │
-           │ (Redis) sessions│             │ Pub/Sub queues │              │ (Gemini) + eval    │
-           │ rate limits     │             │ LLM fan-out    │              │ Self-hosted alt    │
-           └────────────────┘              └────────────────┘              │ (GKE / GCE)        │
-                                                                              └────────────────────┘
+                         ┌── Jurisdiction: UK (europe-west2) or US (us-central1) ──┐
+                         │  One GCP project per (jurisdiction × environment)       │
+                         ▼                                                       │
+              ┌──────────────────────┐                                           │
+              │  HTTPS / Cloud Run   │  Next.js + API (regional)                │
+              └──────────┬───────────┘                                           │
+                         │                                                       │
+         ┌───────────────┼───────────────┬──────────────────┐                   │
+         ▼               ▼               ▼                  ▼                   │
+  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐ ┌──────────────┐              │
+  │ Cloud SQL   │ │ GCS exports │ │ Vertex AI    │ │ Cloud Tasks  │              │
+  │ PostgreSQL  │ │ (CMEK)      │ │ (same region)│ │ / Pub/Sub    │              │
+  │ **UK-only   │ │ **no US     │ │              │ │              │              │
+  │  or US-only │ │  PHI here** │ │              │ │              │              │
+  └─────────────┘ └─────────────┘ └──────────────┘ └──────────────┘              │
+                         └───────────────────────────────────────────────────────┘
+
+              ┌── Other jurisdiction = separate diagram (separate project + SQL) ──┐
 ```
 
 **Flow summary**
 
-1. **Parents** hit **magic-link** routes; **clinicians** use authenticated app surfaces — both served over **TLS 1.2+** from **Cloud Run** behind **Global External Application Load Balancer**.
-2. **BFF/API** services enforce authZ, consent checks, and **audit logging**; they read/write **Cloud SQL** and **Cloud Storage**.
-3. **Long-running LLM** work uses **Cloud Tasks** or **Pub/Sub** → **Cloud Run jobs** or a dedicated worker service to avoid blocking HTTP and to centralise retries.
-4. **Secrets** (DB passwords, signing keys, third-party API keys) live in **Secret Manager**; **CMEK** via **Cloud KMS** for SQL and buckets holding sensitive exports.
+1. **Parents** and **clinicians** hit **regional** Cloud Run services (TLS 1.2+); optional global LB only for static/marketing assets.
+2. **BFF/API** resolves **tenant → jurisdiction → DSN**; queries are scoped to that jurisdiction’s **Cloud SQL** and **GCS** only.
+3. **LLM** calls use **Vertex AI in the same region** as the tenant’s data plane.
+4. **Secrets** and **CMEK** are **per jurisdiction / per project**, not shared across UK and US.
 
 ---
 
@@ -124,12 +118,13 @@ A **single global database** mixing US PHI and UK health data is a **compliance 
 | **Runtime** | **Node.js 22 LTS** or **Bun** (only if team commits to support) on **Cloud Run** — **minimum instances ≥ 1** in pilot for predictable latency. |
 | **Framework** | **Hono** or **Fastify** (standalone services) *or* Next.js **Route Handlers** if you want a single deployable unit for MVP velocity — trade purity for speed consciously. |
 | **Validation** | **Zod** (or equivalent) at all ingress boundaries. |
-| **AuthZ** | Row-level **tenant_id** + **clinician_id** on every query; no “implicit global” queries. |
+| **AuthZ** | Row-level **tenant_id** + **clinician_id** + **jurisdiction** on every query; no cross-jurisdiction or “implicit global” queries. |
 
 ### 4.3 Database
 
 | Concern | Choice |
 |---------|--------|
+| **Topology** | **One Cloud SQL instance per jurisdiction per environment** — never one shared instance for UK + US. |
 | **Engine** | **Cloud SQL for PostgreSQL** — **regional HA** in pilot; **Point-in-Time Recovery** enabled. |
 | **ORM / migrations** | **Drizzle** (as per brief) or **Prisma** — pick one and enforce migration review. |
 | **Sensitive fields** | **Application-layer encryption** for highest-risk columns (parent/child identifiers, free-text) with keys in **Cloud KMS**; plus **database-level encryption at rest** (default). |
@@ -208,16 +203,16 @@ Maintain a **living internal matrix**:
 
 ## 6. Environments and delivery
 
-| Environment | Purpose |
-|-------------|---------|
-| **dev** | Fake data; cheaper tiers; can use non-HIPAA sandbox **without PHI**. |
-| **staging** | Synthetic load; **same** service enablement as prod; **no real PHI**. |
-| **prod (US)** | US tenants; BAA in effect; US regions. |
-| **prod (UK)** | UK tenants; UK DPA + residency; `europe-west2` (or chosen EU). |
+| Axis | Values | Notes |
+|------|--------|--------|
+| **Jurisdiction** | `uk`, `us` | Separate Cloud SQL + projects; see ADR-001. |
+| **Environment** | `dev`, `stage`, `prod` | Within each jurisdiction. |
 
-**CI/CD:** **GitHub** (source) + **Cloud Build** in each GCP project (plan on PR, **apply with human approval** on `main`) — see [`infra/ci/cloud-build-terraform.md`](../infra/ci/cloud-build-terraform.md). Application image deploys can use additional Cloud Build triggers or GitHub Actions + WIF.
+Example GCP projects: `sona-uk-dev` (pilot), `sona-us-dev` (when US work starts), then `*-stage`, `*-prod` per jurisdiction.
 
-**IaC:** **Terraform** modules per region (network, SQL, Run, buckets, KMS). A starter layout with **separate GCP projects** for dev / stage / prod lives in [`infra/`](../infra/README.md).
+**CI/CD:** **GitHub** + **Cloud Build** **per jurisdiction × environment** (e.g. trigger for `uk/dev` only) — [`infra/ci/cloud-build-terraform.md`](../infra/ci/cloud-build-terraform.md).
+
+**IaC:** Terraform roots at `infra/terraform/environments/{uk|us}/{dev|stage|prod}` — [`infra/`](../infra/README.md), [`infra/gcp-projects.yaml`](../infra/gcp-projects.yaml).
 
 ---
 
@@ -240,7 +235,7 @@ Maintain a **living internal matrix**:
 | Risk | Mitigation |
 |------|------------|
 | **Accidental use of non-BAA service** | Terraform modules **whitelist** resources; code review checklist. |
-| **Cross-border transfers** | **Hard tenant→region** mapping; separate projects per jurisdiction if needed. |
+| **Cross-border transfers** | **Hard tenant→jurisdiction** mapping; **separate Cloud SQL per jurisdiction** (ADR-001); no shared DB. |
 | **LLM leakage in logs** | Hash prompts; store only clinician-approved final text in DB; redact monitoring. |
 | **Magic-link abuse** | Short TTL, single-use tokens, rate limits, anomaly alerts. |
 | **Vendor concentration** | `LlmClient` abstraction + documented fallback (e.g. second region or degraded non-AI mode). |
@@ -259,7 +254,7 @@ Maintain a **living internal matrix**:
 
 1. Execute **Google Cloud BAA** and capture **eligible services** snapshot date.  
 2. Complete **DPIA** (UK) and **HIPAA security risk analysis** (US).  
-3. Fix **tenant residency** model (separate projects vs. separate regions within one org).  
+3. ~~Fix tenant residency model~~ — **Done:** ADR-001 + jurisdiction Terraform roots (`uk/`, `us/`).  
 4. Lock **LLM provider** for pilot per **ADR-002** (Vertex vs Azure OpenAI vs self-hosted).  
 5. Pen-test scope for **pilot go-live** (`mvp-brief.md` already calls for pre-scale pen test).
 

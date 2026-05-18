@@ -60,3 +60,7 @@ output "kms_key_ring_id" {
 output "gcs_kms_crypto_key_id" {
   value = module.kms.gcs_crypto_key_id
 }
+
+output "jurisdiction" {
+  value = var.jurisdiction
+}

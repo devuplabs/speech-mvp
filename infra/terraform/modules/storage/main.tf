@@ -1,6 +1,10 @@
 variable "project_id" { type = string }
 variable "region" { type = string }
 variable "environment" { type = string }
+variable "jurisdiction" {
+  description = "Data residency jurisdiction (uk or us). Used in resource naming; must match the deployed stack."
+  type        = string
+}
 variable "gcs_kms_key_id" {
   description = "Full KMS crypto key resource id for bucket default encryption."
   type        = string
@@ -17,7 +21,7 @@ data "google_project" "this" {
 }
 
 locals {
-  bucket_name = "${var.project_id}-sona-exports-${var.environment}"
+  bucket_name = "${var.project_id}-sona-exports-${var.jurisdiction}-${var.environment}"
 }
 
 resource "google_storage_bucket" "exports" {

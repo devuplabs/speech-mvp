@@ -1,23 +1,33 @@
-# Environment stacks
+# Environment stacks (jurisdiction × lifecycle)
 
-Each subdirectory is a **standalone Terraform root** for one **GCP project**. Project ids are listed in [`../../gcp-projects.yaml`](../../gcp-projects.yaml).
+Terraform is split by **jurisdiction** first, then **environment**. This enforces **no shared Cloud SQL** between UK and US data.
 
-| Directory | GCP project (current) |
-|-----------|------------------------|
-| `dev/` | `project-a625d19b-de99-48e9-9a9` (SONA-MVP-DEV) |
-| `stage/` | Not created — update `gcp-projects.yaml` when ready |
-| `prod/` | Not created — update `gcp-projects.yaml` when ready |
+```
+environments/
+  uk/
+    dev/      ← SONA-MVP-DEV (project-a625d19b-de99-48e9-9a9), europe-west2
+    stage/
+    prod/
+  us/
+    dev/      ← separate US GCP project, us-central1
+    stage/
+    prod/
+```
+
+Registry: [`../../gcp-projects.yaml`](../../gcp-projects.yaml) · ADR: [`../../../docs/decisions/001-data-residency-jurisdiction-stacks.md`](../../../docs/decisions/001-data-residency-jurisdiction-stacks.md)
 
 ## Commands
 
-From any environment directory (after copying `terraform.tfvars.example` → `terraform.tfvars` and `backend.hcl.example` → `backend.hcl`):
-
 ```bash
+cd infra/terraform/environments/uk/dev
+cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl
 terraform init -backend-config-file=backend.hcl
 terraform plan
-terraform apply
 ```
 
-Use a **different GCP `project_id` and state bucket** per directory so state and IAM never cross environments.
+Or: `infra/scripts/terraform-env.sh uk dev plan`
 
-For **GitHub → Cloud Build** (plan on PR, apply with approval on `main`), see [`../../ci/cloud-build-terraform.md`](../../ci/cloud-build-terraform.md).
+## Pilot
+
+UK-only for v0.1 (Monal). Provision **`uk/dev`** only; leave **`us/*`** until a US GCP project exists.

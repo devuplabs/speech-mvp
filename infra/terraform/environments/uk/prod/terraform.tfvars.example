@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (do not commit). Replace project_id with your prod GCP project.
+project_id   = "your-sona-uk-prod-project-id"
+region       = "europe-west2"
+jurisdiction = "uk"
+environment  = "prod"
+name_prefix   = "sona"
+
+gcs_bucket_force_destroy = false
+
+db_tier                = "db-custom-2-7680"
+db_disk_size_gb        = 50
+db_high_availability    = true
+db_deletion_protection  = true
+db_backup_enabled       = true
+db_pitr_enabled         = true
