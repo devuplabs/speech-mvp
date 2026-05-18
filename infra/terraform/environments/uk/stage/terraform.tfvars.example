@@ -1,7 +1,8 @@
 # Copy to terraform.tfvars (do not commit). Replace project_id with your stage GCP project.
-project_id  = "your-sona-stage-project-id"
-region      = "europe-west2"
-environment = "stage"
+project_id   = "your-sona-uk-stage-project-id"
+region       = "europe-west2"
+jurisdiction = "uk"
+environment  = "stage"
 name_prefix   = "sona"
 
 gcs_bucket_force_destroy = false

@@ -4,12 +4,12 @@ provider "google" {
 }
 
 module "enable_apis" {
-  source     = "../../modules/enable_apis"
+  source     = "../../../modules/enable_apis"
   project_id = var.project_id
 }
 
 module "network" {
-  source      = "../../modules/network"
+  source      = "../../../modules/network"
   project_id  = var.project_id
   region      = var.region
   name_prefix = var.name_prefix
@@ -18,7 +18,7 @@ module "network" {
 }
 
 module "kms" {
-  source      = "../../modules/kms"
+  source      = "../../../modules/kms"
   project_id  = var.project_id
   region      = var.region
   name_prefix = var.name_prefix
@@ -27,7 +27,7 @@ module "kms" {
 }
 
 module "app_identity" {
-  source      = "../../modules/app_identity"
+  source      = "../../../modules/app_identity"
   project_id  = var.project_id
   name_prefix = var.name_prefix
   environment = var.environment
@@ -36,7 +36,7 @@ module "app_identity" {
 }
 
 module "artifact_registry" {
-  source      = "../../modules/artifact_registry"
+  source      = "../../../modules/artifact_registry"
   project_id  = var.project_id
   region      = var.region
   name_prefix = var.name_prefix
@@ -45,10 +45,11 @@ module "artifact_registry" {
 }
 
 module "storage" {
-  source         = "../../modules/storage"
+  source         = "../../../modules/storage"
   project_id     = var.project_id
   region         = var.region
   environment    = var.environment
+  jurisdiction   = var.jurisdiction
   gcs_kms_key_id = module.kms.gcs_crypto_key_id
   force_destroy  = var.gcs_bucket_force_destroy
 
@@ -56,7 +57,7 @@ module "storage" {
 }
 
 module "cloud_sql" {
-  source                = "../../modules/cloud_sql"
+  source                = "../../../modules/cloud_sql"
   project_id            = var.project_id
   region                = var.region
   name_prefix           = var.name_prefix

@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# Run Terraform for one environment directory: dev | stage | prod
-# Requires backend.hcl (copy from backend.hcl.example) for remote state.
+# Run Terraform for one jurisdiction × environment stack.
+# Usage: ./terraform-env.sh <uk|us> <dev|stage|prod> [plan|apply|destroy]
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ENV="${1:?usage: terraform-env.sh <dev|stage|prod> [plan|apply|destroy]>}"
-OP="${2:-plan}"
+JURISDICTION="${1:?usage: terraform-env.sh <uk|us> <dev|stage|prod> [plan|apply|destroy]}"
+ENV="${2:?usage: terraform-env.sh <uk|us> <dev|stage|prod> [plan|apply|destroy]}"
+OP="${3:-plan}"
+case "$JURISDICTION" in uk|us) ;; *)
+  echo "Unknown jurisdiction: $JURISDICTION" >&2
+  exit 1
+  ;;
+esac
 case "$ENV" in dev|stage|prod) ;; *)
   echo "Unknown env: $ENV" >&2
   exit 1
@@ -15,7 +21,7 @@ case "$OP" in plan|apply|destroy) ;; *)
   exit 1
   ;;
 esac
-cd "$ROOT/terraform/environments/$ENV"
+cd "$ROOT/terraform/environments/$JURISDICTION/$ENV"
 
 if [ -f backend.hcl ]; then
   terraform init -backend-config-file=backend.hcl -input=false

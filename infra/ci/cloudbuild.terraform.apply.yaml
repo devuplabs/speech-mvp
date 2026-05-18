@@ -5,11 +5,12 @@
 # (or use a manual / release trigger). See infra/ci/cloud-build-terraform.md
 
 substitutions:
-  _TERRAFORM_DIR: infra/terraform/environments/dev
+  _TERRAFORM_DIR: infra/terraform/environments/uk/dev
   _STATE_BUCKET: project-a625d19b-de99-48e9-9a9-terraform-state
-  _STATE_PREFIX: sona/core
+  _STATE_PREFIX: sona/uk/dev
   _TARGET_PROJECT_ID: project-a625d19b-de99-48e9-9a9
   _REGION: europe-west2
+  _JURISDICTION: uk
   _ENVIRONMENT: dev
   _GCS_BUCKET_FORCE_DESTROY: "true"
   _DB_TIER: db-f1-micro
@@ -36,6 +37,7 @@ steps:
         {
           echo "project_id = \"${_TARGET_PROJECT_ID}\""
           echo "region = \"${_REGION}\""
+          echo "jurisdiction = \"${_JURISDICTION}\""
           echo "environment = \"${_ENVIRONMENT}\""
           echo "gcs_bucket_force_destroy = ${_GCS_BUCKET_FORCE_DESTROY}"
           echo "db_tier = \"${_DB_TIER}\""

@@ -36,11 +36,13 @@ All three can sit under the **same Organisation** and even the **same billing ac
 
 This repo assumes **one GCP project per environment** (dev configured; stage/prod when created). See [`gcp-projects.yaml`](gcp-projects.yaml).
 
-| Environment | Status | Project ID |
-|-------------|--------|------------|
-| **dev** | **Active** — SONA-MVP-DEV | `project-a625d19b-de99-48e9-9a9` |
-| **stage** | Not created yet | `REPLACE_WHEN_CREATED` in `gcp-projects.yaml` |
-| **prod** | Not created yet | `REPLACE_WHEN_CREATED` in `gcp-projects.yaml` |
+| Jurisdiction | Environment | Status | Project ID |
+|--------------|-------------|--------|------------|
+| **uk** | dev | **Active** — SONA-MVP-DEV | `project-a625d19b-de99-48e9-9a9` |
+| **uk** | stage / prod | Not created | See `gcp-projects.yaml` |
+| **us** | all | Not created | Separate US project per env (no shared DB with UK) |
+
+**v1 rule:** one **Cloud SQL** per jurisdiction — never mix US PHI and UK data. See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](../docs/decisions/001-data-residency-jurisdiction-stacks.md).
 
 **Deploy from GitHub:** use **Cloud Build** (plan on PR, apply on `main` with approval) — not GitHub Actions for Terraform. Full steps: [`ci/cloud-build-terraform.md`](ci/cloud-build-terraform.md).
 
@@ -59,13 +61,17 @@ This repo assumes **one GCP project per environment** (dev configured; stage/pro
 
 Terraform state lives in the **same project** as the workload.
 
-### Dev (`project-a625d19b-de99-48e9-9a9`)
+### UK dev (`project-a625d19b-de99-48e9-9a9`)
 
 ```bash
 gcloud config set project project-a625d19b-de99-48e9-9a9
 
 ./infra/scripts/bootstrap-terraform-state.sh project-a625d19b-de99-48e9-9a9 europe-west2
 ./infra/scripts/bootstrap-cloud-build-iam.sh project-a625d19b-de99-48e9-9a9 1055416779632
+
+cd infra/terraform/environments/uk/dev
+cp terraform.tfvars.example terraform.tfvars
+cp backend.hcl.example backend.hcl
 ```
 
 **Windows (PowerShell):**
@@ -81,16 +87,12 @@ Then connect **GitHub** and create Cloud Build triggers — [`ci/cloud-build-ter
 ### Local Terraform (optional)
 
 ```bash
-cd infra/terraform/environments/dev
-cp terraform.tfvars.example terraform.tfvars
-cp backend.hcl.example backend.hcl
-terraform init -backend-config-file=backend.hcl
-terraform plan
+./infra/scripts/terraform-env.sh uk dev plan
 ```
 
-### Other environments
+### US stack
 
-When stage/prod projects exist, update [`gcp-projects.yaml`](gcp-projects.yaml), repeat bootstrap scripts with the new `project_id`, and add Cloud Build triggers with matching substitutions.
+When you create a **US** GCP project, bootstrap it in `us-central1`, fill in `gcp-projects.yaml` under `jurisdictions.us`, and apply `infra/terraform/environments/us/dev`.
 
 ---
 
@@ -123,17 +125,16 @@ infra/
       app_identity/         ← Cloud Run / runtime service account + roles
       artifact_registry/    ← Docker repository for Cloud Run images
     environments/
-      dev/
-      stage/
-      prod/
+      uk/   dev | stage | prod
+      us/   dev | stage | prod
 ```
 
 ## Wrapper scripts
 
 From the repo root, after `cd infra` (or using full paths). These run `terraform init -backend-config-file=backend.hcl` automatically when `backend.hcl` exists (copy from `backend.hcl.example` first).
 
-- **Windows:** `.\scripts\terraform-env.ps1 -Environment dev -Operation plan`
-- **Unix:** `./scripts/terraform-env.sh dev plan`
+- **Windows:** `.\scripts\terraform-env.ps1 -Jurisdiction uk -Environment dev`
+- **Unix:** `./scripts/terraform-env.sh uk dev plan`
 
 ---
 

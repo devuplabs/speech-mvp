@@ -1,5 +1,0 @@
-# Copy to backend.hcl (gitignored) for local runs.
-# Bucket name matches: ./infra/scripts/bootstrap-terraform-state.sh <project_id>
-
-bucket = "project-a625d19b-de99-48e9-9a9-terraform-state"
-prefix = "sona/core"

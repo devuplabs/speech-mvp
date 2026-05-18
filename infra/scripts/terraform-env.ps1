@@ -1,6 +1,9 @@
-# Run Terraform for one environment: dev | stage | prod
-# Requires backend.hcl (copy from backend.hcl.example). Runs terraform init when backend.hcl exists.
+# Run Terraform for one jurisdiction × environment stack.
+# Usage: .\terraform-env.ps1 -Jurisdiction uk -Environment dev [-Operation plan]
 param(
+  [Parameter(Mandatory = $true)]
+  [ValidateSet("uk", "us")]
+  [string] $Jurisdiction,
   [Parameter(Mandatory = $true)]
   [ValidateSet("dev", "stage", "prod")]
   [string] $Environment,
@@ -10,7 +13,7 @@ param(
 )
 
 $infraRoot = Split-Path -Parent $PSScriptRoot
-$envDir = Join-Path $infraRoot "terraform\environments\$Environment"
+$envDir = Join-Path $infraRoot "terraform\environments\$Jurisdiction\$Environment"
 Set-Location $envDir
 
 if (Test-Path (Join-Path $envDir "backend.hcl")) {

@@ -1,7 +1,8 @@
 # Copy to terraform.tfvars (do not commit). Replace project_id with your prod GCP project.
-project_id  = "your-sona-prod-project-id"
-region      = "europe-west2"
-environment = "prod"
+project_id   = "your-sona-us-prod-project-id"
+region       = "us-central1"
+jurisdiction = "us"
+environment  = "prod"
 name_prefix   = "sona"
 
 gcs_bucket_force_destroy = false
