@@ -14,6 +14,9 @@ desktop.ini
 .env
 .env.*
 !.env.example
+# Local MCP overrides (optional; commit .cursor/mcp.json.example, copy to mcp.json)
+.cursor/mcp.local.json
+# If mcp.json contains inline API keys, use mcp.local.json instead and keep mcp.json env-based only
 *.pem
 credentials.json
 *-credentials.json
@@ -35,10 +38,8 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Node / Next (when application code is added)
+# Node (API — apps/api)
 node_modules/
-.next/
-out/
 dist/
 build/
 coverage/
@@ -46,6 +47,22 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Flutter (apps/sona)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+.idea/
+*.g.dart
+*.freezed.dart
+
+# Generated API clients
+**/openapi-dart/
 
 # Review assets with possible PII (per mvp-brief)
 _review/

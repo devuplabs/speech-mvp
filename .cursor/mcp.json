@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "google-developer-knowledge": {
+      "type": "http",
+      "url": "https://developerknowledge.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "${env:GOOGLE_DEVELOPER_KNOWLEDGE_API_KEY}"
+      }
+    },
+    "gcloud": {
+      "command": "npx",
+      "args": ["-y", "@google-cloud/gcloud-mcp"]
+    },
+    "gcp-observability": {
+      "command": "npx",
+      "args": ["-y", "@google-cloud/observability-mcp"]
+    },
+    "gcp-storage": {
+      "command": "npx",
+      "args": ["-y", "@google-cloud/storage-mcp"]
+    }
+  }
+}

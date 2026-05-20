@@ -1,8 +1,10 @@
 # Sona — GCP architecture & tech stack (HIPAA + UK)
 
 **Document:** `architecture-gcp-hipaa.md`  
-**Version:** 0.1 · 13 May 2026  
-**Status:** Proposed — supersedes the “Neon / Vercel / multi-cloud sketch” in `mvp-brief.md` for teams standardising on Google Cloud.
+**Version:** 0.2 · 20 May 2026  
+**Status:** Proposed — supersedes the “Neon / Vercel / multi-cloud sketch” in `mvp-brief.md` for teams standardising on Google Cloud.  
+**Client stack:** Flutter + [GenUI](https://docs.flutter.dev/ai/genui) — see [`decisions/002-flutter-genui-client.md`](decisions/002-flutter-genui-client.md).  
+**Doc review:** [`architecture-review-gcp-2026.md`](architecture-review-gcp-2026.md) (Google Developer Knowledge MCP, May 2026).
 
 This document describes a **Google Cloud–centric** reference architecture for implementing the **Sona** MVP (intake → consult prep → triage → first-session plan → parent summary) as reflected in the [Figma design](https://www.figma.com/design/OBPcwy4hIS79EQYbK8URBM/Speech-Therapy-MVP-%E2%80%94-Intake---First-Session-Co-Pilot?node-id=0-1). It optimises for **responsive UI**, **clear separation of frontend / APIs / data**, and **regulated health-adjacent data** in both the **United States** and the **United Kingdom**.
 
@@ -17,7 +19,7 @@ This document describes a **Google Cloud–centric** reference architecture for 
 | **HIPAA alignment (US)** | Execute Google’s **Business Associate Agreement (BAA)**; use **only in-scope configurations** of [HIPAA-eligible Google Cloud services](https://cloud.google.com/security/compliance/hipaa) for PHI; documented safeguards (encryption, access control, audit, BAAs with subprocessors). |
 | **UK / EU defensibility** | **UK GDPR**, **UK Data Protection Act 2018**, **Article 9** (special category — health) lawful basis, consent artefacts, DPIA, **UK/EU data residency** for UK tenants; subprocessors and SCCs where relevant. |
 | **Performant parent + clinician UX** | Thin client, edge caching of static assets, fast API cold start profile, streaming LLM responses where useful, disciplined bundle size. |
-| **Swappable LLM** | One **provider interface** in application code: Vertex AI first-party, self-hosted on GKE/GCE, or third-party APIs behind the same contract/DPA gate. |
+| **Air-gapped LLM** | **Self-hosted** inference in tenant VPC only (ADR-003); single `LlmClient` implementation — no managed Vertex/OpenAI path in app code. |
 | **Operational honesty** | “HIPAA compliant” is never a checkbox product feature; it is **organisational + technical** controls on top of eligible infrastructure. |
 
 ### 1.2 Non-goals (this document)
@@ -71,18 +73,19 @@ See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-d
                          ┌── Jurisdiction: UK (europe-west2) or US (us-central1) ──┐
                          │  One GCP project per (jurisdiction × environment)       │
                          ▼                                                       │
-              ┌──────────────────────┐                                           │
-              │  HTTPS / Cloud Run   │  Next.js + API (regional)                │
-              └──────────┬───────────┘                                           │
-                         │                                                       │
-         ┌───────────────┼───────────────┬──────────────────┐                   │
-         ▼               ▼               ▼                  ▼                   │
-  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐ ┌──────────────┐              │
-  │ Cloud SQL   │ │ GCS exports │ │ Vertex AI    │ │ Cloud Tasks  │              │
-  │ PostgreSQL  │ │ (CMEK)      │ │ (same region)│ │ / Pub/Sub    │              │
-  │ **UK-only   │ │ **no US     │ │              │ │              │              │
-  │  or US-only │ │  PHI here** │ │              │ │              │              │
-  └─────────────┘ └─────────────┘ └──────────────┘ └──────────────┘              │
+              ┌──────────────────────┐     ┌──────────────────────┐               │
+              │ Flutter Web / mobile │     │ Sona API (Cloud Run) │               │
+              │ (static / Firebase)  │────▶│ TypeScript · regional│               │
+              └──────────────────────┘     └──────────┬───────────┘               │
+                                                      │                           │
+         ┌────────────────────────────────────────────┼───────────────┐           │
+         ▼               ▼               ▼                ▼               ▼           │
+  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐ ┌──────────────┐ ┌─────────┐ │
+  │ Cloud SQL   │ │ GCS exports │ │ vLLM + Gemma3│ │ Cloud Tasks  │ │ Worker  │ │
+  │ PostgreSQL  │ │ (CMEK)      │ │ 27B (GKE/GPU)│ │ (same region)│ │ (Run)   │ │
+  │ **UK-only   │ │ **no US     │ │ (same region)│ │              │ │ PDF/LLM │ │
+  │  or US-only │ │  PHI here** │ │              │ │              │ │         │ │
+  └─────────────┘ └─────────────┘ └──────────────┘ └──────────────┘ └─────────┘ │
                          └───────────────────────────────────────────────────────┘
 
               ┌── Other jurisdiction = separate diagram (separate project + SQL) ──┐
@@ -90,25 +93,29 @@ See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-d
 
 **Flow summary**
 
-1. **Parents** and **clinicians** hit **regional** Cloud Run services (TLS 1.2+); optional global LB only for static/marketing assets.
-2. **BFF/API** resolves **tenant → jurisdiction → DSN**; queries are scoped to that jurisdiction’s **Cloud SQL** and **GCS** only.
-3. **LLM** calls use **Vertex AI in the same region** as the tenant’s data plane.
-4. **Secrets** and **CMEK** are **per jurisdiction / per project**, not shared across UK and US.
+1. **Parents** (Flutter mobile/web) and **clinicians** (Flutter web) call the **Sona API** on **regional Cloud Run** (TLS 1.2+). Flutter web assets are served from **Firebase Hosting** or **GCS + Cloud CDN** (no PHI in static bundles).
+2. **API** resolves **tenant → jurisdiction → DSN**; queries are scoped to that jurisdiction’s **Cloud SQL** and **GCS** only.
+3. **GenUI (A2UI)** streams structured UI from the **Sona API**; the API calls **self-hosted inference** on private GKE/GCE (ADR-003) — no client LLM keys, no managed Vertex API for prompts.
+4. **Long LLM jobs** (prep brief, plan draft) use **Cloud Tasks** → worker Cloud Run service; UI shows *Drafting → Ready* per Figma.
+5. **Secrets** and **CMEK** are **per jurisdiction / per project**, not shared across UK and US.
 
 ---
 
 ## 4. Component choices (GCP)
 
-### 4.1 Frontend — responsive and fast
+### 4.1 Client — Flutter + GenUI
 
 | Layer | Choice | Rationale |
 |-------|--------|-----------|
-| **Framework** | **Next.js** (App Router) + **TypeScript** + **Tailwind CSS** | Matches `mvp-brief.md`; excellent DX; supports RSC and careful client JS boundaries. |
-| **Hosting** | **Cloud Run** (SSR) + **Cloud CDN** in front of LB | Low ops, per-request scaling, **regional** placement per jurisdiction; CDN improves **TTFB** for static chunks and cached HTML where safe. |
-| **Auth surfaces** | Parent: **signed, time-limited magic links** (no long-lived parent account in v0.1). Clinician: **WebAuthn / passkeys** + optional TOTP; backed by **Identity Platform** or a small custom session table if you need tighter control. |
-| **Performance habits** | Route-level code splitting, image optimisation, avoid shipping large client bundles on parent mobile flow, stream LLM output only on clinician screens where it helps. |
+| **Framework** | **Flutter** (Dart) — one codebase for parent mobile/web + clinician web | Matches Figma breakpoints (375 mobile, 1440 desktop); strong performance on parent mobile flow. |
+| **Generative UI** | **[GenUI](https://docs.flutter.dev/ai/genui)** (`genui` package, alpha) | AI-drafted panels (probe areas, session plan sections, summary blocks) as **constrained widgets** from a Sona catalog — not free-form HTML. |
+| **AI transport** | **`genui_a2a` / A2UI** → **Sona API** (all environments) | Same stack for demo and prod (ADR-004); PHI never on device; inference air-gapped (ADR-003). |
+| **Hosting (web)** | **Firebase Hosting** or **GCS + Cloud CDN** after `flutter build web` | Per [Flutter web deployment](https://docs.flutter.dev/deployment/web). Separate from API Cloud Run service. |
+| **Hosting (mobile)** | iOS / Android store builds (post-pilot) | Out of v0.1 submission scope; web covers pilot. |
+| **Auth surfaces** | Parent: **signed, time-limited magic links** (deep link into Flutter). Clinician: **WebAuthn / passkeys** + optional TOTP; **Identity Platform** or API-issued sessions. |
+| **Design system** | Figma tokens → Flutter `ThemeData` + shared widgets under `apps/sona/` | `#2D6A6E`, `#F2A878`, etc. from `mvp-brief.md`. |
 
-**Note:** If you later split purely static marketing pages, you can host them on **Cloud Storage + Cloud CDN**; the **authenticated app** stays on Cloud Run.
+**Note:** Marketing pages may use **Cloud Storage + Cloud CDN** globally; regulated flows stay on jurisdiction-scoped API + data plane.
 
 ### 4.2 APIs
 
@@ -116,7 +123,7 @@ See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-d
 |---------|--------|
 | **Style** | **REST + JSON** (OpenAPI documented) for mobile-friendly, cache-friendly parent flows; optional **SSE** for streaming LLM to clinician UI. |
 | **Runtime** | **Node.js 22 LTS** or **Bun** (only if team commits to support) on **Cloud Run** — **minimum instances ≥ 1** in pilot for predictable latency. |
-| **Framework** | **Hono** or **Fastify** (standalone services) *or* Next.js **Route Handlers** if you want a single deployable unit for MVP velocity — trade purity for speed consciously. |
+| **Framework** | **Hono** or **Fastify** on **Cloud Run** (standalone service — not embedded in Flutter) | Clean boundary for OpenAPI → Dart client codegen; independent scale from static Flutter web. |
 | **Validation** | **Zod** (or equivalent) at all ingress boundaries. |
 | **AuthZ** | Row-level **tenant_id** + **clinician_id** + **jurisdiction** on every query; no cross-jurisdiction or “implicit global” queries. |
 
@@ -147,17 +154,21 @@ See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-d
 | **Email** | **SendGrid / Postmark / SES** — **only** vendors with **BAA** (US) and appropriate **UK GDPR DPA** (UK); send via **regional** configuration; **no PHI in provider dashboards** (templates + variables only). |
 | **Observability** | **Cloud Logging / Cloud Monitoring / Error Reporting**; **PII redaction** in log pipelines; **Sentry** (or similar) only with **server-side scrubbing** and BAA. |
 
-### 4.6 LLM strategy (Vertex vs self-hosted vs third-party)
+### 4.6 LLM — self-hosted air-gap (ADR-003)
 
-**Pattern:** **`LlmClient` interface** in code — one implementation selected per tenant/environment.
+**Decision:** **One** `LlmClient` → **self-hosted [Gemma 3 27B IT](https://huggingface.co/google/gemma-3-27b-it)** (`google/gemma-3-27b-it`) via **vLLM** on **GKE + GPU** in the tenant region. **No** managed Vertex/OpenAI calls from Sona API for client data.
 
-| Option | When to use | GCP fit |
-|--------|-------------|---------|
-| **Vertex AI (Gemini)** | Default if staying on GCP; enterprise terms + **BAA coverage** for in-scope services | **Same region** as tenant data; **no training** flags per Google’s AI governance settings; log **prompt/response hashes** + minimal metadata in DB; avoid raw prompts in application logs. |
-| **Self-hosted open-weights** | Strict air-gap, custom fine-tunes, or non-negotiable “no third-party API” | **GKE** or **GCE** with **L4/L5 GPU** (or **Cloud TPU** for supported models) in **tenant region**; **VPC-SC** / private Google access; model weights in **GCS** with CMEK; no egress. |
-| **Third-party API** (OpenAI, Anthropic, etc.) | Commercial model quality | **Only** with **BAA/DPA**, **subprocessor** disclosure, **region** endpoint choice, and **UK transfer analysis** if UK data leaves UK/EU. |
+| Control | Implementation |
+|---------|----------------|
+| **Placement** | Same VPC as Cloud SQL (`europe-west2` / `us-central1`) |
+| **Egress** | Deny internet from inference subnet; weights in **GCS (CMEK)** |
+| **Callers** | Sona API + Cloud Tasks workers → **private** inference URL |
+| **Perimeter** | VPC firewall; optional **VPC Service Controls** on prod |
+| **Demo vs prod** | **Same** topology and code; dev uses synthetic data only (ADR-004) |
 
-**MVP recommendation:** **Vertex AI in the same region as the tenant** (e.g. `europe-west2` for UK, `us-central1` for US) behind **async Cloud Tasks** so parent intake submission is resilient and the clinician sees **Drafting → Ready** states as in the Figma flow.
+**Async:** Cloud Tasks → worker → same internal inference endpoint; UI shows *Drafting → Ready* per Figma.
+
+**Not in scope for Sona v0.1:** Vertex Gemini API, Firebase AI Logic, third-party LLM APIs. (`speech-train` Whisper on Vertex remains a separate repo for future ASR.)
 
 ---
 
@@ -192,10 +203,11 @@ Maintain a **living internal matrix**:
 
 | Service | PHI allowed? | Notes |
 |---------|----------------|-------|
-| Cloud Run | Yes (if in BAA scope) | Configure min instances, concurrency, CPU for SSR. |
+| Cloud Run (API + workers) | Yes (if in BAA scope) | Min instances for API latency; separate service for async LLM/PDF workers. |
+| Firebase Hosting (Flutter web) | **Confirm** | Static assets only; PHI flows API-only. |
 | Cloud SQL | Yes | Private IP, backups encrypted, IAM DB auth optional. |
 | Cloud Storage | Yes | Bucket policies, no public ACLs. |
-| Vertex AI | **Confirm** | Use enterprise configuration; document what Google classifies as eligible **at sign-off time**. |
+| GKE / GCE (inference) | Yes (if in BAA scope) | GPU nodes private; no prompt egress; separate from managed Vertex API. |
 | BigQuery | Often for analytics | **Do not** stream raw PHI into analytics until assessed. |
 | Firebase (various) | Mixed | Many teams use **Identity Platform**; verify **each** Firebase product’s HIPAA eligibility before use with PHI. |
 
@@ -210,6 +222,8 @@ Maintain a **living internal matrix**:
 
 Example GCP projects: `sona-uk-dev` (pilot), `sona-us-dev` (when US work starts), then `*-stage`, `*-prod` per jurisdiction.
 
+**Environment parity (ADR-004):** Dev, stage, and prod run the **same** services (Flutter → API → private inference → SQL). Only **data** (synthetic vs PHI) and **IAM** (engineers on dev, not on prod) differ.
+
 **CI/CD:** **GitHub** + **Cloud Build** **per jurisdiction × environment** (e.g. trigger for `uk/dev` only) — [`infra/ci/cloud-build-terraform.md`](../infra/ci/cloud-build-terraform.md).
 
 **IaC:** Terraform roots at `infra/terraform/environments/{uk|us}/{dev|stage|prod}` — [`infra/`](../infra/README.md), [`infra/gcp-projects.yaml`](../infra/gcp-projects.yaml).
@@ -220,12 +234,12 @@ Example GCP projects: `sona-uk-dev` (pilot), `sona-us-dev` (when US work starts)
 
 | Area | Stack |
 |------|--------|
-| **UI** | React 19 / Next.js, Tailwind, design tokens from Figma (`#2D6A6E`, etc.) |
-| **API** | TypeScript, Hono or Fastify (or Next route handlers), Zod, OpenAPI |
+| **UI** | **Flutter** + **GenUI**; Figma design tokens in `ThemeData` |
+| **API** | TypeScript, Hono or Fastify on Cloud Run, Zod, OpenAPI → Dart client |
 | **DB** | PostgreSQL (Cloud SQL), Drizzle (or Prisma), migrations in CI |
 | **Cache / rate limit** | Memorystore (Redis) — **no PHI** in cache; session IDs and ephemeral tokens only |
-| **PDF** | Server-side `@react-pdf/renderer` or HTML→PDF in **Cloud Run** worker |
-| **Infra** | Terraform, Cloud Run, Global LB + Cloud CDN, Secret Manager, KMS |
+| **PDF** | **Cloud Run worker** (HTML→PDF or headless Chromium) or Dart `pdf` in worker |
+| **Infra** | Terraform, Cloud Run (API/worker), GKE/GCE inference, Flutter web CDN, Secret Manager, KMS |
 | **Observability** | Cloud Logging + Monitoring; optional Sentry with scrubbing |
 
 ---
@@ -255,8 +269,9 @@ Example GCP projects: `sona-uk-dev` (pilot), `sona-us-dev` (when US work starts)
 1. Execute **Google Cloud BAA** and capture **eligible services** snapshot date.  
 2. Complete **DPIA** (UK) and **HIPAA security risk analysis** (US).  
 3. ~~Fix tenant residency model~~ — **Done:** ADR-001 + jurisdiction Terraform roots (`uk/`, `us/`).  
-4. Lock **LLM provider** for pilot per **ADR-002** (Vertex vs Azure OpenAI vs self-hosted).  
-5. Pen-test scope for **pilot go-live** (`mvp-brief.md` already calls for pre-scale pen test).
+4. ~~Lock LLM provider~~ — **Done:** ADR-003 self-hosted air-gap; add GKE/GPU Terraform in `uk/dev`.  
+5. Enforce **ADR-004** prod IAM (no standing developer access on prod projects).  
+6. Pen-test scope for **pilot go-live** (`mvp-brief.md` already calls for pre-scale pen test).
 
 ---
 

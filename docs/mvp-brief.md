@@ -163,21 +163,24 @@ The detail goes into ADR-001…N. This is the headline:
 
 **Data residency (v1):** **Separate databases per jurisdiction** — UK stack (`europe-west2`) and US stack (`us-central1`). No single global Postgres mixing UK health data and US PHI. See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-data-residency-jurisdiction-stacks.md) and [`docs/architecture-gcp-hipaa.md`](architecture-gcp-hipaa.md).
 
+**Client (ADR-002):** **Flutter** + **GenUI A2UI** → **Sona API** (same in dev and prod). **LLM (ADR-003):** self-hosted, air-gapped in VPC — not Vertex/Firebase on device.
+
 ```
 ┌──────────────────┐      ┌──────────────────────────────┐
-│  Parent (mobile) │──→  │  /parents/[token]            │
-└──────────────────┘      │  (Next.js · magic link only) │
-                          └──────────────────────────────┘
+│  Parent (Flutter)│──→  │  Magic-link deep link routes │
+│  mobile + web    │      │  (intake · review · consent) │
+└──────────────────┘      └──────────────────────────────┘
                                        │
                                        ▼
 ┌──────────────────┐      ┌──────────────────────────────┐
-│  Clinician (web) │──→  │  /clinician (passkey auth)   │
-└──────────────────┘      │  (Next.js · server actions)  │
-                          └──────────────────────────────┘
+│  Clinician       │──→  │  Flutter Web · passkey auth  │
+│  (Flutter web)   │      │  GenUI for AI-draft sections │
+└──────────────────┘      └──────────────────────────────┘
                                        │
-                                       ▼
+                                       ▼ HTTPS (REST / SSE)
                           ┌──────────────────────────────┐
-                          │  Sona API (tenant→jurisdiction)│
+                          │  Sona API · Cloud Run          │
+                          │  (tenant → jurisdiction)     │
                           └──────────────────────────────┘
                                        │
               ┌────────────────────────┴──────────────────────────┐
@@ -185,24 +188,31 @@ The detail goes into ADR-001…N. This is the headline:
    ┌──────────────────┐                   ┌──────────────────┐
    │ Postgres + GCS   │                   │ Postgres + GCS   │
    │ europe-west2     │                   │ us-central1      │
-   │ + LLM (same reg) │                   │ + LLM (same reg) │
+   │ Gemma3-27B (vLLM) │                  │ Gemma3-27B (vLLM) │
    └──────────────────┘                   └──────────────────┘
 ```
 
-### Likely picks (to be confirmed in ADRs)
-- **Frontend & API.** Next.js 14 app router + TypeScript + Tailwind. Server actions for clinician writes; route handlers for the parent magic-link surface.
-- **Database.** **One Postgres (Cloud SQL) per jurisdiction** — UK in `europe-west2`, US in `us-central1`; never a shared global instance. Drizzle ORM. Field-level encryption on PII columns.
-- **Auth.** Magic link for parents (no account). WebAuthn / passkeys for clinicians. NextAuth.js or Lucia.
-- **LLM.** Single swappable provider behind an interface. First pick: **Azure OpenAI UK South** or **AWS Bedrock EU** with no-training DPA. Vertex AI (GCP `europe-west2`) is the fallback so we stay aligned with the [`speech-train`](../../speech-train) infra.
-- **PDF generation.** Server-side React → PDF (e.g., `@react-pdf/renderer`) for parent summaries.
-- **Email.** Postmark or AWS SES UK region. Plain text + branded HTML.
-- **Observability.** Structured logs with PII redaction; audit trail in DB; Sentry with PII scrubbing.
+### Likely picks (confirmed / pending ADRs)
+
+| Area | Choice | ADR |
+|------|--------|-----|
+| **Client** | Flutter + GenUI (server-fed catalog) | [002](decisions/002-flutter-genui-client.md) |
+| **API** | TypeScript, Hono/Fastify on Cloud Run, OpenAPI | — |
+| **Database** | Cloud SQL Postgres per jurisdiction; Drizzle | [001](decisions/001-data-residency-jurisdiction-stacks.md) |
+| **Auth** | Magic link (parent); WebAuthn / passkeys (clinician) | — |
+| **LLM** | Self-hosted **Gemma 3 27B IT** + vLLM on GKE (air-gap) | [003](decisions/003-self-hosted-llm-air-gap.md) |
+| **Environments** | Same architecture; prod = no dev GCP access | [004](decisions/004-unified-environments-access.md) |
+| **Async AI** | Cloud Tasks → worker for prep brief / plan draft | [`architecture-gcp-hipaa.md`](architecture-gcp-hipaa.md) |
+| **PDF** | API/worker (not client-side) | — |
+| **Email** | Postmark or SES with BAA/DPA | — |
+| **Hosting** | Flutter web: Firebase Hosting or GCS+CDN; API: Cloud Run | [`architecture-review-gcp-2026.md`](architecture-review-gcp-2026.md) |
 
 ### What we're explicitly **not** building day one
-- A microservice mesh — single Next.js app + Postgres covers it.
-- Custom auth — use a library.
+- A microservice mesh — **Flutter client + Sona API + Postgres** covers v0.1.
+- Next.js / React — superseded by Flutter (ADR-002).
+- Client-side or managed-cloud LLM APIs (Vertex, Firebase AI Logic, OpenAI) for Sona inference.
+- A separate “demo-only” app or API fork.
 - A vector store — RAG over RCSLT/SLI references is roadmap, not v0.1.
-- A queue system — the AI prep brief can run synchronously inside a server action with a loading state.
 
 ---
 
@@ -244,7 +254,7 @@ Each item is one increment. Prioritised by clinical leverage × design-partner p
 - **Co-design session #1** — Walk through 3 anonymised real recent intakes with Monal. Design the question tree together.
 - **NHS comparison** — Talk to 2–3 NHS SLTs (Monal's own action item). Confirm intake differs but isn't incompatible. Keeps the B2B path open.
 - **Paper prototype** — Parent welcome + form + clinician prep screen, click-through in Figma. Test with 1 real parent.
-- **LLM vendor decision** — Region, DPA, no-training clause, fallback strategy → ADR-002.
+- **Inference stack in `uk/dev`** — GKE/GPU + internal endpoint; synthetic data only until DPIA.
 - **Data-protection impact assessment (DPIA)** — Draft before any client data touches the system.
 - **Build v0.1** — Target 4–6 weeks to first paying-user pilot (Monal herself).
 
@@ -254,12 +264,14 @@ Each item is one increment. Prioritised by clinical leverage × design-partner p
 
 The big ones that need answers before code:
 
-1. **Vendor & region for the LLM** — Azure OpenAI UK South vs. AWS Bedrock EU vs. Vertex AI `europe-west2`. Drives auth, infra, and DPA structure. → ADR-002.
-2. **Database host** — Neon vs. Supabase vs. RDS in `eu-west-2`. Cost vs. ops trade-off. → ADR-003.
-3. **Hosting** — Vercel EU vs. self-host on GCP (same project as `speech-train`)? Vercel is faster to start; GCP unifies IAM. → ADR-004.
-4. **Question-tree authoring** — JSON spec we edit by hand, or a small DSL with a CMS later? Starts as JSON; tracked in ADR-005.
-5. **Pricing model** — Per-clinician monthly subscription vs. per-case. Need ~3 SLT conversations before deciding.
-6. **B2C vs. B2B2C identity** — Does the parent ever have an account beyond a magic link? Default no in v0.1; revisit when carryover lands.
+1. ~~**LLM**~~ — **Decided:** air-gap **Gemma 3 27B IT** + vLLM (ADR-003). Remaining: GPU quota + weights mirror to GCS in `uk/dev`.
+2. ~~**Database host**~~ — **Decided:** Cloud SQL per jurisdiction (ADR-001).
+3. ~~**Client + GenUI**~~ — **Decided:** Flutter + A2UI → Sona API; no Firebase AI branch (ADR-002).
+4. ~~**Demo vs prod**~~ — **Decided:** same architecture; prod IAM lockdown only (ADR-004).
+5. **Flutter web hosting** — Firebase Hosting vs GCS+CDN. → ADR-005 (when written).
+6. **Question-tree authoring** — JSON by hand vs DSL/CMS. → ADR-006 (when written).
+7. **Pricing model** — Per-clinician subscription vs per-case.
+8. **B2C vs. B2B2C identity** — Parent account beyond magic link? Default no in v0.1.
 
 ---
 
@@ -286,8 +298,8 @@ The big ones that need answers before code:
 | Interview synthesis | Done |
 | MVP scope | Drafted, awaiting design-partner sign-off |
 | Figma screens (7) | Done — see file link above |
-| Architecture decisions | Sketch only — ADRs pending |
-| Code | Not started |
+| Architecture decisions | ADR-001–004 accepted (residency, Flutter/A2UI, air-gap LLM, unified envs) |
+| Code | `apps/` layout planned; not started |
 | Pilot agreement | Not started |
 | DPIA | Not started |
 

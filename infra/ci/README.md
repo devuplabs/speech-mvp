@@ -7,6 +7,8 @@
 | Doc | Purpose |
 |-----|---------|
 | [`cloud-build-terraform.md`](cloud-build-terraform.md) | Connect GitHub, create **plan** + **apply** triggers, enable **approvals** on apply |
+| [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1) | Automated bootstrap + triggers (run after GitHub OAuth) |
+| [`triggers/`](triggers/) | Trigger YAML templates for `uk/dev` |
 | [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml) | PR / plan-only |
 | [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | `main` + human approval → `terraform apply` |
 | [`../gcp-projects.yaml`](../gcp-projects.yaml) | Dev project id, state bucket, Cloud Build SA |

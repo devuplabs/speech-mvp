@@ -14,3 +14,15 @@ db_high_availability   = false
 db_deletion_protection = false
 db_backup_enabled      = true
 db_pitr_enabled        = true
+
+# GKE + vLLM (Gemma 3 27B IT) — ADR-003
+inference_enabled = true
+inference_zone    = "europe-west2-b"
+model_gcs_prefix  = "gemma-3-27b-it"
+# Mirror vllm/vllm-openai to Artifact Registry before apply (see modules/inference/README.md)
+vllm_container_image = "europe-west2-docker.pkg.dev/project-a625d19b-de99-48e9-9a9/sona-sona/vllm-openai:latest"
+
+inference_gpu_machine_type    = "g2-standard-8"
+inference_node_pool_min_count = 1
+inference_node_pool_max_count = 1
+inference_deletion_protection = false

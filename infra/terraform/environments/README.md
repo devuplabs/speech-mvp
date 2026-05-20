@@ -31,3 +31,5 @@ Or: `infra/scripts/terraform-env.sh uk dev plan`
 ## Pilot
 
 UK-only for v0.1 (Monal). Provision **`uk/dev`** only; leave **`us/*`** until a US GCP project exists.
+
+Every environment uses the same stack module (`sona_environment`): Cloud SQL, GKE inference (Gemma 3 27B + vLLM), Cloud Tasks, model weights bucket. See [`../modules/inference/README.md`](../modules/inference/README.md) for GPU quota and image mirror steps.
