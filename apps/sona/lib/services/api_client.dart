@@ -11,6 +11,7 @@ class SonaApiClient {
 
   Future<Map<String, dynamic>> health() async {
     final res = await _client.get(_base.replace(path: '/health'));
+    _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -20,6 +21,31 @@ class SonaApiClient {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'displayName': displayName}),
     );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createCase({
+    required String tenantId,
+    String? parentEmail,
+    String? childDisplayName,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'tenantId': tenantId,
+        'parentEmail': parentEmail,
+        'childDisplayName': childDisplayName,
+      }),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getCase(String caseId) async {
+    final res = await _client.get(_base.replace(path: '/v1/cases/$caseId'));
+    _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -37,6 +63,22 @@ class SonaApiClient {
         'parentEmail': ?parentEmail,
       }),
     );
+    _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  void _ensureOk(http.Response res) {
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw SonaApiException(res.statusCode, res.body);
+    }
+  }
+}
+
+class SonaApiException implements Exception {
+  SonaApiException(this.statusCode, this.body);
+  final int statusCode;
+  final String body;
+
+  @override
+  String toString() => 'SonaApiException($statusCode): $body';
 }
