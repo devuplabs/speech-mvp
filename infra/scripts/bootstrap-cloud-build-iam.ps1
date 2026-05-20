@@ -38,9 +38,10 @@ Write-Host "Project:        $ProjectId"
 Write-Host "Cloud Build SA: $cbSa"
 Write-Host "State bucket:   gs://$stateBucket"
 
+# Owner for MVP bootstrap (Terraform sets project/KMS/Cloud SQL IAM). Narrow after first apply.
 gcloud projects add-iam-policy-binding $ProjectId `
   --member="serviceAccount:$cbSa" `
-  --role="roles/editor" `
+  --role="roles/owner" `
   --condition=None
 
 $oldEap = $ErrorActionPreference
