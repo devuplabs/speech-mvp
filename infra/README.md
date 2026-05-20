@@ -54,6 +54,8 @@ This repo assumes **one GCP project per environment** (dev configured; stage/pro
 
 **Deploy from GitHub:** use **Cloud Build** (plan on PR, apply on `main` with approval) — not GitHub Actions for Terraform. Full steps: [`ci/cloud-build-terraform.md`](ci/cloud-build-terraform.md).
 
+**MVP bootstrap (uk/dev, core only):** [`MVP-INFRA.md`](MVP-INFRA.md) — phase 1 without GKE; enable inference in phase 2.
+
 ---
 
 ## Prerequisites

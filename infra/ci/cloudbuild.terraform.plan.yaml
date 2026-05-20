@@ -23,6 +23,8 @@ options:
   logging: CLOUD_LOGGING_ONLY
   substitution_option: ALLOW_LOOSE
 
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
+
 timeout: 5400s
 
 steps:
