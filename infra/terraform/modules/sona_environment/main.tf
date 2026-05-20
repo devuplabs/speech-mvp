@@ -87,6 +87,7 @@ module "cloud_sql" {
   environment           = var.environment
   vpc_network_self_link = module.network.vpc_self_link
   tier                  = var.db_tier
+  edition               = var.db_edition
   disk_size_gb          = var.db_disk_size_gb
   high_availability     = var.db_high_availability
   deletion_protection   = var.db_deletion_protection

@@ -9,6 +9,7 @@ name_prefix  = "sona"
 gcs_bucket_force_destroy = true
 
 db_tier                = "db-f1-micro"
+db_edition             = "ENTERPRISE" # required for db-f1-micro on POSTGRES_16 (API default is ENTERPRISE_PLUS)
 db_disk_size_gb        = 10
 db_high_availability   = false
 db_deletion_protection = false

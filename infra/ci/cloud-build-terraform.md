@@ -94,16 +94,15 @@ gcloud services enable \
 
 ### 4. IAM for the Cloud Build service account (bootstrap)
 
-For the **first** apply, grant the default Cloud Build SA enough access on **this** project and the state bucket:
+Creates **`sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com`** (legacy `PROJECT_NUMBER@cloudbuild.gserviceaccount.com` often does not exist):
 
 ```bash
-./infra/scripts/bootstrap-cloud-build-iam.sh project-a625d19b-de99-48e9-9a9
+./infra/scripts/bootstrap-cloud-build-iam.sh project-a625d19b-de99-48e9-9a9 1055416779632
 ```
 
-This grants `roles/editor` on the project and `roles/storage.objectAdmin` on the state bucket to  
-`1055416779632@cloudbuild.gserviceaccount.com`. **Narrow these roles** after the first successful apply.
+Grants `roles/owner` on the project and state bucket access for the **first** apply. **Narrow roles** after success — see [`../BOOTSTRAP-MANUAL-STEPS.md`](../BOOTSTRAP-MANUAL-STEPS.md).
 
-Optional (recommended later): create `sona-terraform-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com`, move the same roles to it, and uncomment `serviceAccount` in `cloudbuild.terraform.apply.yaml`.
+Plan/apply YAML already set `serviceAccount` to `sona-cloudbuild@...`.
 
 ### 5. Connect GitHub to Cloud Build (2nd gen)
 
@@ -123,7 +122,9 @@ gcloud builds connections describe sona-github --region=europe-west2 \
 
 Complete OAuth, then re-run `setup-cloud-build.ps1`.
 
-**No separate “install app” prompt?** If `installationState.stage` is **COMPLETE**, the app is already installed (see `githubConfig.appInstallationId`). You still must **grant the app access** to `devuplabs/speech-mvp` in GitHub → Installed GitHub Apps → Google Cloud Build → Configure. Details: [`docs/cloud-build-github-troubleshooting.md`](../../docs/cloud-build-github-troubleshooting.md).
+**No separate “install app” prompt?** If `installationState.stage` is **COMPLETE**, the app is already installed. You still must **grant the app access** to `devuplabs/speech-mvp` (manual). Details: [`../BOOTSTRAP-MANUAL-STEPS.md`](../BOOTSTRAP-MANUAL-STEPS.md) and [`docs/cloud-build-github-troubleshooting.md`](../../docs/cloud-build-github-troubleshooting.md).
+
+**Linked repository name** must be **`devuplabs-speech-mvp`** in triggers (not `speech-mvp`).
 
 Builds run **in** `project-a625d19b-de99-48e9-9a9` (same project as Terraform target for dev).
 
@@ -144,14 +145,17 @@ chmod +x infra/scripts/setup-cloud-build.sh
 ./infra/scripts/setup-cloud-build.sh
 ```
 
-This creates/updates:
+Creates or updates triggers via **REST API** (required `serviceAccount` on newer projects):
 
 | Trigger | Config | Event |
 |---------|--------|--------|
-| `sona-terraform-dev-plan` | [`triggers/sona-terraform-dev-plan.yaml`](triggers/sona-terraform-dev-plan.yaml) | PR to `main` (comment `/gcbrun`) |
-| `sona-terraform-dev-apply` | [`triggers/sona-terraform-dev-apply.yaml`](triggers/sona-terraform-dev-apply.yaml) | Push to `main` + **approval required** |
+| `sona-terraform-dev-plan` | [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml) | PR to `main` (`/gcbrun` for collaborators) |
+| `sona-terraform-dev-apply` | [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | Push to `main` + **approval required** |
 
-Templates live under [`infra/ci/triggers/`](triggers/). Build steps include inference variables (Gemma / vLLM) in [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml).
+Substitutions: `_INFERENCE_ENABLED=false`, `_DB_TIER=db-f1-micro`, `sona-cloudbuild@...` SA.  
+Templates: [`triggers/`](triggers/). Sync existing triggers: `.\setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers`.
+
+**Do not** use `gcloud builds submit` for routine deploys — see [`../BOOTSTRAP-MANUAL-STEPS.md`](../BOOTSTRAP-MANUAL-STEPS.md).
 
 Grant approvers `roles/cloudbuild.builds.approver` on the dev project for team members who may approve applies.
 

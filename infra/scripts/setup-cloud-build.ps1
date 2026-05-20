@@ -7,7 +7,8 @@ param(
   [string] $ConnectionName = "sona-github",
   [string] $RepositoryName = "devuplabs-speech-mvp",
   [string] $RemoteUri = "https://github.com/devuplabs/speech-mvp.git",
-  [switch] $SkipBootstrap
+  [switch] $SkipBootstrap,
+  [switch] $UpdateTriggers
 )
 
 $ErrorActionPreference = "Stop"
@@ -165,9 +166,16 @@ foreach ($pair in @(
     @{ Name = "sona-terraform-dev-plan"; Body = $planBody },
     @{ Name = "sona-terraform-dev-apply"; Body = $applyBody }
   )) {
-  $existing = gcloud builds triggers describe $pair.Name --region=$Region --project=$ProjectId 2>$null
+  $existingJson = gcloud builds triggers describe $pair.Name --region=$Region --project=$ProjectId --format=json 2>$null
   if ($LASTEXITCODE -eq 0) {
-    Write-Host "Trigger $($pair.Name) already exists - skipping." -ForegroundColor Gray
+    if ($UpdateTriggers) {
+      $triggerId = ($existingJson | ConvertFrom-Json).id
+      Invoke-RestMethod -Uri "$triggerApi/$triggerId" -Method PATCH -Headers $headers -ContentType "application/json" -Body $pair.Body | Out-Null
+      Write-Host "Updated trigger $($pair.Name)" -ForegroundColor Green
+    }
+    else {
+      Write-Host "Trigger $($pair.Name) already exists (use -UpdateTriggers to sync)." -ForegroundColor Gray
+    }
     continue
   }
   Invoke-RestMethod -Uri $triggerApi -Method POST -Headers $headers -ContentType "application/json" -Body $pair.Body | Out-Null
@@ -181,3 +189,4 @@ Write-Host "  Apply:  sona-terraform-dev-apply (push main, approval required)"
 Write-Host ""
 Write-Host "Grant approvers: roles/cloudbuild.builds.approver on project $ProjectId"
 Write-Host "Console: https://console.cloud.google.com/cloud-build/triggers?project=$ProjectId"
+Write-Host "Manual steps: infra/BOOTSTRAP-MANUAL-STEPS.md"
