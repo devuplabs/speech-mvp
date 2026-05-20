@@ -21,7 +21,9 @@ We do **not** run Terraform apply from GitHub Actions in this layout (avoids sto
 
 ## Application deploys (future)
 
-When you add **Cloud Run** image builds, you can either:
+**App deploy:** `cloudbuild.api.yaml` + trigger template `triggers/sona-api-dev-deploy.yaml`. Requires Terraform `cloud_run` module applied first.
+
+When you add more **Cloud Run** services, you can either:
 
 - Add Cloud Build steps / separate triggers in the same GitHub-connected project, or
 - Use **GitHub Actions + Workload Identity Federation** to push images and deploy (no JSON keys).

@@ -87,3 +87,12 @@ output "inference_vllm_openai_base_url" {
 output "inference_model_gcs_uri" {
   value = module.stack.inference_model_gcs_uri
 }
+
+output "api_service_uri" {
+  description = "Sona API Cloud Run URL (Flutter SONA_API_BASE_URL)."
+  value       = module.stack.api_service_uri
+}
+
+output "worker_service_uri" {
+  value = module.stack.worker_service_uri
+}

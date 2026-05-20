@@ -1,0 +1,22 @@
+# Cloud Build trigger template — Sona API deploy (uk/dev).
+# Create in GCP Console or: gcloud builds triggers import --source=infra/ci/triggers/sona-api-dev-deploy.yaml
+#
+# Prerequisites:
+# - Terraform cloud_run module applied (sona-api-dev, sona-worker-dev)
+# - sona-cloudbuild SA: roles/run.admin, roles/artifactregistry.writer
+
+name: sona-api-dev-deploy
+description: Build and deploy Sona API + worker to Cloud Run (uk/dev)
+filename: infra/ci/cloudbuild.api.yaml
+github:
+  owner: devuplabs
+  name: speech-mvp
+  push:
+    branch: ^main$
+includedFiles:
+  - apps/api/**
+  - infra/ci/cloudbuild.api.yaml
+substitutions:
+  _REGION: europe-west2
+  _PROJECT_ID: project-a625d19b-de99-48e9-9a9
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com

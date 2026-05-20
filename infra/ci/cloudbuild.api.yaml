@@ -1,0 +1,62 @@
+# Build Sona API image and deploy to Cloud Run (API + worker).
+# Requires: Artifact Registry repo, Cloud Run services (Terraform cloud_run module).
+# Trigger: push to main on apps/api/** or manual run with substitutions.
+
+substitutions:
+  _REGION: europe-west2
+  _AR_HOST: europe-west2-docker.pkg.dev
+  _PROJECT_ID: project-a625d19b-de99-48e9-9a9
+  _REPOSITORY: sona-sona
+  _IMAGE: sona-api
+  _API_SERVICE: sona-api-dev
+  _WORKER_SERVICE: sona-worker-dev
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
+
+timeout: 1200s
+
+steps:
+  - id: build-api
+    name: gcr.io/cloud-builders/docker
+    dir: apps/api
+    args:
+      - build
+      - -t
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+      - -t
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest
+      - .
+
+  - id: push-api
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}
+
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_API_SERVICE}
+      - --image=${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --project=${_PROJECT_ID}
+      - --quiet
+
+  - id: deploy-worker
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_WORKER_SERVICE}
+      - --image=${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --project=${_PROJECT_ID}
+      - --quiet
