@@ -1,17 +1,12 @@
 data "google_client_config" "this" {}
 
-data "google_compute_network" "vpc" {
-  name    = var.vpc_network_name
-  project = var.project_id
-}
-
 resource "google_compute_subnetwork" "gke" {
   count = local.enabled_count
 
   name          = "${var.name_prefix}-gke-${var.environment}"
   ip_cidr_range = var.gke_subnet_cidr
   region        = var.region
-  network       = data.google_compute_network.vpc.id
+  network       = var.vpc_id
   project       = var.project_id
 
   private_ip_google_access = true
@@ -77,7 +72,7 @@ resource "google_container_cluster" "this" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  network    = data.google_compute_network.vpc.id
+  network    = var.vpc_id
   subnetwork = google_compute_subnetwork.gke[0].name
 
   ip_allocation_policy {
