@@ -71,7 +71,15 @@ output "gcs_kms_crypto_key_id" {
 }
 
 output "llm_cloud_tasks_queue_name" {
-  value = module.cloud_tasks.llm_queue_name
+  value = local.llm_queue_name
+}
+
+output "api_service_uri" {
+  value = module.cloud_run.api_uri
+}
+
+output "worker_service_uri" {
+  value = module.cloud_run.worker_uri
 }
 
 output "inference_cluster_name" {

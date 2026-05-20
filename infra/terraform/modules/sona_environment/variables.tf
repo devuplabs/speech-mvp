@@ -117,3 +117,15 @@ variable "gke_master_authorized_cidrs" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
+
+variable "api_container_image" {
+  description = "Cloud Run image for API and worker. Default: {artifact_registry}/sona-api:latest. Cloud Build updates the tag; Terraform ignores image changes."
+  type        = string
+  default     = null
+}
+
+variable "cloud_run_allow_unauthenticated" {
+  description = "Allow public invoke on API service (dev Flutter web). Disable in prod."
+  type        = bool
+  default     = true
+}

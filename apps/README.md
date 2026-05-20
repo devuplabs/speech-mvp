@@ -1,6 +1,13 @@
 # Sona applications
 
-Monorepo layout (not scaffolded yet). **One architecture** for dev, stage, and prod — see [ADR-004](../docs/decisions/004-unified-environments-access.md).
+Monorepo layout. **Project tracker (Notion):** [Projects — Sona MVP board](https://www.notion.so/366c6894396e80fe993de778c796a932?v=366c6894396e80ad985e000c6e5a19f4) (Devup Teamspace).
+
+| App | Status |
+|-----|--------|
+| `api/` | Scaffolded — Hono, health/ready, env config |
+| `sona/` | Scaffolded — Flutter + GenUI deps, dev shell |
+
+**One architecture** for dev, stage, and prod — see [ADR-004](../docs/decisions/004-unified-environments-access.md).
 
 ```
 apps/

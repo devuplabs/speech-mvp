@@ -48,16 +48,28 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Flutter (apps/sona)
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-build/
-*.iml
-.idea/
+# Flutter (apps/sona) — see apps/sona/.gitignore for platform rules
+apps/sona/.dart_tool/
+apps/sona/.flutter-plugins
+apps/sona/.flutter-plugins-dependencies
+apps/sona/.packages
+apps/sona/.pub-cache/
+apps/sona/.pub/
+apps/sona/build/
+apps/sona/coverage/
+apps/sona/**/*.iml
+apps/sona/**/generated_plugin_registrant.*
+apps/sona/**/generated_plugins.cmake
+apps/sona/**/GeneratedPluginRegistrant.*
+apps/sona/**/Flutter/ephemeral/
+apps/sona/**/Flutter/Generated.xcconfig
+apps/sona/**/Flutter/flutter_export_environment.sh
+apps/sona/android/local.properties
+apps/sona/android/.gradle/
+apps/sona/android/.cxx/
+apps/sona/android/app/debug/
+apps/sona/android/app/profile/
+apps/sona/android/app/release/
 *.g.dart
 *.freezed.dart
 
