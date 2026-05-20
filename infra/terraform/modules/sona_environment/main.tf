@@ -99,7 +99,8 @@ module "cloud_sql" {
 
 locals {
   llm_queue_name = "${var.name_prefix}-llm-${var.environment}"
-  api_image      = coalesce(var.api_container_image, "${module.artifact_registry.docker_repository_url}/sona-api:latest")
+  # Bootstrap image must exist before first apply; Cloud Build deploys sona-api afterward.
+  api_image      = coalesce(var.api_container_image, var.cloud_run_bootstrap_image)
   inference_zone = var.inference_zone != "" ? var.inference_zone : "${var.region}-b"
 }
 

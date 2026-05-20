@@ -118,8 +118,14 @@ variable "gke_master_authorized_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "cloud_run_bootstrap_image" {
+  description = "Placeholder Cloud Run image for first Terraform apply (before sona-api is built). Cloud Build replaces it; Terraform ignores image changes."
+  type        = string
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+}
+
 variable "api_container_image" {
-  description = "Cloud Run image for API and worker. Default: {artifact_registry}/sona-api:latest. Cloud Build updates the tag; Terraform ignores image changes."
+  description = "Override Cloud Run image for API and worker. Leave null to use cloud_run_bootstrap_image until Cloud Build deploys sona-api."
   type        = string
   default     = null
 }
