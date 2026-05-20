@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+/** Cloud Run / Terraform often set optional URLs to ""; treat as unset. */
+function emptyToUndefined(val: unknown): unknown {
+  return typeof val === "string" && val.trim() === "" ? undefined : val;
+}
+
 const envSchema = z.object({
   PORT: z.coerce.number().default(8080),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -13,10 +18,13 @@ const envSchema = z.object({
   DB_USER: z.string().default("sona_app"),
   DB_PASSWORD: z.string().optional(),
   DATABASE_URL: z.string().optional(),
-  INFERENCE_OPENAI_BASE_URL: z.string().url().optional(),
+  INFERENCE_OPENAI_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().optional(),
+  ),
   LLM_CLOUD_TASKS_QUEUE: z.string().default("sona-llm-dev"),
   RUNTIME_SERVICE_ACCOUNT: z.string().optional(),
-  WORKER_SERVICE_URL: z.string().url().optional(),
+  WORKER_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   RUN_MIGRATIONS_ON_START: z
     .enum(["true", "false"])
     .default("true")
