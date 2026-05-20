@@ -14,10 +14,11 @@ locals {
 }
 
 resource "google_cloud_run_v2_service" "api" {
-  name     = local.api_service_name
-  location = var.region
-  project  = var.project_id
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  name                = local.api_service_name
+  location            = var.region
+  project             = var.project_id
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = var.deletion_protection
 
   template {
     service_account = var.runtime_service_account_email
@@ -122,10 +123,11 @@ resource "google_cloud_run_v2_service" "api" {
 }
 
 resource "google_cloud_run_v2_service" "worker" {
-  name     = local.worker_service_name
-  location = var.region
-  project  = var.project_id
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  name                = local.worker_service_name
+  location            = var.region
+  project             = var.project_id
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = var.deletion_protection
 
   template {
     service_account = var.runtime_service_account_email
