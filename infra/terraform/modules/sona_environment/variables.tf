@@ -37,6 +37,12 @@ variable "gcs_bucket_force_destroy" {
 }
 
 variable "db_tier" { type = string }
+
+variable "db_edition" {
+  description = "Cloud SQL edition (ENTERPRISE for dev micro tiers; ENTERPRISE_PLUS for prod perf tiers)."
+  type        = string
+  default     = "ENTERPRISE"
+}
 variable "db_disk_size_gb" {
   type    = number
   default = 10

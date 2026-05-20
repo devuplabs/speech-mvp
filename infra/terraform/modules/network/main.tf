@@ -48,6 +48,10 @@ resource "google_vpc_access_connector" "this" {
   network       = google_compute_network.this.name
   ip_cidr_range = var.vpc_connector_cidr
 
+  # GCP API requires either max_instances or max_throughput (see vpc-access connector create).
+  min_instances = 2
+  max_instances = 3
+
   depends_on = [
     google_service_networking_connection.private_vpc_connection,
   ]

@@ -2,12 +2,15 @@
 
 End-to-end path for **core GCP** only — no GKE/GPU until phase 2.
 
+**Deploy path:** GitHub PR → Cloud Build plan → merge `main` → **approve** apply trigger. No `gcloud builds submit`.  
+**Human-only steps:** [`BOOTSTRAP-MANUAL-STEPS.md`](BOOTSTRAP-MANUAL-STEPS.md).
+
 ## What gets deployed (phase 1)
 
 | Component | Purpose |
 |-----------|---------|
 | VPC + VPC connector | Private Cloud SQL + future Cloud Run |
-| Cloud SQL (PostgreSQL 16) | App database |
+| Cloud SQL (PostgreSQL 16) | App database (`ENTERPRISE` + `db-f1-micro`) |
 | KMS + CMEK buckets | Exports + model storage |
 | Secret Manager | DB password |
 | Artifact Registry | Future app + vLLM images |
@@ -32,24 +35,21 @@ flowchart LR
 3. [Cloud Build → History](https://console.cloud.google.com/cloud-build/builds;region=europe-west2?project=1055416779632) → approve `sona-terraform-dev-apply`.
 4. First apply takes **~15–30 min** (Cloud SQL private IP is slow).
 
+Ensure `sen/infra` (or `main`) includes Terraform fixes: VPC connector `min_instances`/`max_instances`, Cloud SQL `db_edition = "ENTERPRISE"`. Sync live triggers after merge:
+
+```powershell
+.\infra\scripts\setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers
+```
+
 ## Phase 2 (inference)
 
 When ready:
 
-1. Request **L4 GPU quota** in `europe-west2-b`.
+1. Request **L4 GPU quota** in `europe-west2-b` (manual — see BOOTSTRAP-MANUAL-STEPS).
 2. Upload Gemma weights to the models bucket.
 3. Mirror `vllm/vllm-openai` to Artifact Registry.
 4. Set `_INFERENCE_ENABLED=true` on apply trigger and `inference_enabled = true` in tfvars.
 5. Merge + approve apply.
-
-## Manual apply (optional)
-
-```powershell
-gcloud builds submit . `
-  --project=project-a625d19b-de99-48e9-9a9 `
-  --region=europe-west2 `
-  --config=infra/ci/cloudbuild.terraform.apply.yaml
-```
 
 ## Outputs after apply
 

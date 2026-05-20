@@ -1,5 +1,7 @@
 # Cloud Build + GitHub — troubleshooting
 
+**Routine deploys:** GitHub triggers only (no `gcloud builds submit`). One-time human steps: [`infra/BOOTSTRAP-MANUAL-STEPS.md`](../infra/BOOTSTRAP-MANUAL-STEPS.md).
+
 ## “I authorized OAuth but never saw the GitHub App install prompt”
 
 That is **often normal**. On the current connection:
@@ -20,6 +22,19 @@ gcloud builds connections describe sona-github `
   --region=europe-west2 --project=project-a625d19b-de99-48e9-9a9 `
   --format="yaml(installationState,githubConfig)"
 ```
+
+## Terraform apply: VPC connector failures
+
+**409 — entity already exists:** A partial apply left `sona-vpc-cn` in GCP but not in Terraform state. Delete and re-apply:
+
+```powershell
+gcloud compute networks vpc-access connectors delete sona-vpc-cn `
+  --region=europe-west2 --project=project-a625d19b-de99-48e9-9a9 --quiet
+```
+
+**Error code 3 — must specify max_throughput or max_instances:** The connector resource needs `min_instances` / `max_instances` (fixed in `infra/terraform/modules/network/main.tf`).
+
+**Cloud SQL — Invalid Tier for ENTERPRISE_PLUS:** `db-f1-micro` is not valid on Postgres 16’s default edition. Use `edition = "ENTERPRISE"` in the Cloud SQL module (or a `db-perf-optimized-*` tier).
 
 ## Build starts then fails immediately (`invalid build.service_account`)
 
@@ -67,15 +82,7 @@ You should see a row like `devuplabs-speech-mvp` (name is auto-generated; trigge
 
 ## Create triggers
 
-Triggers must specify a **user-managed service account** (newer GCP projects reject triggers without one). The setup script creates them via the Cloud Build REST API with:
-
-`projects/PROJECT_ID/serviceAccounts/PROJECT_NUMBER@cloudbuild.gserviceaccount.com`
-
-If `gcloud builds triggers create github` returns **`INVALID_ARGUMENT`**, add:
-
-```powershell
---service-account="projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/1055416779632@cloudbuild.gserviceaccount.com"
-```
+Triggers must specify **`sona-cloudbuild@PROJECT_ID.iam.gserviceaccount.com`** (full resource path). The setup script creates them via the Cloud Build REST API. Legacy `1055416779632@cloudbuild.gserviceaccount.com` does not exist in this project.
 
 After repo access is configured:
 
@@ -89,7 +96,7 @@ After repo access is configured:
 
 1. [Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers;region=europe-west2?project=project-a625d19b-de99-48e9-9a9)
 2. **Create trigger** → Repository: **speech-mvp** (2nd gen)
-3. **Service account:** `1055416779632@cloudbuild.gserviceaccount.com`
+3. **Service account:** `sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com`
 4. **Plan trigger:** Event = Pull request → `main`, Config = `infra/ci/cloudbuild.terraform.plan.yaml`
 5. **Apply trigger:** Event = Push → `main`, Config = `infra/ci/cloudbuild.terraform.apply.yaml`, enable **Require approval**
 

@@ -30,6 +30,12 @@ variable "db_tier" {
   type        = string
 }
 
+variable "db_edition" {
+  description = "Cloud SQL edition. ENTERPRISE allows db-f1-micro on POSTGRES_16; use ENTERPRISE_PLUS + perf tiers for prod."
+  type        = string
+  default     = "ENTERPRISE"
+}
+
 variable "db_disk_size_gb" {
   type    = number
   default = 10

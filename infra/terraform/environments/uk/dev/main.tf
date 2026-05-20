@@ -15,6 +15,7 @@ module "stack" {
   gcs_bucket_force_destroy = var.gcs_bucket_force_destroy
 
   db_tier                = var.db_tier
+  db_edition             = var.db_edition
   db_disk_size_gb        = var.db_disk_size_gb
   db_high_availability   = var.db_high_availability
   db_deletion_protection = var.db_deletion_protection

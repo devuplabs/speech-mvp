@@ -13,6 +13,12 @@ variable "tier" {
   type        = string
 }
 
+variable "edition" {
+  description = "Cloud SQL edition. POSTGRES_16 defaults to ENTERPRISE_PLUS in the API; use ENTERPRISE for db-f1-micro / db-g1-small. Prod may use ENTERPRISE_PLUS with db-perf-optimized-* tiers."
+  type        = string
+  default     = "ENTERPRISE"
+}
+
 variable "disk_size_gb" {
   type    = number
   default = 10
@@ -63,6 +69,7 @@ resource "google_sql_database_instance" "this" {
   deletion_protection = var.deletion_protection
 
   settings {
+    edition             = var.edition
     tier                = var.tier
     disk_autoresize     = true
     disk_size           = var.disk_size_gb

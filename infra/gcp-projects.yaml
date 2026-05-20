@@ -32,7 +32,8 @@ jurisdictions:
           state_bucket: REPLACE_WHEN_CREATED-terraform-state
           state_prefix: sona/uk/stage
         cloud_build:
-          service_account: REPLACE_WHEN_CREATED@cloudbuild.gserviceaccount.com
+          service_account: sona-cloudbuild@REPLACE_WHEN_CREATED.iam.gserviceaccount.com
+          repository: REPLACE_ORG-speech-mvp
       prod:
         display_name: SONA-MVP-UK-PROD
         project_id: REPLACE_WHEN_CREATED
@@ -43,7 +44,8 @@ jurisdictions:
           state_bucket: REPLACE_WHEN_CREATED-terraform-state
           state_prefix: sona/uk/prod
         cloud_build:
-          service_account: REPLACE_WHEN_CREATED@cloudbuild.gserviceaccount.com
+          service_account: sona-cloudbuild@REPLACE_WHEN_CREATED.iam.gserviceaccount.com
+          repository: REPLACE_ORG-speech-mvp
 
   us:
     default_region: us-central1
@@ -58,7 +60,7 @@ jurisdictions:
           state_bucket: REPLACE_WHEN_CREATED-terraform-state
           state_prefix: sona/us/dev
         cloud_build:
-          service_account: REPLACE_WHEN_CREATED@cloudbuild.gserviceaccount.com
+          service_account: sona-cloudbuild@REPLACE_WHEN_CREATED.iam.gserviceaccount.com
       stage:
         display_name: SONA-MVP-US-STAGE
         project_id: REPLACE_WHEN_CREATED
@@ -69,7 +71,7 @@ jurisdictions:
           state_bucket: REPLACE_WHEN_CREATED-terraform-state
           state_prefix: sona/us/stage
         cloud_build:
-          service_account: REPLACE_WHEN_CREATED@cloudbuild.gserviceaccount.com
+          service_account: sona-cloudbuild@REPLACE_WHEN_CREATED.iam.gserviceaccount.com
       prod:
         display_name: SONA-MVP-US-PROD
         project_id: REPLACE_WHEN_CREATED
@@ -80,4 +82,4 @@ jurisdictions:
           state_bucket: REPLACE_WHEN_CREATED-terraform-state
           state_prefix: sona/us/prod
         cloud_build:
-          service_account: REPLACE_WHEN_CREATED@cloudbuild.gserviceaccount.com
+          service_account: sona-cloudbuild@REPLACE_WHEN_CREATED.iam.gserviceaccount.com
