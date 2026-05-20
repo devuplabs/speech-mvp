@@ -52,5 +52,7 @@ steps:
         } > ci.auto.tfvars
         terraform init -input=false -backend-config=backend.ci.hcl
         terraform validate
+        # Recover from a failed first apply (missing image taints worker; deletion protection blocks replace).
+        terraform untaint 'module.stack.module.cloud_run.google_cloud_run_v2_service.worker' 2>/dev/null || true
         terraform plan -input=false -out=tfplan
         terraform apply -input=false -auto-approve tfplan
