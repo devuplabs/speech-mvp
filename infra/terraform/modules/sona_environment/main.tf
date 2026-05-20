@@ -112,9 +112,9 @@ locals {
 }
 
 module "inference" {
-  count  = var.inference_enabled ? 1 : 0
   source = "../inference"
 
+  enabled               = var.inference_enabled
   project_id            = var.project_id
   region                = var.region
   name_prefix           = var.name_prefix

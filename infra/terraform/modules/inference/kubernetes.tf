@@ -5,12 +5,16 @@ locals {
 }
 
 provider "kubernetes" {
-  host                   = "https://${google_container_cluster.this.endpoint}"
-  token                  = data.google_client_config.this.access_token
-  cluster_ca_certificate = base64decode(google_container_cluster.this.master_auth[0].cluster_ca_certificate)
+  host = var.enabled ? "https://${google_container_cluster.this[0].endpoint}" : "https://127.0.0.1"
+  token = data.google_client_config.this.access_token
+  cluster_ca_certificate = var.enabled ? base64decode(
+    google_container_cluster.this[0].master_auth[0].cluster_ca_certificate
+  ) : ""
 }
 
 resource "kubernetes_namespace" "vllm" {
+  count = local.enabled_count
+
   metadata {
     name = "vllm"
   }
@@ -19,25 +23,31 @@ resource "kubernetes_namespace" "vllm" {
 }
 
 resource "kubernetes_service_account" "vllm" {
+  count = local.enabled_count
+
   metadata {
     name      = "vllm"
-    namespace = kubernetes_namespace.vllm.metadata[0].name
+    namespace = kubernetes_namespace.vllm[0].metadata[0].name
     annotations = {
-      "iam.gke.io/gcp-service-account" = google_service_account.gke_nodes.email
+      "iam.gke.io/gcp-service-account" = google_service_account.gke_nodes[0].email
     }
   }
 }
 
 resource "google_service_account_iam_member" "vllm_workload_identity" {
-  service_account_id = google_service_account.gke_nodes.name
+  count = local.enabled_count
+
+  service_account_id = google_service_account.gke_nodes[0].name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[${kubernetes_namespace.vllm.metadata[0].name}/${kubernetes_service_account.vllm.metadata[0].name}]"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[${kubernetes_namespace.vllm[0].metadata[0].name}/${kubernetes_service_account.vllm[0].metadata[0].name}]"
 }
 
 resource "kubernetes_deployment" "vllm" {
+  count = local.enabled_count
+
   metadata {
     name      = "vllm-gemma"
-    namespace = kubernetes_namespace.vllm.metadata[0].name
+    namespace = kubernetes_namespace.vllm[0].metadata[0].name
     labels = {
       app = "vllm"
     }
@@ -60,7 +70,7 @@ resource "kubernetes_deployment" "vllm" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.vllm.metadata[0].name
+        service_account_name = kubernetes_service_account.vllm[0].metadata[0].name
 
         init_container {
           name  = "sync-model"
@@ -170,9 +180,11 @@ resource "kubernetes_deployment" "vllm" {
 }
 
 resource "kubernetes_service" "vllm" {
+  count = local.enabled_count
+
   metadata {
     name      = "vllm"
-    namespace = kubernetes_namespace.vllm.metadata[0].name
+    namespace = kubernetes_namespace.vllm[0].metadata[0].name
     annotations = {
       "networking.gke.io/load-balancer-type" = "Internal"
     }

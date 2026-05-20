@@ -4,6 +4,8 @@ data "google_compute_network" "fw_vpc" {
 
 # Cloud Run (VPC connector) → vLLM internal load balancer
 resource "google_compute_firewall" "allow_vpc_connector_to_vllm" {
+  count = local.enabled_count
+
   name    = "${var.name_prefix}-allow-connector-vllm"
   network = data.google_compute_network.fw_vpc.name
   project = var.project_id
@@ -22,6 +24,8 @@ resource "google_compute_firewall" "allow_vpc_connector_to_vllm" {
 
 # Deny general internet egress from inference nodes (Private Google Access still works).
 resource "google_compute_firewall" "deny_inference_egress_internet" {
+  count = local.enabled_count
+
   name    = "${var.name_prefix}-deny-inference-egress-inet"
   network = data.google_compute_network.fw_vpc.name
   project = var.project_id
@@ -39,6 +43,8 @@ resource "google_compute_firewall" "deny_inference_egress_internet" {
 
 # Allow east-west within VPC (API connector, health checks, internal LB).
 resource "google_compute_firewall" "allow_inference_internal" {
+  count = local.enabled_count
+
   name    = "${var.name_prefix}-allow-inference-internal"
   network = data.google_compute_network.fw_vpc.name
   project = var.project_id

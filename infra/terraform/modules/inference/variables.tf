@@ -1,3 +1,9 @@
+variable "enabled" {
+  description = "When false, skip GKE/vLLM resources (avoids count on this module, which uses a kubernetes provider)."
+  type        = bool
+  default     = true
+}
+
 variable "project_id" { type = string }
 variable "region" { type = string }
 variable "name_prefix" { type = string }

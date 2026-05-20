@@ -5,6 +5,8 @@ data "google_compute_network" "vpc" {
 }
 
 resource "google_compute_subnetwork" "gke" {
+  count = local.enabled_count
+
   name          = "${var.name_prefix}-gke-${var.environment}"
   ip_cidr_range = var.gke_subnet_cidr
   region        = var.region
@@ -25,36 +27,48 @@ resource "google_compute_subnetwork" "gke" {
 }
 
 resource "google_service_account" "gke_nodes" {
+  count = local.enabled_count
+
   account_id   = "${var.name_prefix}-gke-nodes"
   display_name = "GKE inference nodes (${var.environment})"
   project      = var.project_id
 }
 
 resource "google_storage_bucket_iam_member" "gke_nodes_models_reader" {
+  count = local.enabled_count
+
   bucket = var.models_bucket_name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${google_service_account.gke_nodes.email}"
+  member = "serviceAccount:${google_service_account.gke_nodes[0].email}"
 }
 
 resource "google_project_iam_member" "gke_nodes_ar_reader" {
+  count = local.enabled_count
+
   project = var.project_id
   role    = "roles/artifactregistry.reader"
-  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+  member  = "serviceAccount:${google_service_account.gke_nodes[0].email}"
 }
 
 resource "google_project_iam_member" "gke_nodes_logging" {
+  count = local.enabled_count
+
   project = var.project_id
   role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+  member  = "serviceAccount:${google_service_account.gke_nodes[0].email}"
 }
 
 resource "google_project_iam_member" "gke_nodes_monitoring" {
+  count = local.enabled_count
+
   project = var.project_id
   role    = "roles/monitoring.metricWriter"
-  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+  member  = "serviceAccount:${google_service_account.gke_nodes[0].email}"
 }
 
 resource "google_container_cluster" "this" {
+  count = local.enabled_count
+
   name     = "${var.name_prefix}-inference-${var.environment}"
   location = var.region
   project  = var.project_id
@@ -63,7 +77,7 @@ resource "google_container_cluster" "this" {
   initial_node_count       = 1
 
   network    = data.google_compute_network.vpc.id
-  subnetwork = google_compute_subnetwork.gke.name
+  subnetwork = google_compute_subnetwork.gke[0].name
 
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"
@@ -98,9 +112,11 @@ resource "google_container_cluster" "this" {
 }
 
 resource "google_container_node_pool" "gpu" {
+  count = local.enabled_count
+
   name     = "${var.name_prefix}-gpu-pool"
   location = var.inference_zone
-  cluster  = google_container_cluster.this.name
+  cluster  = google_container_cluster.this[0].name
   project  = var.project_id
 
   initial_node_count = var.node_pool_min_count
@@ -115,7 +131,7 @@ resource "google_container_node_pool" "gpu" {
     disk_size_gb = 100
     disk_type    = "pd-balanced"
 
-    service_account = google_service_account.gke_nodes.email
+    service_account = google_service_account.gke_nodes[0].email
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]

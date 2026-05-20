@@ -75,14 +75,14 @@ output "llm_cloud_tasks_queue_name" {
 }
 
 output "inference_cluster_name" {
-  value = var.inference_enabled ? module.inference[0].cluster_name : null
+  value = module.inference.cluster_name
 }
 
 output "inference_vllm_openai_base_url" {
   description = "Sona API INFERENCE_OPENAI_BASE_URL (may be empty until internal LB IP is ready)."
-  value       = var.inference_enabled ? module.inference[0].vllm_openai_base_url : null
+  value       = module.inference.vllm_openai_base_url
 }
 
 output "inference_model_gcs_uri" {
-  value = var.inference_enabled ? module.inference[0].model_gcs_uri : "gs://${module.model_storage.models_bucket_name}/${var.model_gcs_prefix}"
+  value = module.inference.model_gcs_uri
 }
