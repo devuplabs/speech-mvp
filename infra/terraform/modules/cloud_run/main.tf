@@ -84,6 +84,14 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "INFERENCE_OPENAI_BASE_URL"
         value = var.inference_openai_base_url
       }
+      env {
+        name  = "GCP_REGION"
+        value = var.region
+      }
+      env {
+        name  = "WORKER_SERVICE_URL"
+        value = google_cloud_run_v2_service.worker.uri
+      }
 
       env {
         name = "DB_PASSWORD"

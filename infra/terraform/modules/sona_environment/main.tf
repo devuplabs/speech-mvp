@@ -169,10 +169,9 @@ module "cloud_tasks" {
   region                        = var.region
   name_prefix                   = var.name_prefix
   environment                   = var.environment
-  worker_service_uri            = module.cloud_run.worker_uri
   runtime_service_account_email = module.app_identity.runtime_service_account_email
 
-  depends_on = [module.cloud_run]
+  depends_on = [module.enable_apis]
 }
 
 resource "google_storage_bucket_iam_member" "runtime_exports" {
