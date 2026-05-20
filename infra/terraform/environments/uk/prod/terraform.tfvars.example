@@ -1,15 +1,24 @@
-# Copy to terraform.tfvars (do not commit). Replace project_id with your prod GCP project.
-project_id   = "your-sona-uk-prod-project-id"
+project_id   = "REPLACE_UK_PROD_PROJECT_ID"
 region       = "europe-west2"
 jurisdiction = "uk"
 environment  = "prod"
-name_prefix   = "sona"
+name_prefix  = "sona"
 
 gcs_bucket_force_destroy = false
 
 db_tier                = "db-custom-2-7680"
 db_disk_size_gb        = 50
-db_high_availability    = true
-db_deletion_protection  = true
-db_backup_enabled       = true
-db_pitr_enabled         = true
+db_high_availability   = true
+db_deletion_protection = true
+db_backup_enabled      = true
+db_pitr_enabled        = true
+
+inference_enabled = true
+inference_zone    = "europe-west2-b"
+model_gcs_prefix  = "gemma-3-27b-it"
+vllm_container_image = "europe-west2-docker.pkg.dev/REPLACE_UK_PROD_PROJECT_ID/sona-sona/vllm-openai:latest"
+
+inference_gpu_machine_type    = "g2-standard-8"
+inference_node_pool_min_count = 1
+inference_node_pool_max_count = 2
+inference_deletion_protection = true

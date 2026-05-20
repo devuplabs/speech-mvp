@@ -22,7 +22,9 @@ Canonical project ids live in [`../gcp-projects.yaml`](../gcp-projects.yaml).
 | Terraform root | `infra/terraform/environments/uk/dev` |
 | Terraform state bucket | `project-a625d19b-de99-48e9-9a9-terraform-state` |
 | State prefix | `sona/uk/dev` |
-| Default Cloud Build SA | `1055416779632@cloudbuild.gserviceaccount.com` |
+| Cloud Build SA (Terraform) | `sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com` |
+| Linked repo (2nd gen) | `devuplabs-speech-mvp` |
+| MVP apply | `_INFERENCE_ENABLED=false` (core only); enable GKE in phase 2 |
 
 Stage and prod: add rows to `gcp-projects.yaml` when those projects exist, then duplicate triggers with new substitutions.
 
@@ -84,7 +86,10 @@ gcloud services enable \
   run.googleapis.com \
   secretmanager.googleapis.com \
   cloudkms.googleapis.com \
-  artifactregistry.googleapis.com
+  artifactregistry.googleapis.com \
+  container.googleapis.com \
+  cloudtasks.googleapis.com \
+  secretmanager.googleapis.com
 ```
 
 ### 4. IAM for the Cloud Build service account (bootstrap)
@@ -102,16 +107,55 @@ Optional (recommended later): create `sona-terraform-cloudbuild@project-a625d19b
 
 ### 5. Connect GitHub to Cloud Build (2nd gen)
 
-1. Console → **Cloud Build** → **Repositories** → **Create host connection** → **GitHub (Cloud Build)**.  
-   Follow: [Connect to a GitHub repository](https://cloud.google.com/build/docs/automating-builds/github/connect-repo-github).
-2. Link this repository (org + repo name).
-3. Grant the Cloud Build GitHub app access to the repo.
+Connection **`sona-github`** in region **`europe-west2`** (created via `setup-cloud-build.ps1` or CLI):
+
+```bash
+gcloud builds connections create github sona-github \
+  --region=europe-west2 --project=project-a625d19b-de99-48e9-9a9
+```
+
+If status is `PENDING_USER_OAUTH`, open the URL from:
+
+```bash
+gcloud builds connections describe sona-github --region=europe-west2 \
+  --format='value(installationState.actionUri)'
+```
+
+Complete OAuth, then re-run `setup-cloud-build.ps1`.
+
+**No separate “install app” prompt?** If `installationState.stage` is **COMPLETE**, the app is already installed (see `githubConfig.appInstallationId`). You still must **grant the app access** to `devuplabs/speech-mvp` in GitHub → Installed GitHub Apps → Google Cloud Build → Configure. Details: [`docs/cloud-build-github-troubleshooting.md`](../../docs/cloud-build-github-troubleshooting.md).
 
 Builds run **in** `project-a625d19b-de99-48e9-9a9` (same project as Terraform target for dev).
 
-### 6. Create triggers
+### 6. Create triggers (automated script)
 
-Create **two** triggers (Console → **Cloud Build** → **Triggers** → **Create**).
+From the repo root (after step 5 OAuth is **COMPLETE**):
+
+**Windows:**
+
+```powershell
+.\infra\scripts\setup-cloud-build.ps1
+```
+
+**macOS / Linux:**
+
+```bash
+chmod +x infra/scripts/setup-cloud-build.sh
+./infra/scripts/setup-cloud-build.sh
+```
+
+This creates/updates:
+
+| Trigger | Config | Event |
+|---------|--------|--------|
+| `sona-terraform-dev-plan` | [`triggers/sona-terraform-dev-plan.yaml`](triggers/sona-terraform-dev-plan.yaml) | PR to `main` (comment `/gcbrun`) |
+| `sona-terraform-dev-apply` | [`triggers/sona-terraform-dev-apply.yaml`](triggers/sona-terraform-dev-apply.yaml) | Push to `main` + **approval required** |
+
+Templates live under [`infra/ci/triggers/`](triggers/). Build steps include inference variables (Gemma / vLLM) in [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml).
+
+Grant approvers `roles/cloudbuild.builds.approver` on the dev project for team members who may approve applies.
+
+**Manual alternative** — Console → **Cloud Build** → **Triggers** → **Create**:
 
 #### Trigger A — Plan (no approval)
 

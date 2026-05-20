@@ -1,0 +1,30 @@
+# Cloud Build trigger (2nd gen GitHub). Requires manual approval in Console.
+#   gcloud builds triggers create --trigger-config=infra/ci/triggers/sona-terraform-dev-apply.yaml --region=europe-west2
+
+name: sona-terraform-dev-apply
+description: Terraform apply for uk/dev (push to main, approval required)
+filename: infra/ci/cloudbuild.terraform.apply.yaml
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+serviceAccount: projects/REPLACE_PROJECT_ID/serviceAccounts/REPLACE_PROJECT_NUMBER@cloudbuild.gserviceaccount.com
+approvalConfig:
+  approvalRequired: true
+
+repositoryEventConfig:
+  repository: REPLACE_REPOSITORY_RESOURCE
+  push:
+    branch: ^main$
+
+substitutions:
+  _TERRAFORM_DIR: infra/terraform/environments/uk/dev
+  _STATE_BUCKET: project-a625d19b-de99-48e9-9a9-terraform-state
+  _STATE_PREFIX: sona/uk/dev
+  _TARGET_PROJECT_ID: project-a625d19b-de99-48e9-9a9
+  _REGION: europe-west2
+  _JURISDICTION: uk
+  _ENVIRONMENT: dev
+  _GCS_BUCKET_FORCE_DESTROY: "true"
+  _DB_TIER: db-f1-micro
+  _INFERENCE_ENABLED: "false"
+  _MODEL_GCS_PREFIX: gemma-3-27b-it
+  _VLLM_CONTAINER_IMAGE: europe-west2-docker.pkg.dev/project-a625d19b-de99-48e9-9a9/sona-sona/vllm-openai:latest
+  _INFERENCE_ZONE: europe-west2-b

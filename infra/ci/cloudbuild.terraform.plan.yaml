@@ -13,10 +13,17 @@ substitutions:
   _ENVIRONMENT: dev
   _GCS_BUCKET_FORCE_DESTROY: "true"
   _DB_TIER: db-f1-micro
+  _INFERENCE_ENABLED: "false"
+  # Phase 2: set true after L4 quota, model weights in GCS, vLLM image in Artifact Registry
+  _MODEL_GCS_PREFIX: gemma-3-27b-it
+  _VLLM_CONTAINER_IMAGE: europe-west2-docker.pkg.dev/project-a625d19b-de99-48e9-9a9/sona-sona/vllm-openai:latest
+  _INFERENCE_ZONE: europe-west2-b
 
 options:
   logging: CLOUD_LOGGING_ONLY
   substitution_option: ALLOW_LOOSE
+
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
 
 timeout: 5400s
 
@@ -37,6 +44,10 @@ steps:
           echo "environment = \"${_ENVIRONMENT}\""
           echo "gcs_bucket_force_destroy = ${_GCS_BUCKET_FORCE_DESTROY}"
           echo "db_tier = \"${_DB_TIER}\""
+          echo "inference_enabled = ${_INFERENCE_ENABLED}"
+          echo "model_gcs_prefix = \"${_MODEL_GCS_PREFIX}\""
+          echo "vllm_container_image = \"${_VLLM_CONTAINER_IMAGE}\""
+          echo "inference_zone = \"${_INFERENCE_ZONE}\""
         } > ci.auto.tfvars
         terraform init -input=false -backend-config=backend.ci.hcl
         terraform validate

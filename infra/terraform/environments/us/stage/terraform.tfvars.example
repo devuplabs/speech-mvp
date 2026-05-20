@@ -1,15 +1,24 @@
-# Copy to terraform.tfvars (do not commit). Replace project_id with your stage GCP project.
-project_id   = "your-sona-us-stage-project-id"
+project_id   = "REPLACE_US_STAGE_PROJECT_ID"
 region       = "us-central1"
 jurisdiction = "us"
 environment  = "stage"
-name_prefix   = "sona"
+name_prefix  = "sona"
 
 gcs_bucket_force_destroy = false
 
 db_tier                = "db-g1-small"
 db_disk_size_gb        = 20
-db_high_availability    = false
-db_deletion_protection  = true
-db_backup_enabled       = true
-db_pitr_enabled         = true
+db_high_availability   = false
+db_deletion_protection = false
+db_backup_enabled      = true
+db_pitr_enabled        = true
+
+inference_enabled = true
+inference_zone    = "us-central1-a"
+model_gcs_prefix  = "gemma-3-27b-it"
+vllm_container_image = "us-central1-docker.pkg.dev/REPLACE_US_STAGE_PROJECT_ID/sona-sona/vllm-openai:latest"
+
+inference_gpu_machine_type    = "g2-standard-8"
+inference_node_pool_min_count = 1
+inference_node_pool_max_count = 1
+inference_deletion_protection = false

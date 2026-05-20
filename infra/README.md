@@ -1,6 +1,14 @@
 # Sona — GCP infrastructure (Terraform)
 
-Terraform layout for the stack described in [`docs/architecture-gcp-hipaa.md`](../docs/architecture-gcp-hipaa.md): **VPC + private Cloud SQL (PostgreSQL)**, **Serverless VPC Access** (for Cloud Run → SQL), **GCS** (exports) with optional **CMEK**, **Secret Manager** (app DB password), **Artifact Registry**, and **least-privilege service accounts**.
+Terraform layout for the stack in [`docs/architecture-gcp-hipaa.md`](../docs/architecture-gcp-hipaa.md):
+
+- **VPC** + private **Cloud SQL** + **Serverless VPC Access**
+- **GCS** (exports + **model weights**) with **CMEK**
+- **GKE + vLLM** (Gemma 3 27B IT, air-gap) — [`modules/inference`](terraform/modules/inference/README.md)
+- **Cloud Tasks** (async LLM jobs)
+- **Secret Manager**, **Artifact Registry**, runtime service accounts
+
+All environment roots use the composite module [`terraform/modules/sona_environment`](terraform/modules/sona_environment/README.md).
 
 ---
 
@@ -23,9 +31,9 @@ Google Cloud does **not** use the word *subscription* (that is an Azure term). T
 
 | Environment | Example project id | Who gets IAM here |
 |-------------|--------------------|-------------------|
-| **dev** | `project-a625d19b-de99-48e9-9a9` | Engineers; Cloud Build applies after approval |
-| **stage** | TBD | Engineers + release automation |
-| **prod** | TBD | Break-glass + Cloud Build apply SA only |
+| **dev** | `project-a625d19b-de99-48e9-9a9` | Engineers; synthetic data; full stack including **GKE inference** |
+| **stage** | TBD | Engineers + release automation; production-like config |
+| **prod** | TBD | **No standing developer access** — Cloud Build apply SA + break-glass only ([ADR-004](../docs/decisions/004-unified-environments-access.md)) |
 
 All three can sit under the **same Organisation** and even the **same billing account**; **IAM is per project**, so granting `roles/editor` on the **dev** project does **not** grant access to **prod** unless someone explicitly adds you there.
 
@@ -45,6 +53,8 @@ This repo assumes **one GCP project per environment** (dev configured; stage/pro
 **v1 rule:** one **Cloud SQL** per jurisdiction — never mix US PHI and UK data. See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](../docs/decisions/001-data-residency-jurisdiction-stacks.md).
 
 **Deploy from GitHub:** use **Cloud Build** (plan on PR, apply on `main` with approval) — not GitHub Actions for Terraform. Full steps: [`ci/cloud-build-terraform.md`](ci/cloud-build-terraform.md).
+
+**MVP bootstrap (uk/dev, core only):** [`MVP-INFRA.md`](MVP-INFRA.md) — phase 1 without GKE; enable inference in phase 2.
 
 ---
 
@@ -158,12 +168,40 @@ After `terraform apply`, note:
 - `vpc_connector_name` — attach to Cloud Run (`vpc-access-connector`).
 - `runtime_service_account_email` — Cloud Run **service account** (runtime identity).
 - `artifact_registry_url` — `docker push` target.
+- `models_bucket_name` — upload `gemma-3-27b-it/` weights before vLLM pod starts.
+- `llm_cloud_tasks_queue_name` — async LLM worker target.
+- `inference_vllm_openai_base_url` — Sona API `INFERENCE_OPENAI_BASE_URL` (after internal LB IP is assigned).
 
 Database password is in **Secret Manager** (`db_app_password_secret_id` output); retrieve only with audited break-glass or inject via CI from Terraform → Secret (already created by apply).
+
+### Inference prerequisites (`uk/dev`)
+
+1. Request **NVIDIA L4** quota in `europe-west2-b` (or your `inference_zone`).
+2. Mirror **vLLM** image to Artifact Registry (see `modules/inference/README.md`).
+3. Upload **Gemma 3 27B IT** (AWQ recommended) to `inference_model_gcs_uri` output path.
+4. Set `vllm_container_image` in `terraform.tfvars`.
+5. `terraform apply` — GKE + vLLM deploy may take 15–25 minutes; re-run if `inference_vllm_openai_base_url` was empty on first pass (internal LB IP pending).
+
+---
+
+## Application deploy (planned)
+
+Terraform today provisions **data plane + Artifact Registry** for the **Sona API** container. Application CI (not yet in repo) will add:
+
+| Artifact | Build | Deploy target |
+|----------|-------|----------------|
+| **Sona API** | `docker build` → Artifact Registry | Cloud Run (regional) |
+| **Inference** | vLLM + **Gemma 3 27B IT** weights (GCS CMEK) | GKE + L4 GPU, private subnet ([ADR-003](../docs/decisions/003-self-hosted-llm-air-gap.md)) |
+| **Flutter web** | `flutter build web` | GCS + CDN or Firebase Hosting |
+| **Flutter mobile** | `flutter build apk/ipa` | Stores (post-pilot) |
+
+See [`apps/README.md`](../apps/README.md) and [`docs/decisions/002-flutter-genui-client.md`](../docs/decisions/002-flutter-genui-client.md).
 
 ---
 
 ## Related documentation
 
 - [`docs/architecture-gcp-hipaa.md`](../docs/architecture-gcp-hipaa.md)
+- [`docs/architecture-review-gcp-2026.md`](../docs/architecture-review-gcp-2026.md) — Google Developer Knowledge MCP cross-check
+- [`docs/decisions/`](../docs/decisions/) — ADRs (residency, Flutter/A2UI, air-gap LLM, unified envs)
 - **GCP-native CI:** [`ci/cloud-build-terraform.md`](ci/cloud-build-terraform.md) (Cloud Build + optional Infrastructure Manager)

@@ -32,6 +32,8 @@ variable "services" {
     "artifactregistry.googleapis.com",
     "iam.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "container.googleapis.com",
+    "cloudtasks.googleapis.com",
   ]
 }
 
