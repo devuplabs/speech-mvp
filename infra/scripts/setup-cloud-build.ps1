@@ -5,7 +5,7 @@ param(
   [string] $ProjectNumber = "1055416779632",
   [string] $Region = "europe-west2",
   [string] $ConnectionName = "sona-github",
-  [string] $RepositoryName = "speech-mvp",
+  [string] $RepositoryName = "devuplabs-speech-mvp",
   [string] $RemoteUri = "https://github.com/devuplabs/speech-mvp.git",
   [switch] $SkipBootstrap
 )
@@ -105,32 +105,69 @@ if ($LASTEXITCODE -ne 0) {
     --project=$ProjectId
 }
 
-# Create triggers from templates
-$repoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$triggersDir = Join-Path $repoRoot "infra\ci\triggers"
-$planTpl = Join-Path $triggersDir "sona-terraform-dev-plan.yaml"
-$applyTpl = Join-Path $triggersDir "sona-terraform-dev-apply.yaml"
-$planCfg = Join-Path $env:TEMP "sona-terraform-dev-plan.yaml"
-$applyCfg = Join-Path $env:TEMP "sona-terraform-dev-apply.yaml"
+# Create triggers via REST (gcloud create fails without serviceAccount on newer projects)
+$cbSaResource = "projects/$ProjectId/serviceAccounts/${ProjectNumber}@cloudbuild.gserviceaccount.com"
+$token = gcloud auth print-access-token 2>$null
+$headers = @{
+  Authorization         = "Bearer $token"
+  "x-goog-user-project" = $ProjectNumber
+}
+$triggerApi = "https://cloudbuild.googleapis.com/v1/projects/$ProjectId/locations/$Region/triggers"
 
-(Get-Content $planTpl -Raw).Replace("REPLACE_REPOSITORY_RESOURCE", $repoResource) | Set-Content $planCfg -NoNewline
-(Get-Content $applyTpl -Raw).Replace("REPLACE_REPOSITORY_RESOURCE", $repoResource) | Set-Content $applyCfg -NoNewline
+$subs = @{
+  _TERRAFORM_DIR           = "infra/terraform/environments/uk/dev"
+  _STATE_BUCKET            = "${ProjectId}-terraform-state"
+  _STATE_PREFIX            = "sona/uk/dev"
+  _TARGET_PROJECT_ID       = $ProjectId
+  _REGION                  = $Region
+  _JURISDICTION            = "uk"
+  _ENVIRONMENT             = "dev"
+  _GCS_BUCKET_FORCE_DESTROY = "true"
+  _DB_TIER                 = "db-f1-micro"
+  _INFERENCE_ENABLED       = "true"
+  _MODEL_GCS_PREFIX        = "gemma-3-27b-it"
+  _VLLM_CONTAINER_IMAGE    = "europe-west2-docker.pkg.dev/$ProjectId/sona-sona/vllm-openai:latest"
+  _INFERENCE_ZONE          = "europe-west2-b"
+}
+
+$planBody = @{
+  name = "sona-terraform-dev-plan"
+  description = "Terraform plan for uk/dev (PRs to main)"
+  filename = "infra/ci/cloudbuild.terraform.plan.yaml"
+  includeBuildLogs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
+  serviceAccount = $cbSaResource
+  repositoryEventConfig = @{
+    repository = $repoResource
+    pullRequest = @{ branch = "^main$"; commentControl = "COMMENTS_ENABLED" }
+  }
+  substitutions = $subs
+} | ConvertTo-Json -Depth 20
+
+$applyBody = @{
+  name = "sona-terraform-dev-apply"
+  description = "Terraform apply for uk/dev (push to main, approval required)"
+  filename = "infra/ci/cloudbuild.terraform.apply.yaml"
+  includeBuildLogs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
+  serviceAccount = $cbSaResource
+  approvalConfig = @{ approvalRequired = $true }
+  repositoryEventConfig = @{
+    repository = $repoResource
+    push = @{ branch = "^main$" }
+  }
+  substitutions = $subs
+} | ConvertTo-Json -Depth 20
 
 foreach ($pair in @(
-    @{ Name = "sona-terraform-dev-plan"; File = $planCfg },
-    @{ Name = "sona-terraform-dev-apply"; File = $applyCfg }
+    @{ Name = "sona-terraform-dev-plan"; Body = $planBody },
+    @{ Name = "sona-terraform-dev-apply"; Body = $applyBody }
   )) {
   $existing = gcloud builds triggers describe $pair.Name --region=$Region --project=$ProjectId 2>$null
   if ($LASTEXITCODE -eq 0) {
-    Write-Host "Trigger $($pair.Name) already exists - updating..." -ForegroundColor Gray
-    gcloud builds triggers update github $pair.Name `
-      --trigger-config=$pair.File `
-      --region=$Region `
-      --project=$ProjectId
+    Write-Host "Trigger $($pair.Name) already exists - skipping." -ForegroundColor Gray
+    continue
   }
-  else {
-    gcloud builds triggers create github --trigger-config=$pair.File --region=$Region --project=$ProjectId
-  }
+  Invoke-RestMethod -Uri $triggerApi -Method POST -Headers $headers -ContentType "application/json" -Body $pair.Body | Out-Null
+  Write-Host "Created trigger $($pair.Name)" -ForegroundColor Green
 }
 
 Write-Host ""

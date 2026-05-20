@@ -37,14 +37,7 @@ https://github.com/settings/installations/134099335
 ## Link the repo in GCP (done once per project)
 
 ```powershell
-gcloud builds repositories create speech-mvp `
-  --remote-uri=https://github.com/devuplabs/speech-mvp.git `
-  --connection=sona-github `
-  --region=europe-west2 `
-  --project=project-a625d19b-de99-48e9-9a9
-```
-
-Check:
+**Prefer the Console** (Repositories → 2nd gen → `sona-github` → **Link repository**) and pick `devuplabs/speech-mvp` from GitHub so webhooks are registered. CLI-only create may not wire events:
 
 ```powershell
 gcloud builds repositories list `
@@ -52,28 +45,46 @@ gcloud builds repositories list `
   --project=project-a625d19b-de99-48e9-9a9
 ```
 
-You should see `speech-mvp`.
+You should see a row like `devuplabs-speech-mvp` (name is auto-generated; triggers must use that **exact** resource name, not `speech-mvp`).
 
 ## Create triggers
 
-After repo access is configured, either:
+Triggers must specify a **user-managed service account** (newer GCP projects reject triggers without one). The setup script creates them via the Cloud Build REST API with:
 
-**A. Console (recommended if CLI returns `INVALID_ARGUMENT`)**
+`projects/PROJECT_ID/serviceAccounts/PROJECT_NUMBER@cloudbuild.gserviceaccount.com`
 
-1. [Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers;region=europe-west2?project=project-a625d19b-de99-48e9-9a9)
-2. **Create trigger** → Repository: **speech-mvp** (2nd gen)
-3. **Plan trigger:** Event = Pull request → `main`, Config = `infra/ci/cloudbuild.terraform.plan.yaml`
-4. **Apply trigger:** Event = Push → `main`, Config = `infra/ci/cloudbuild.terraform.apply.yaml`, enable **Require approval**
+If `gcloud builds triggers create github` returns **`INVALID_ARGUMENT`**, add:
 
-**B. Script**
+```powershell
+--service-account="projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/1055416779632@cloudbuild.gserviceaccount.com"
+```
+
+After repo access is configured:
+
+**A. Script (recommended)**
 
 ```powershell
 .\infra\scripts\setup-cloud-build.ps1 -SkipBootstrap
 ```
 
+**B. Console**
+
+1. [Cloud Build → Triggers](https://console.cloud.google.com/cloud-build/triggers;region=europe-west2?project=project-a625d19b-de99-48e9-9a9)
+2. **Create trigger** → Repository: **speech-mvp** (2nd gen)
+3. **Service account:** `1055416779632@cloudbuild.gserviceaccount.com`
+4. **Plan trigger:** Event = Pull request → `main`, Config = `infra/ci/cloudbuild.terraform.plan.yaml`
+5. **Apply trigger:** Event = Push → `main`, Config = `infra/ci/cloudbuild.terraform.apply.yaml`, enable **Require approval**
+
 ## PR builds and `/gcbrun`
 
 For the plan trigger, Cloud Build only runs on PRs from **forks/external contributors** unless a collaborator comments **`/gcbrun`** on the PR (default `COMMENTS_ENABLED`). As repo owner, comment `/gcbrun` on your PR to start the plan build.
+
+If `/gcbrun` does nothing after ~1 minute, the **Google Cloud Build** GitHub App likely does not have access to `devuplabs/speech-mvp` (org-owned repo). Fix at:
+
+- User install: https://github.com/settings/installations/134099335
+- **Org install (preferred):** https://github.com/organizations/devuplabs/settings/installations → **Google Cloud Build** → add **speech-mvp**
+
+Enable **Cloud Build data sharing** if status checks never appear: [Cloud Build → Settings → Data sharing](https://console.cloud.google.com/cloud-build/settings/data-sharing?project=project-a625d19b-de99-48e9-9a9).
 
 ## Connection region
 

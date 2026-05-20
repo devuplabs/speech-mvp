@@ -5,6 +5,7 @@ name: sona-terraform-dev-apply
 description: Terraform apply for uk/dev (push to main, approval required)
 filename: infra/ci/cloudbuild.terraform.apply.yaml
 includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+serviceAccount: projects/REPLACE_PROJECT_ID/serviceAccounts/REPLACE_PROJECT_NUMBER@cloudbuild.gserviceaccount.com
 approvalConfig:
   approvalRequired: true
 

@@ -8,6 +8,8 @@ name: sona-terraform-dev-plan
 description: Terraform plan for uk/dev (PRs to main)
 filename: infra/ci/cloudbuild.terraform.plan.yaml
 includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+# Required on newer projects — use full resource name when creating via gcloud/API:
+serviceAccount: projects/REPLACE_PROJECT_ID/serviceAccounts/REPLACE_PROJECT_NUMBER@cloudbuild.gserviceaccount.com
 
 repositoryEventConfig:
   repository: REPLACE_REPOSITORY_RESOURCE
