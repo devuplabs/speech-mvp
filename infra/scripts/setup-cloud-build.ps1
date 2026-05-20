@@ -106,7 +106,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Create triggers via REST (gcloud create fails without serviceAccount on newer projects)
-$cbSaResource = "projects/$ProjectId/serviceAccounts/${ProjectNumber}@cloudbuild.gserviceaccount.com"
+$cbSaEmail = "sona-cloudbuild@${ProjectId}.iam.gserviceaccount.com"
+if (-not (gcloud iam service-accounts describe $cbSaEmail --project=$ProjectId 2>$null)) {
+  & "$PSScriptRoot\bootstrap-cloud-build-iam.ps1" -ProjectId $ProjectId -ProjectNumber $ProjectNumber
+}
+$cbSaResource = "projects/$ProjectId/serviceAccounts/$cbSaEmail"
 $token = gcloud auth print-access-token 2>$null
 $headers = @{
   Authorization         = "Bearer $token"

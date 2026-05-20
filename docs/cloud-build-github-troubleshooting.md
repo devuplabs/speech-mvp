@@ -7,7 +7,8 @@ That is **often normal**. On the current connection:
 | Field | Value |
 |-------|--------|
 | `installationState.stage` | **COMPLETE** |
-| `githubConfig.appInstallationId` | `134099335` |
+| `githubConfig.appInstallationId` | `134099335` (org: [devuplabs install](https://github.com/organizations/devuplabs/settings/installations/134099335)) |
+| Linked repository name | `devuplabs-speech-mvp` |
 | OAuth user | Your GitHub account (shown in connection `githubConfig`) |
 
 OAuth and app install can happen in one flow, or the app was **already installed** on your GitHub user/org from a previous GCP project. You do **not** need a second prompt if `stage` is `COMPLETE`.
@@ -19,6 +20,23 @@ gcloud builds connections describe sona-github `
   --region=europe-west2 --project=project-a625d19b-de99-48e9-9a9 `
   --format="yaml(installationState,githubConfig)"
 ```
+
+## Build starts then fails immediately (`invalid build.service_account`)
+
+Some projects **do not have** the legacy `PROJECT_NUMBER@cloudbuild.gserviceaccount.com` account. Triggers must use an existing user-managed SA (e.g. `sona-cloudbuild@PROJECT_ID.iam.gserviceaccount.com`) with:
+
+- `roles/iam.serviceAccountUser` for `service-PROJECT_NUMBER@gcp-sa-cloudbuild.iam.gserviceaccount.com`
+- `roles/logging.logWriter` (build configs use `logging: CLOUD_LOGGING_ONLY`)
+- Terraform permissions (`roles/editor` for bootstrap; narrow later)
+
+Run `.\infra\scripts\bootstrap-cloud-build-iam.ps1` to create/configure `sona-cloudbuild`.
+
+## Triggers must match the linked repository name
+
+Console link creates names like **`devuplabs-speech-mvp`**, not `speech-mvp`. Stale trigger repository paths fail silently or reject events.
+
+Triggers must include  
+`serviceAccount: projects/PROJECT_ID/serviceAccounts/sona-cloudbuild@PROJECT_ID.iam.gserviceaccount.com`.
 
 ## What you still must do: grant repo access to the app
 
