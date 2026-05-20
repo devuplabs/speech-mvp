@@ -1,7 +1,8 @@
 data "google_client_config" "this" {}
 
 data "google_compute_network" "vpc" {
-  self_link = var.vpc_network_self_link
+  name    = var.vpc_network_name
+  project = var.project_id
 }
 
 resource "google_compute_subnetwork" "gke" {

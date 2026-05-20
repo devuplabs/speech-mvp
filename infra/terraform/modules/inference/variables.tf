@@ -9,7 +9,16 @@ variable "region" { type = string }
 variable "name_prefix" { type = string }
 variable "environment" { type = string }
 
-variable "vpc_network_self_link" { type = string }
+variable "vpc_network_name" {
+  description = "VPC network name (from network module)."
+  type        = string
+}
+
+variable "vpc_network_self_link" {
+  description = "Deprecated: use vpc_network_name. Kept for compatibility."
+  type        = string
+  default     = ""
+}
 variable "vpc_connector_cidr" {
   description = "CIDR for Serverless VPC Access (source for API → vLLM firewall rule)."
   type        = string

@@ -1,5 +1,6 @@
 data "google_compute_network" "fw_vpc" {
-  self_link = var.vpc_network_self_link
+  name    = var.vpc_network_name
+  project = var.project_id
 }
 
 # Cloud Run (VPC connector) → vLLM internal load balancer
