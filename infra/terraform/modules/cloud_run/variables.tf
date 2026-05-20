@@ -53,3 +53,9 @@ variable "allow_unauthenticated_api" {
   type        = bool
   default     = true
 }
+
+variable "deletion_protection" {
+  description = "Cloud Run deletion protection. false in dev so Terraform can replace services during bootstrap."
+  type        = bool
+  default     = false
+}

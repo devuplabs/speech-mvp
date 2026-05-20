@@ -130,6 +130,12 @@ variable "api_container_image" {
   default     = null
 }
 
+variable "cloud_run_deletion_protection" {
+  description = "Cloud Run deletion protection. Keep false in dev; enable in prod."
+  type        = bool
+  default     = false
+}
+
 variable "cloud_run_allow_unauthenticated" {
   description = "Allow public invoke on API service (dev Flutter web). Disable in prod."
   type        = bool

@@ -154,6 +154,7 @@ module "cloud_run" {
   api_image                 = local.api_image
   inference_openai_base_url = module.inference.vllm_openai_base_url
   allow_unauthenticated_api    = var.cloud_run_allow_unauthenticated
+  deletion_protection          = var.cloud_run_deletion_protection
 
   depends_on = [
     module.enable_apis,
