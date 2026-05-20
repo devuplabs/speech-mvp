@@ -130,13 +130,6 @@ module "inference" {
   node_pool_max_count     = var.inference_node_pool_max_count
   deletion_protection       = var.inference_deletion_protection
   master_authorized_cidrs = var.gke_master_authorized_cidrs
-
-  depends_on = [
-    module.enable_apis,
-    module.network,
-    module.model_storage,
-    module.artifact_registry,
-  ]
 }
 
 resource "google_storage_bucket_iam_member" "runtime_exports" {
