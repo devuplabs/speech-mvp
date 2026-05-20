@@ -30,12 +30,13 @@ Stage and prod: add rows to `gcp-projects.yaml` when those projects exist, then 
 
 ---
 
-## Pipeline layout (two triggers)
+## Pipeline layout (three triggers on `main`)
 
 | Trigger | Config file | When it runs | Applies infra? |
 |---------|-------------|--------------|----------------|
-| **sona-terraform-dev-plan** | [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml) | Pull request to `main`, or push to any branch (your choice) | **No** — `terraform plan` only |
-| **sona-terraform-dev-apply** | [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | Push to `main` (after merge) | **Yes** — after **approval** |
+| **sona-terraform-dev-plan** | [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml) | Pull request to `main` | **No** — `terraform plan` only |
+| **sona-terraform-dev-apply** | [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | Push to `main` when `infra/**` changes | **Yes** — after **approval** |
+| **sona-api-dev-deploy** | [`cloudbuild.api.yaml`](cloudbuild.api.yaml) | Push to `main` when `apps/api/**` changes | **No** — builds image + deploys Cloud Run |
 
 ```mermaid
 flowchart LR

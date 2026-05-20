@@ -150,11 +150,12 @@ $planBody = @{
 
 $applyBody = @{
   name = "sona-terraform-dev-apply"
-  description = "Terraform apply for uk/dev (push to main, approval required)"
+  description = "Terraform apply for uk/dev (push main, infra/** only, approval required)"
   filename = "infra/ci/cloudbuild.terraform.apply.yaml"
   includeBuildLogs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
   serviceAccount = $cbSaResource
   approvalConfig = @{ approvalRequired = $true }
+  includedFiles = @("infra/**")
   repositoryEventConfig = @{
     repository = $repoResource
     push = @{ branch = "^main$" }
@@ -162,9 +163,34 @@ $applyBody = @{
   substitutions = $subs
 } | ConvertTo-Json -Depth 20
 
+$apiSubs = @{
+  _REGION           = $Region
+  _PROJECT_ID       = $ProjectId
+  _AR_HOST          = "europe-west2-docker.pkg.dev"
+  _REPOSITORY       = "sona-sona"
+  _IMAGE            = "sona-api"
+  _API_SERVICE      = "sona-api-dev"
+  _WORKER_SERVICE   = "sona-worker-dev"
+}
+
+$apiBody = @{
+  name = "sona-api-dev-deploy"
+  description = "Build and deploy Sona API + worker (push main, apps/api/** only)"
+  filename = "infra/ci/cloudbuild.api.yaml"
+  includeBuildLogs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
+  serviceAccount = $cbSaResource
+  includedFiles = @("apps/api/**", "infra/ci/cloudbuild.api.yaml")
+  repositoryEventConfig = @{
+    repository = $repoResource
+    push = @{ branch = "^main$" }
+  }
+  substitutions = $apiSubs
+} | ConvertTo-Json -Depth 20
+
 foreach ($pair in @(
     @{ Name = "sona-terraform-dev-plan"; Body = $planBody },
-    @{ Name = "sona-terraform-dev-apply"; Body = $applyBody }
+    @{ Name = "sona-terraform-dev-apply"; Body = $applyBody },
+    @{ Name = "sona-api-dev-deploy"; Body = $apiBody }
   )) {
   $existingJson = gcloud builds triggers describe $pair.Name --region=$Region --project=$ProjectId --format=json 2>$null
   if ($LASTEXITCODE -eq 0) {
@@ -184,8 +210,9 @@ foreach ($pair in @(
 
 Write-Host ""
 Write-Host "OK: Cloud Build triggers configured." -ForegroundColor Green
-Write-Host "  Plan:   sona-terraform-dev-plan  (PR -> main, /gcbrun)"
-Write-Host "  Apply:  sona-terraform-dev-apply (push main, approval required)"
+Write-Host "  Plan:   sona-terraform-dev-plan  (PR -> main)"
+Write-Host "  Apply:  sona-terraform-dev-apply (push main, infra/**, approval required)"
+Write-Host "  API:    sona-api-dev-deploy      (push main, apps/api/**, no approval)"
 Write-Host ""
 Write-Host "Grant approvers: roles/cloudbuild.builds.approver on project $ProjectId"
 Write-Host "Console: https://console.cloud.google.com/cloud-build/triggers?project=$ProjectId"

@@ -102,11 +102,12 @@ EOF
 apply_body="$(cat <<EOF
 {
   "name": "sona-terraform-dev-apply",
-  "description": "Terraform apply uk/dev (push main, approval, MVP core only)",
+  "description": "Terraform apply uk/dev (push main, infra/** only, approval required)",
   "filename": "infra/ci/cloudbuild.terraform.apply.yaml",
   "includeBuildLogs": "INCLUDE_BUILD_LOGS_WITH_STATUS",
   "serviceAccount": "${CB_SA_RESOURCE}",
   "approvalConfig": { "approvalRequired": true },
+  "includedFiles": ["infra/**"],
   "repositoryEventConfig": {
     "repository": "${REPO_RESOURCE}",
     "push": { "branch": "^main$" }
@@ -125,6 +126,31 @@ apply_body="$(cat <<EOF
     "_MODEL_GCS_PREFIX": "gemma-3-27b-it",
     "_VLLM_CONTAINER_IMAGE": "europe-west2-docker.pkg.dev/${PROJECT_ID}/sona-sona/vllm-openai:latest",
     "_INFERENCE_ZONE": "europe-west2-b"
+  }
+}
+EOF
+)"
+
+api_body="$(cat <<EOF
+{
+  "name": "sona-api-dev-deploy",
+  "description": "Build and deploy Sona API + worker (push main, apps/api/** only)",
+  "filename": "infra/ci/cloudbuild.api.yaml",
+  "includeBuildLogs": "INCLUDE_BUILD_LOGS_WITH_STATUS",
+  "serviceAccount": "${CB_SA_RESOURCE}",
+  "includedFiles": ["apps/api/**", "infra/ci/cloudbuild.api.yaml"],
+  "repositoryEventConfig": {
+    "repository": "${REPO_RESOURCE}",
+    "push": { "branch": "^main$" }
+  },
+  "substitutions": {
+    "_REGION": "${REGION}",
+    "_PROJECT_ID": "${PROJECT_ID}",
+    "_AR_HOST": "europe-west2-docker.pkg.dev",
+    "_REPOSITORY": "sona-sona",
+    "_IMAGE": "sona-api",
+    "_API_SERVICE": "sona-api-dev",
+    "_WORKER_SERVICE": "sona-worker-dev"
   }
 }
 EOF
@@ -160,7 +186,11 @@ upsert_trigger() {
 
 upsert_trigger "sona-terraform-dev-plan" "${plan_body}"
 upsert_trigger "sona-terraform-dev-apply" "${apply_body}"
+upsert_trigger "sona-api-dev-deploy" "${api_body}"
 
 echo ""
 echo "OK: Cloud Build triggers configured."
+echo "  Plan:   sona-terraform-dev-plan  (PR -> main)"
+echo "  Apply:  sona-terraform-dev-apply (push main, infra/**, approval required)"
+echo "  API:    sona-api-dev-deploy      (push main, apps/api/**, no approval)"
 echo "Manual steps: infra/BOOTSTRAP-MANUAL-STEPS.md"

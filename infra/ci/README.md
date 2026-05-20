@@ -10,7 +10,8 @@
 | [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1) | Automated bootstrap + triggers (run after GitHub OAuth) |
 | [`triggers/`](triggers/) | Trigger YAML templates for `uk/dev` |
 | [`cloudbuild.terraform.plan.yaml`](cloudbuild.terraform.plan.yaml) | PR / plan-only |
-| [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | `main` + human approval → `terraform apply` |
+| [`cloudbuild.terraform.apply.yaml`](cloudbuild.terraform.apply.yaml) | `main` + `infra/**` + human approval → `terraform apply` |
+| [`cloudbuild.api.yaml`](cloudbuild.api.yaml) | `main` + `apps/api/**` → build image + deploy Cloud Run |
 | [`../gcp-projects.yaml`](../gcp-projects.yaml) | Dev project id, state bucket, Cloud Build SA |
 
 **Dev project:** `project-a625d19b-de99-48e9-9a9` (SONA-MVP-DEV).
@@ -19,9 +20,13 @@ We do **not** run Terraform apply from GitHub Actions in this layout (avoids sto
 
 ---
 
-## Application deploys (future)
+## Application deploys (Cloud Run)
 
-**App deploy:** `cloudbuild.api.yaml` + trigger template `triggers/sona-api-dev-deploy.yaml`. Requires Terraform `cloud_run` module applied first.
+| Trigger | Config | When |
+|---------|--------|------|
+| **sona-api-dev-deploy** | [`cloudbuild.api.yaml`](cloudbuild.api.yaml) | Push to `main` when `apps/api/**` or `infra/ci/cloudbuild.api.yaml` changes |
+
+Requires Terraform `cloud_run` applied first. Created by [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1).
 
 When you add more **Cloud Run** services, you can either:
 
