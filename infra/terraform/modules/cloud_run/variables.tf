@@ -11,17 +11,15 @@ variable "cloud_sql_connection_name" { type = string }
 variable "cloud_sql_private_ip" { type = string }
 variable "cloud_sql_database" { type = string }
 variable "cloud_sql_app_user" { type = string }
-variable "db_password_secret_id" { type = string }
+variable "db_password_secret_resource_id" {
+  description = "Full Secret Manager resource ID for DB password (Cloud Run secret_key_ref)."
+  type        = string
+}
 
 variable "artifact_registry_docker_url" { type = string }
 
 variable "api_image" {
   description = "Container image for API (and worker when using the same image)."
-  type        = string
-}
-
-variable "llm_queue_name" {
-  description = "Existing Cloud Tasks queue name (sona-llm-{env}). HTTP target is configured here."
   type        = string
 }
 

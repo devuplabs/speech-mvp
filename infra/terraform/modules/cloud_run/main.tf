@@ -70,7 +70,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
       env {
         name  = "LLM_CLOUD_TASKS_QUEUE"
-        value = var.llm_queue_name
+        value = "${var.name_prefix}-llm-${var.environment}"
       }
       env {
         name  = "RUNTIME_SERVICE_ACCOUNT"
@@ -89,7 +89,7 @@ resource "google_cloud_run_v2_service" "api" {
         name = "DB_PASSWORD"
         value_source {
           secret_key_ref {
-            secret  = var.db_password_secret_id
+            secret  = var.db_password_secret_resource_id
             version = "latest"
           }
         }
@@ -181,7 +181,7 @@ resource "google_cloud_run_v2_service" "worker" {
         name = "DB_PASSWORD"
         value_source {
           secret_key_ref {
-            secret  = var.db_password_secret_id
+            secret  = var.db_password_secret_resource_id
             version = "latest"
           }
         }
@@ -221,36 +221,4 @@ resource "google_cloud_run_v2_service_iam_member" "worker_tasks_invoker" {
   name     = google_cloud_run_v2_service.worker.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${var.runtime_service_account_email}"
-}
-
-resource "google_cloud_tasks_queue" "llm_jobs" {
-  name     = var.llm_queue_name
-  location = var.region
-  project  = var.project_id
-
-  http_target {
-    uri         = "${google_cloud_run_v2_service.worker.uri}/internal/tasks/llm-prep"
-    http_method = "POST"
-    headers = {
-      "Content-Type" = "application/json"
-    }
-    oidc_token {
-      service_account_email = var.runtime_service_account_email
-      audience              = google_cloud_run_v2_service.worker.uri
-    }
-  }
-
-  rate_limits {
-    max_dispatches_per_second = 10
-    max_concurrent_dispatches = 5
-  }
-
-  retry_config {
-    max_attempts       = 5
-    max_retry_duration = "3600s"
-    min_backoff        = "10s"
-    max_backoff        = "300s"
-  }
-
-  depends_on = [google_cloud_run_v2_service.worker]
 }

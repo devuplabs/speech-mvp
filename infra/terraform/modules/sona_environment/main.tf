@@ -147,12 +147,11 @@ module "cloud_run" {
   cloud_sql_private_ip      = module.cloud_sql.private_ip_address
   cloud_sql_database        = module.cloud_sql.database_name
   cloud_sql_app_user        = module.cloud_sql.db_user_name
-  db_password_secret_id     = module.cloud_sql.db_password_secret_id
+  db_password_secret_resource_id = module.cloud_sql.db_password_secret_resource_id
 
   artifact_registry_docker_url = module.artifact_registry.docker_repository_url
-  api_image                    = local.api_image
-  llm_queue_name               = local.llm_queue_name
-  inference_openai_base_url    = module.inference.vllm_openai_base_url
+  api_image                 = local.api_image
+  inference_openai_base_url = module.inference.vllm_openai_base_url
   allow_unauthenticated_api    = var.cloud_run_allow_unauthenticated
 
   depends_on = [
@@ -168,16 +167,12 @@ module "cloud_tasks" {
   source                        = "../cloud_tasks"
   project_id                    = var.project_id
   region                        = var.region
-  llm_queue_name                = local.llm_queue_name
+  name_prefix                   = var.name_prefix
+  environment                   = var.environment
+  worker_service_uri            = module.cloud_run.worker_uri
   runtime_service_account_email = module.app_identity.runtime_service_account_email
 
   depends_on = [module.cloud_run]
-}
-
-# Queue resource moved from cloud_tasks → cloud_run (adds HTTP target to worker).
-moved {
-  from = module.cloud_tasks.google_cloud_tasks_queue.llm_jobs
-  to   = module.cloud_run.google_cloud_tasks_queue.llm_jobs
 }
 
 resource "google_storage_bucket_iam_member" "runtime_exports" {
