@@ -63,6 +63,8 @@ resource "google_sql_database_instance" "this" {
   deletion_protection = var.deletion_protection
 
   settings {
+    # POSTGRES_16 defaults to ENTERPRISE_PLUS, which rejects db-f1-micro / db-g1-small.
+    edition             = "ENTERPRISE"
     tier                = var.tier
     disk_autoresize     = true
     disk_size           = var.disk_size_gb

@@ -21,6 +21,19 @@ gcloud builds connections describe sona-github `
   --format="yaml(installationState,githubConfig)"
 ```
 
+## Terraform apply: VPC connector failures
+
+**409 — entity already exists:** A partial apply left `sona-vpc-cn` in GCP but not in Terraform state. Delete and re-apply:
+
+```powershell
+gcloud compute networks vpc-access connectors delete sona-vpc-cn `
+  --region=europe-west2 --project=project-a625d19b-de99-48e9-9a9 --quiet
+```
+
+**Error code 3 — must specify max_throughput or max_instances:** The connector resource needs `min_instances` / `max_instances` (fixed in `infra/terraform/modules/network/main.tf`).
+
+**Cloud SQL — Invalid Tier for ENTERPRISE_PLUS:** `db-f1-micro` is not valid on Postgres 16’s default edition. Use `edition = "ENTERPRISE"` in the Cloud SQL module (or a `db-perf-optimized-*` tier).
+
 ## Build starts then fails immediately (`invalid build.service_account`)
 
 Some projects **do not have** the legacy `PROJECT_NUMBER@cloudbuild.gserviceaccount.com` account. Triggers must use an existing user-managed SA (e.g. `sona-cloudbuild@PROJECT_ID.iam.gserviceaccount.com`) with:
