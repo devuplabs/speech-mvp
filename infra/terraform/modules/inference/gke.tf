@@ -96,11 +96,11 @@ resource "google_container_cluster" "this" {
   }
 
   master_authorized_networks_config {
-    dynamic "cidr_block" {
+    dynamic "cidr_blocks" {
       for_each = var.master_authorized_cidrs
       content {
-        cidr_block   = cidr_block.value
-        display_name = "authorized-${cidr_block.key}"
+        cidr_block   = cidr_blocks.value
+        display_name = "authorized-${cidr_blocks.key}"
       }
     }
   }
