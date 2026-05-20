@@ -2,23 +2,53 @@
 
 Parent (mobile/web) + clinician (web). GenUI A2UI → Sona API.
 
-## Bootstrap (requires Flutter SDK 3.24+)
+## Prerequisites
+
+- Flutter SDK 3.24+ (`flutter doctor`)
+- On Windows: enable **Developer Mode** for plugin symlinks (Settings → System → For developers)
+
+## Git (what we commit)
+
+Tracked: `lib/`, `test/`, `web/`, `android/`, `ios/`, `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`.
+
+Ignored (build/local): `.dart_tool/`, `build/`, generated plugin registrants, IDE files, desktop `linux/` / `macos/` / `windows/` (MVP targets are web + mobile only). Regenerate desktop with `flutter create . --platforms=windows,linux,macos` if needed.
+
+## Run (dev API on localhost)
 
 ```bash
+# Terminal 1 — API
+cd apps/api && npm install && npm run dev
+
+# Terminal 2 — Flutter
 cd apps/sona
-flutter create . --org com.devuplabs.sona
-dart pub add genui genui_a2a a2a
+flutter pub get
+flutter run -d chrome
+# or: flutter run -d windows
 ```
 
-Set `SONA_API_BASE_URL` per flavor (dev / stage / prod).
+Default API URL: `http://localhost:8080` (override below).
 
-**Do not add:** `firebase_vertex_ai`, `genui_google_generative_ai`, or Vertex SDKs.
+## API URL per environment
 
-## Layout (after `flutter create`)
+```bash
+flutter run --dart-define=SONA_API_BASE_URL=https://your-dev-api.run.app
+```
+
+## Layout
 
 ```
 lib/
-  design_system/
-  features/
-  genui/
+  config/          # SONA_API_BASE_URL (dart-define)
+  design_system/   # ThemeData / tokens
+  features/        # Screens (home, intake, clinician, …)
+  genui/           # A2uiAgentConnector → Sona API
 ```
+
+## Bootstrap (already done)
+
+```bash
+flutter create . --org com.devuplabs.sona --project-name sona
+dart pub add genui genui_a2a a2a
+```
+
+**Do not add:** `firebase_vertex_ai`, `genui_google_generative_ai`, or Vertex SDKs.
