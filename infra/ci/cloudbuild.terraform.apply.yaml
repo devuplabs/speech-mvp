@@ -14,7 +14,7 @@ substitutions:
   _ENVIRONMENT: dev
   _GCS_BUCKET_FORCE_DESTROY: "true"
   _DB_TIER: db-f1-micro
-  _INFERENCE_ENABLED: "true"
+  _INFERENCE_ENABLED: "false"
   _MODEL_GCS_PREFIX: gemma-3-27b-it
   _VLLM_CONTAINER_IMAGE: europe-west2-docker.pkg.dev/project-a625d19b-de99-48e9-9a9/sona-sona/vllm-openai:latest
   _INFERENCE_ZONE: europe-west2-b

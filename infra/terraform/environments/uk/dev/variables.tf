@@ -66,9 +66,9 @@ variable "jurisdiction" {
 }
 
 variable "inference_enabled" {
-  description = "Provision GKE + vLLM (Gemma 3 27B). Same in all environments per ADR-004."
+  description = "Provision GKE + vLLM (Gemma 3 27B). Enable in phase 2 after core infra and GPU quota."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "model_gcs_prefix" {
@@ -78,8 +78,9 @@ variable "model_gcs_prefix" {
 }
 
 variable "vllm_container_image" {
-  description = "vLLM image in Artifact Registry (mirror before apply)."
+  description = "vLLM image in Artifact Registry (required when inference_enabled)."
   type        = string
+  default     = ""
 }
 
 variable "inference_zone" {

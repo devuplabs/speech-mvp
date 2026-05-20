@@ -59,9 +59,9 @@ variable "db_pitr_enabled" {
 }
 
 variable "inference_enabled" {
-  description = "Provision GKE + vLLM (same topology in dev/stage/prod per ADR-004)."
+  description = "Provision GKE + vLLM. Default false for MVP bootstrap; enable when GPU/model ready."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "model_gcs_prefix" {

@@ -17,7 +17,11 @@ jurisdictions:
           state_bucket: project-a625d19b-de99-48e9-9a9-terraform-state
           state_prefix: sona/uk/dev
         cloud_build:
-          service_account: "1055416779632@cloudbuild.gserviceaccount.com"
+          service_account: "sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com"
+          repository: devuplabs-speech-mvp
+          triggers:
+            plan: sona-terraform-dev-plan
+            apply: sona-terraform-dev-apply
       stage:
         display_name: SONA-MVP-UK-STAGE
         project_id: REPLACE_WHEN_CREATED

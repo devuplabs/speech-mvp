@@ -22,7 +22,9 @@ Canonical project ids live in [`../gcp-projects.yaml`](../gcp-projects.yaml).
 | Terraform root | `infra/terraform/environments/uk/dev` |
 | Terraform state bucket | `project-a625d19b-de99-48e9-9a9-terraform-state` |
 | State prefix | `sona/uk/dev` |
-| Default Cloud Build SA | `1055416779632@cloudbuild.gserviceaccount.com` |
+| Cloud Build SA (Terraform) | `sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com` |
+| Linked repo (2nd gen) | `devuplabs-speech-mvp` |
+| MVP apply | `_INFERENCE_ENABLED=false` (core only); enable GKE in phase 2 |
 
 Stage and prod: add rows to `gcp-projects.yaml` when those projects exist, then duplicate triggers with new substitutions.
 
