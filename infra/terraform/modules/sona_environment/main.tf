@@ -119,6 +119,7 @@ module "inference" {
   region                = var.region
   name_prefix           = var.name_prefix
   environment           = var.environment
+  vpc_network_name      = module.network.vpc_name
   vpc_network_self_link = module.network.vpc_self_link
   vpc_connector_cidr    = var.vpc_connector_cidr
   models_bucket_name    = module.model_storage.models_bucket_name
