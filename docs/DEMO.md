@@ -11,17 +11,33 @@ End-to-end **synthetic** flow on live **uk/dev** API (no Postmark, no GPU infere
 
 ```bash
 cd apps/sona
-flutter run -d chrome
+flutter run -d chrome --web-port=8080
 # or: flutter run --dart-define=SONA_API_BASE_URL=https://your-api.run.app
 ```
 
-## Demo flow (3 tabs)
+## Demo flow (Figma UI)
 
-| Tab | Steps |
-|-----|--------|
-| **Parent** | Submit intake → copy **Case ID** |
-| **Clinician** | Paste case ID → Load case → see prep brief → Triage → **Publish parent summary** |
-| **Parent view** | Paste case ID → **Open published summary** |
+| Step | Action |
+|------|--------|
+| **Parent intake** | Welcome → Form → Review (check **all three** consent boxes) → **Submit** |
+| **Clinician Today** | Dashboard lists cases from API; open prep for your child |
+| **Prep → Triage → Publish** | Continue flow → publish parent summary |
+| **Parent summary** | Bottom bar **Parent summary** after publish |
+
+## Local API + browser (CORS)
+
+Flutter web on `localhost` cannot call Cloud Run until the API is redeployed with CORS. For local dev, run the API on another port:
+
+```bash
+# Terminal 1 — API (needs DATABASE_URL in apps/api/.env)
+cd apps/api
+set PORT=8081
+npm run dev
+
+# Terminal 2 — Flutter
+cd apps/sona
+flutter run -d chrome --web-port=8080 --dart-define=SONA_API_BASE_URL=http://localhost:8081
+```
 
 ## API shortcuts (curl)
 

@@ -2,19 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/state/sona_app_state.dart';
+import 'package:sona/utils/case_status.dart';
 
 class ClinicianTodayScreen extends StatelessWidget {
   const ClinicianTodayScreen({
     super.key,
     required this.state,
     required this.onOpenPrep,
+    required this.onRefresh,
   });
 
   final SonaAppState state;
-  final VoidCallback onOpenPrep;
+  final ValueChanged<String> onOpenPrep;
+  final Future<void> Function() onRefresh;
+
+  List<Map<String, dynamic>> get _dashboardCases =>
+      state.clinicianCases.where((c) => showCaseOnTodayDashboard(c['status'] as String?)).toList();
+
+  int get _intakePendingCount =>
+      state.clinicianCases.where((c) => (c['status'] as String?) == 'intake_submitted').length;
+
+  int get _prepReadyCount => state.clinicianCases
+      .where((c) => (c['status'] as String?) == 'prep_ready' || (c['status'] as String?) == 'plan_ready')
+      .length;
 
   @override
   Widget build(BuildContext context) {
+    final cases = _dashboardCases;
+    final activeId = state.caseId;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -86,33 +102,27 @@ class ClinicianTodayScreen extends StatelessWidget {
                     stack
                         ? Column(
                             children: [
-                              _kpi('3', 'Consults today', SonaColors.primary, expanded: false),
+                              _kpi('${cases.length}', 'Cases on dashboard', SonaColors.primary, expanded: false),
                               const SizedBox(height: 12),
-                              _kpi('1', 'Intake pending review', SonaColors.accent, expanded: false),
+                              _kpi('$_intakePendingCount', 'Intake submitted', SonaColors.accent, expanded: false),
                               const SizedBox(height: 12),
-                              _kpi('2', 'Plans to review', SonaColors.textSecondary, expanded: false),
+                              _kpi('$_prepReadyCount', 'Prep ready', SonaColors.textSecondary, expanded: false),
                             ],
                           )
                         : Row(
                             children: [
-                              _kpi('3', 'Consults today', SonaColors.primary),
+                              _kpi('${cases.length}', 'Cases on dashboard', SonaColors.primary),
                               const SizedBox(width: 16),
-                              _kpi('1', 'Intake pending review', SonaColors.accent),
+                              _kpi('$_intakePendingCount', 'Intake submitted', SonaColors.accent),
                               const SizedBox(width: 16),
-                              _kpi('2', 'Plans to review', SonaColors.textSecondary),
+                              _kpi('$_prepReadyCount', 'Prep ready', SonaColors.textSecondary),
                             ],
                           ),
                     const SizedBox(height: 24),
-                    _consultList(),
+                    _consultList(cases, activeId),
                   ],
                 );
-                final aside = Column(
-                  children: [
-                    _sideCard('Up next', 'Aria M. · 10:30', 'Prep brief ${state.prepStatus.toLowerCase()}', onOpenPrep),
-                    const SizedBox(height: 16),
-                    _sideCard('Recent activity', 'Intake submitted · Aria', '2 min ago', onOpenPrep),
-                  ],
-                );
+                final aside = _buildAside(cases, activeId);
                 if (stack) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -135,7 +145,7 @@ class ClinicianTodayScreen extends StatelessWidget {
     );
   }
 
-  Widget _consultList() {
+  Widget _consultList(List<Map<String, dynamic>> cases, String? activeId) {
     return Container(
       decoration: BoxDecoration(
         color: SonaColors.surface,
@@ -145,16 +155,66 @@ class ClinicianTodayScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.all(18),
-            child: Text("Today's free consultations", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    "Today's cases (from API)",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(onPressed: () => onRefresh(), child: const Text('Refresh')),
+              ],
+            ),
           ),
           const Divider(height: 1),
-          _consultRow('10:30', 'Aria M.', '4y · Speech + feeding', state.prepStatus, onOpenPrep, highlight: true),
-          _consultRow('14:00', 'Leo T.', '6y · Stutter', 'Drafting', () {}),
-          _consultRow('16:30', 'Maya K.', '3y · Language delay', 'Not started', () {}),
+          if (cases.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No submitted intakes yet. Complete the parent flow first — check all three consent boxes on review.',
+                style: TextStyle(fontSize: 14, color: SonaColors.textSecondary, height: 1.4),
+              ),
+            )
+          else
+            ...cases.map((c) {
+              final id = c['id'] as String;
+              final name = (c['childDisplayName'] as String?) ?? 'Child';
+              final status = prepLabelFromCaseStatus(c['status'] as String?);
+              final apiStatus = c['status'] as String? ?? '';
+              return _consultRow(
+                'Intake',
+                name,
+                apiStatus.replaceAll('_', ' '),
+                status,
+                () => onOpenPrep(id),
+                highlight: id == activeId,
+              );
+            }),
         ],
       ),
+    );
+  }
+
+  Widget _buildAside(List<Map<String, dynamic>> cases, String? activeId) {
+    if (cases.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final primary = cases.firstWhere(
+      (c) => c['id'] == activeId,
+      orElse: () => cases.first,
+    );
+    final id = primary['id'] as String;
+    final name = (primary['childDisplayName'] as String?) ?? 'Child';
+    final label = prepLabelFromCaseStatus(primary['status'] as String?);
+    return Column(
+      children: [
+        _sideCard('Up next', name, 'Prep brief · $label', () => onOpenPrep(id)),
+        const SizedBox(height: 16),
+        _sideCard('Recent activity', 'Intake submitted · $name', 'Just now', () => onOpenPrep(id)),
+      ],
     );
   }
 
