@@ -17,19 +17,14 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: SonaColors.background,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Row(
-            children: [
-              Expanded(
-                child: ClinicianShellPreview(onBack: onBackClinician),
-              ),
-              const SizedBox(width: 24),
-              SizedBox(
-                width: 375,
-                child: ParentMobileScaffold(
-                  body: ListView(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final preview = ClinicianShellPreview(onBack: onBackClinician);
+          final phone = SizedBox(
+            width: 375,
+            child: ParentMobileScaffold(
+              showStatusBar: false,
+              body: ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
                       Container(
@@ -91,11 +86,31 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
+            ),
+          );
+          if (constraints.maxWidth < 800) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [preview, const SizedBox(height: 24), phone],
               ),
-            ],
-          ),
-        ),
+            );
+          }
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: preview),
+                  const SizedBox(width: 24),
+                  phone,
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -14,4 +14,8 @@ For multi-file or multi-step work:
 
 Avoid landing large unreviewed diffs. Prefer feature flags or stubs over long-lived branches.
 
+## Shipping a slice to GCP
+
+A vertical slice that “goes live” still follows **PR → merge → CI/Terraform** — not `gcloud builds submit` or `gcloud run deploy` from the agent. Add or update `infra/ci/*.yaml` and Terraform in the same PR as the app change when hosting or env vars are involved.
+
 Full workflow: `.cursor/skills/incremental-implementation/SKILL.md` (run `scripts/sync-agent-skills.ps1` if missing).

@@ -12,6 +12,7 @@ Before merging any PR, check:
 3. **Architecture** — minimal scope; reuses existing modules; no drive-by refactors.
 4. **Security** — no secrets in git; PHI not in email/logs; validate at API boundary.
 5. **Performance** — no obvious regressions for web/API paths touched.
+6. **Release path** — no reliance on manual `gcloud` deploys; app changes paired with Cloud Build YAML/triggers when needed; infra changes in Terraform and `infra/**` for the apply trigger.
 
 Approve when the change **improves** code health; don’t block for style-only nits.
 

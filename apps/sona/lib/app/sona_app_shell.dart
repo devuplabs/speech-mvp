@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sona/config/env.dart';
 import 'package:sona/design_system/sona_colors.dart';
@@ -13,6 +14,8 @@ import 'package:sona/features/parent/parent_summary_screen.dart';
 import 'package:sona/features/parent/parent_welcome_screen.dart';
 import 'package:sona/services/api_client.dart';
 import 'package:sona/state/sona_app_state.dart';
+import 'package:sona/utils/api_errors.dart';
+import 'package:sona/utils/case_status.dart';
 
 enum SonaRoute {
   launcher,
@@ -51,10 +54,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
     try {
       await fn();
     } catch (e) {
-      setState(() => _status = 'Error: $e');
+      final friendly = friendlyApiError(e);
+      setState(() => _status = 'Error: $friendly');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
+          SnackBar(content: Text(friendly)),
         );
       }
     } finally {
@@ -74,10 +78,29 @@ class _SonaAppShellState extends State<SonaAppShell> {
     final status = caseMap?['status'] as String? ?? '';
     setState(() {
       _status = 'Case: $status';
-      _state.prepStatus = status.contains('intake') || status == 'new' ? 'Drafting' : 'Ready';
+      _state.prepStatus = prepLabelFromCaseStatus(status);
       if (caseMap?['childDisplayName'] != null) {
         _state.childName = caseMap!['childDisplayName'] as String;
       }
+    });
+  }
+
+  Future<void> _loadClinicianDashboard() async {
+    await _ensureTenant();
+    final rows = await _api.listCases(_state.tenantId!);
+    setState(() {
+      _state.clinicianCases = rows;
+      if (_state.caseId != null) {
+        for (final row in rows) {
+          if (row['id'] == _state.caseId) {
+            _state.prepStatus = prepLabelFromCaseStatus(row['status'] as String?);
+            final name = row['childDisplayName'] as String?;
+            if (name != null && name.isNotEmpty) _state.childName = name;
+            break;
+          }
+        }
+      }
+      _status = '${rows.length} case(s) loaded';
     });
   }
 
@@ -114,9 +137,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
         _clinicianNav = ClinicianRoute.today;
       });
       await _refreshCase();
+      await _loadClinicianDashboard();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Intake submitted — clinician prep is updating.')),
+          const SnackBar(content: Text('Intake submitted — see Today dashboard for your case.')),
         );
       }
     }, label: 'Submit intake');
@@ -155,6 +179,17 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   void _go(SonaRoute route) => setState(() => _route = route);
+
+  Future<void> _openClinicianToday() async {
+    _go(SonaRoute.clinicianToday);
+    await _run(() async {
+      if (_state.tenantId == null && _state.caseId == null) {
+        await _ensureTenant();
+      }
+      await _loadClinicianDashboard();
+      if (_state.caseId != null) await _refreshCase();
+    }, label: 'Load dashboard');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,15 +239,16 @@ class _SonaAppShellState extends State<SonaAppShell> {
                           onPressed: _busy ? null : _loadParentSummary,
                           child: const Text('Parent summary'),
                         ),
-                      Expanded(
-                        child: Text(
-                          _status ?? Env.apiBaseUrl,
-                          textAlign: TextAlign.end,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
+                      if (_status != null || kDebugMode)
+                        Expanded(
+                          child: Text(
+                            _status ?? (kDebugMode ? Env.apiBaseUrl : ''),
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -242,10 +278,13 @@ class _SonaAppShellState extends State<SonaAppShell> {
                 child: const Text('S', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Speech Therapy MVP',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+              Semantics(
+                header: true,
+                child: const Text(
+                  'Speech Therapy MVP',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -262,10 +301,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
               SonaButton(
                 label: 'Clinician workspace (desktop)',
                 variant: SonaButtonVariant.secondary,
-                onPressed: () {
-                  _go(SonaRoute.clinicianToday);
-                  _refreshCase();
-                },
+                onPressed: () => _openClinicianToday(),
               ),
               ],
             ),
@@ -292,10 +328,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
         ),
       _ => ClinicianTodayScreen(
           state: _state,
-          onOpenPrep: () {
+          onOpenPrep: (caseId) {
+            setState(() => _state.caseId = caseId);
             _refreshCase();
             _go(SonaRoute.clinicianPrep);
           },
+          onRefresh: _loadClinicianDashboard,
         ),
     };
 

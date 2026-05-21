@@ -71,4 +71,29 @@ if (Test-Path $RefsSource) {
     Write-Host "Synced: references/"
 }
 
+# Re-apply Speech MVP CI/CD override (upstream sync must not remove deploy policy)
+$ciCdSkill = Join-Path $Dest "ci-cd-and-automation\SKILL.md"
+if (Test-Path $ciCdSkill) {
+    $mvpBlock = @"
+
+## Speech MVP override (always wins)
+
+This repo does **not** deploy from the agent or laptop. Do not run ``gcloud builds submit``, ``gcloud run deploy``, or manual Cloud Run updates.
+
+| Target | Path |
+|--------|------|
+| API + worker | PR → ``main`` → ``sona-api-dev-deploy`` (``infra/ci/cloudbuild.api.yaml``) |
+| Flutter web | PR → ``main`` → ``sona-web-dev-deploy`` (``infra/ci/cloudbuild.web.yaml``) |
+| Terraform | PR → ``main`` → ``sona-terraform-dev-apply`` (``infra/**``, approval) |
+
+See ``.cursor/skills/mvp-git-workflow/SKILL.md`` and ``infra/ci/README.md``.
+"@
+    $content = Get-Content $ciCdSkill -Raw
+    if ($content -notmatch "Speech MVP override") {
+        $content = $content -replace "(# CI/CD and Automation\r?\n)", "`$1`r`n$mvpBlock`r`n"
+        Set-Content $ciCdSkill $content -NoNewline -Encoding utf8
+        Write-Host "Patched: ci-cd-and-automation (MVP deploy policy)"
+    }
+}
+
 Write-Host "`nDone. On-demand skills are in .cursor/skills/"

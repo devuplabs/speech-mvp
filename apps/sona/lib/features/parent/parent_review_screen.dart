@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
+import 'package:sona/design_system/widgets/sona_page_title.dart';
+import 'package:sona/design_system/widgets/sona_step_progress.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/state/sona_app_state.dart';
 
@@ -35,6 +38,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
               children: [
                 IconButton(
                   onPressed: widget.onBack,
+                  tooltip: 'Back',
                   icon: const Icon(Icons.chevron_left),
                   style: IconButton.styleFrom(side: const BorderSide(color: SonaColors.border)),
                 ),
@@ -49,21 +53,18 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(999)),
-              child: LinearProgressIndicator(value: 1, minHeight: 6, color: SonaColors.primary),
-            ),
+            const SonaStepProgress(currentStep: 8, totalSteps: 8),
           ],
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
         children: [
-          const Text('Review your answers', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SonaPageTitle('Review your answers', style: SonaTypography.sectionTitle),
           const SizedBox(height: 8),
           const Text(
             'Edit anything before submitting. Your clinician sees this before your call.',
-            style: TextStyle(fontSize: 14, color: SonaColors.textSecondary, height: 1.4),
+            style: SonaTypography.body,
           ),
           const SizedBox(height: 16),
           _summaryCard('About Aria', [
@@ -110,7 +111,14 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
               const Spacer(),
-              Text('Edit', style: TextStyle(fontSize: 13, color: SonaColors.primary, fontWeight: FontWeight.w600)),
+              Semantics(
+                button: true,
+                label: 'Edit $title',
+                child: Text(
+                  'Edit',
+                  style: TextStyle(fontSize: 13, color: SonaColors.primary, fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),

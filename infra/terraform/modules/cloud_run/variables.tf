@@ -59,3 +59,30 @@ variable "deletion_protection" {
   type        = bool
   default     = false
 }
+
+variable "enable_web" {
+  description = "Provision sona-web-{env} Cloud Run (Flutter web static nginx)."
+  type        = bool
+  default     = true
+}
+
+variable "web_image" {
+  description = "Container image for Flutter web. Replaced by sona-web-dev-deploy; Terraform ignores tag changes."
+  type        = string
+}
+
+variable "allow_unauthenticated_web" {
+  description = "Dev only: public ingress for hosted Flutter web."
+  type        = bool
+  default     = true
+}
+
+variable "web_min_instances" {
+  type    = number
+  default = 0
+}
+
+variable "web_max_instances" {
+  type    = number
+  default = 3
+}

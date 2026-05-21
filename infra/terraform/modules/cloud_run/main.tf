@@ -11,6 +11,7 @@ terraform {
 locals {
   api_service_name    = "${var.name_prefix}-api-${var.environment}"
   worker_service_name = "${var.name_prefix}-worker-${var.environment}"
+  web_service_name    = "${var.name_prefix}-web-${var.environment}"
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -92,6 +93,14 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "WORKER_SERVICE_URL"
         value = google_cloud_run_v2_service.worker.uri
+      }
+
+      dynamic "env" {
+        for_each = var.enable_web ? [1] : []
+        content {
+          name  = "CORS_ORIGINS"
+          value = google_cloud_run_v2_service.web[0].uri
+        }
       }
 
       env {
@@ -215,11 +224,61 @@ resource "google_cloud_run_v2_service" "worker" {
   }
 }
 
+# Flutter web (static nginx). No VPC/DB; image replaced by sona-web-dev-deploy after first apply.
+resource "google_cloud_run_v2_service" "web" {
+  count               = var.enable_web ? 1 : 0
+  name                = local.web_service_name
+  location            = var.region
+  project             = var.project_id
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = var.deletion_protection
+
+  template {
+    scaling {
+      min_instance_count = var.web_min_instances
+      max_instance_count = var.web_max_instances
+    }
+
+    containers {
+      name  = "web"
+      image = var.web_image
+
+      ports {
+        container_port = 8080
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "256Mi"
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+      client,
+      client_version,
+    ]
+  }
+}
+
 resource "google_cloud_run_v2_service_iam_member" "api_public" {
   count    = var.allow_unauthenticated_api ? 1 : 0
   project  = var.project_id
   location = var.region
   name     = google_cloud_run_v2_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_cloud_run_v2_service_iam_member" "web_public" {
+  count    = var.enable_web && var.allow_unauthenticated_web ? 1 : 0
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_service.web[0].name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

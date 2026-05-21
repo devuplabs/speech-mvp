@@ -10,10 +10,10 @@ Loaded via `.cursor/rules/*.mdc` with `alwaysApply: true`:
 
 | Rule | Purpose |
 |------|---------|
-| `mvp-git-workflow` | Branch + PR only — never commit/push to `main` |
-| `incremental-implementation` | Thin vertical slices, verify each step |
-| `code-review-and-quality` | Five-axis review before merge |
-| `mvp-security-reminder` | PHI, secrets, portal-first comms |
+| `mvp-git-workflow` | Branch + PR only; **no direct `gcloud` deploys** — merge → Cloud Build / Terraform |
+| `incremental-implementation` | Thin vertical slices; GCP shipping still via PR + CI |
+| `code-review-and-quality` | Six-axis review (includes release path / no manual deploy) |
+| `mvp-security-reminder` | PHI, secrets, portal-first; CORS/env via PR not ad-hoc `gcloud` |
 
 Edit those rules or `.cursor/skills/mvp-git-workflow/SKILL.md` as your process evolves.
 
@@ -84,6 +84,8 @@ After sync: `.cursor/references/` — `security-checklist.md`, `testing-patterns
 
 Mention them when needed: e.g. "Use the security checklist in `.cursor/references/security-checklist.md`."
 
-### Do not duplicate git workflow
+### Do not duplicate git / release workflow
 
-Use **`mvp-git-workflow`** for branching/PR policy. Do not add the pack's `git-workflow-and-versioning` skill — it allows trunk merges without your PR-only rule.
+Use **`mvp-git-workflow`** for branching, PR policy, and **GCP releases** (no `gcloud builds submit` / `gcloud run deploy` from the agent). Do not add the pack's `git-workflow-and-versioning` skill — it allows trunk merges without your PR-only rule.
+
+When **`ci-cd-and-automation`** is invoked, it must not override MVP rules: shipping still goes through PR → merge → Cloud Build triggers in `infra/ci/`.

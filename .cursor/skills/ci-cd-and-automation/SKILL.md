@@ -6,6 +6,18 @@ description: Automates CI/CD pipeline setup. Use when setting up or modifying bu
 
 # CI/CD and Automation
 
+## Speech MVP override (always wins)
+
+This repo does **not** deploy from the agent or laptop. Do not run `gcloud builds submit`, `gcloud run deploy`, or manual Cloud Run updates.
+
+| Target | Path |
+|--------|------|
+| API + worker | PR → `main` → `sona-api-dev-deploy` (`infra/ci/cloudbuild.api.yaml`) |
+| Flutter web | PR → `main` → `sona-web-dev-deploy` (`infra/ci/cloudbuild.web.yaml`) |
+| Terraform | PR → `main` → `sona-terraform-dev-apply` (`infra/**`, approval) |
+
+See `.cursor/skills/mvp-git-workflow/SKILL.md` and `infra/ci/README.md`. Re-run `scripts/sync-agent-skills.ps1` only if you need to refresh upstream content — re-apply this section if the file was overwritten.
+
 ## Overview
 
 Automate quality gates so that no change reaches production without passing tests, lint, type checking, and build. CI/CD is the enforcement mechanism for every other skill â€” it catches what humans and agents miss, and it does so consistently on every single change.

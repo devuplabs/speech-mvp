@@ -187,10 +187,36 @@ $apiBody = @{
   substitutions = $apiSubs
 } | ConvertTo-Json -Depth 20
 
+$webSubs = @{
+  _REGION         = $Region
+  _PROJECT_ID     = $ProjectId
+  _AR_HOST        = "europe-west2-docker.pkg.dev"
+  _REPOSITORY     = "sona-sona"
+  _IMAGE          = "sona-web"
+  _WEB_SERVICE    = "sona-web-dev"
+  _API_SERVICE    = "sona-api-dev"
+  _API_URL        = "https://sona-api-dev-3rhenudy6a-nw.a.run.app"
+}
+
+$webBody = @{
+  name = "sona-web-dev-deploy"
+  description = "Build and deploy Sona Flutter web (push main, apps/sona/** only)"
+  filename = "infra/ci/cloudbuild.web.yaml"
+  includeBuildLogs = "INCLUDE_BUILD_LOGS_WITH_STATUS"
+  serviceAccount = $cbSaResource
+  includedFiles = @("apps/sona/**", "infra/ci/cloudbuild.web.yaml")
+  repositoryEventConfig = @{
+    repository = $repoResource
+    push = @{ branch = "^main$" }
+  }
+  substitutions = $webSubs
+} | ConvertTo-Json -Depth 20
+
 foreach ($pair in @(
     @{ Name = "sona-terraform-dev-plan"; Body = $planBody },
     @{ Name = "sona-terraform-dev-apply"; Body = $applyBody },
-    @{ Name = "sona-api-dev-deploy"; Body = $apiBody }
+    @{ Name = "sona-api-dev-deploy"; Body = $apiBody },
+    @{ Name = "sona-web-dev-deploy"; Body = $webBody }
   )) {
   $existingJson = gcloud builds triggers describe $pair.Name --region=$Region --project=$ProjectId --format=json 2>$null
   if ($LASTEXITCODE -eq 0) {
@@ -213,6 +239,7 @@ Write-Host "OK: Cloud Build triggers configured." -ForegroundColor Green
 Write-Host "  Plan:   sona-terraform-dev-plan  (PR -> main)"
 Write-Host "  Apply:  sona-terraform-dev-apply (push main, infra/**, approval required)"
 Write-Host "  API:    sona-api-dev-deploy      (push main, apps/api/**, no approval)"
+Write-Host "  Web:    sona-web-dev-deploy      (push main, apps/sona/**, no approval)"
 Write-Host ""
 Write-Host "Grant approvers: roles/cloudbuild.builds.approver on project $ProjectId"
 Write-Host "Console: https://console.cloud.google.com/cloud-build/triggers?project=$ProjectId"

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
+import 'package:sona/design_system/widgets/sona_page_title.dart';
+import 'package:sona/design_system/widgets/sona_select_chip.dart';
+import 'package:sona/design_system/widgets/sona_step_progress.dart';
 import 'package:sona/state/sona_app_state.dart';
 
 class ParentFormScreen extends StatefulWidget {
@@ -31,10 +35,8 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = widget.state.formStep / 8;
-
     return ParentMobileScaffold(
-      header: _formHeader(progress),
+      header: _formHeader(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
         children: [
@@ -55,14 +57,14 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          const SonaPageTitle(
             'Does Aria have specific challenges with eating?',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.3),
+            style: SonaTypography.screenTitle,
           ),
           const SizedBox(height: 8),
           const Text(
             "Pick any that apply. We'll branch into more questions if needed.",
-            style: TextStyle(fontSize: 14, color: SonaColors.textSecondary, height: 1.4),
+            style: SonaTypography.body,
           ),
           const SizedBox(height: 16),
           ..._options.map(_chip),
@@ -99,7 +101,7 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
     );
   }
 
-  Widget _formHeader(double progress) {
+  Widget _formHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
       child: Column(
@@ -108,6 +110,7 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
             children: [
               IconButton(
                 onPressed: widget.onBack,
+                tooltip: 'Back',
                 icon: const Icon(Icons.chevron_left, size: 28),
                 style: IconButton.styleFrom(
                   backgroundColor: SonaColors.surface,
@@ -122,21 +125,17 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
                 ),
               ),
               OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Save & exit will be available in a future update.')),
+                  );
+                },
                 child: const Text('Save & exit', style: TextStyle(fontSize: 13)),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: SonaColors.border,
-              color: SonaColors.primary,
-            ),
-          ),
+          SonaStepProgress(currentStep: widget.state.formStep, totalSteps: 8),
         ],
       ),
     );
@@ -146,50 +145,18 @@ class _ParentFormScreenState extends State<ParentFormScreen> {
     final selected = widget.state.selectedConcerns.contains(label);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: () {
+      child: SonaSelectChip(
+        label: label,
+        selected: selected,
+        onChanged: (v) {
           setState(() {
-            if (selected) {
-              widget.state.selectedConcerns.remove(label);
-            } else {
+            if (v) {
               widget.state.selectedConcerns.add(label);
+            } else {
+              widget.state.selectedConcerns.remove(label);
             }
           });
         },
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected ? SonaColors.heroTint : SonaColors.surface,
-            border: Border.all(
-              color: selected ? SonaColors.primary : SonaColors.border,
-              width: selected ? 1.5 : 1,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: selected ? SonaColors.primary : Colors.transparent,
-                  border: Border.all(
-                    color: selected ? SonaColors.primary : SonaColors.chipBorder,
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                alignment: Alignment.center,
-                child: selected
-                    ? const Text('✓', style: TextStyle(color: Colors.white, fontSize: 12))
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
-            ],
-          ),
-        ),
       ),
     );
   }

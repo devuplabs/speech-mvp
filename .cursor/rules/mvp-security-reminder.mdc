@@ -9,5 +9,6 @@ alwaysApply: true
 - **Secrets** — never commit `.env`, tokens, or API keys; use Secret Manager / env in deploy.
 - **Boundaries** — validate input on API routes; parameterized DB access; no client-only security checks.
 - **Integrations** — new vendors (email, AI, storage) need explicit approval; prefer GCP-only where possible.
+- **CORS / env** — set `CORS_ORIGINS` and production env via Terraform or documented CI after PR merge; do not patch Cloud Run env with ad-hoc `gcloud run services update` from the agent.
 
 Full checklist: `.cursor/skills/security-and-hardening/SKILL.md` and `.cursor/references/security-checklist.md`

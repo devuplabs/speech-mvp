@@ -1,18 +1,30 @@
 import { serve } from "@hono/node-server";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { buildDatabaseUrl, loadEnv } from "./config.js";
+import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { SelfHostedLlmClient } from "./llm/client.js";
 import { createTaskRoutes } from "./routes/tasks.js";
 import { createV1Routes } from "./routes/v1.js";
+import { createV1DisabledRoutes } from "./v1-disabled.js";
 
 const env = loadEnv();
 const llm = new SelfHostedLlmClient(env);
 const databaseUrl = buildDatabaseUrl(env);
 
 const app = new Hono();
+
+app.use(
+  "*",
+  cors({
+    origin: (origin) => resolveCorsOrigin(origin, env),
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
+  }),
+);
 
 app.get("/health", (c) =>
   c.json({
@@ -70,14 +82,9 @@ if (databaseUrl) {
   }
 } else {
   console.warn("DATABASE_URL / DB_* not set — API data routes disabled");
-  app.get("/v1/meta", (c) =>
-    c.json({
-      service: "sona-api",
-      version: "0.1.0",
-      jurisdiction: env.JURISDICTION,
-      warning: "database_not_configured",
-    }),
-  );
+  if (env.SONA_MODE === "api") {
+    app.route("/v1", createV1DisabledRoutes(env));
+  }
 }
 
 serve({ fetch: app.fetch, port: env.PORT }, (info) => {

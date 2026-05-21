@@ -101,6 +101,7 @@ locals {
   llm_queue_name = "${var.name_prefix}-llm-${var.environment}"
   # Bootstrap image must exist before first apply; Cloud Build deploys sona-api afterward.
   api_image      = coalesce(var.api_container_image, var.cloud_run_bootstrap_image)
+  web_image      = coalesce(var.web_container_image, var.web_bootstrap_image)
   inference_zone = var.inference_zone != "" ? var.inference_zone : "${var.region}-b"
 }
 
@@ -152,8 +153,11 @@ module "cloud_run" {
 
   artifact_registry_docker_url = module.artifact_registry.docker_repository_url
   api_image                 = local.api_image
+  web_image                 = local.web_image
+  enable_web                = var.cloud_run_enable_web
   inference_openai_base_url = module.inference.vllm_openai_base_url
   allow_unauthenticated_api    = var.cloud_run_allow_unauthenticated
+  allow_unauthenticated_web    = var.cloud_run_allow_unauthenticated
   deletion_protection          = var.cloud_run_deletion_protection
 
   depends_on = [

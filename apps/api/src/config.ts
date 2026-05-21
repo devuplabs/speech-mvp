@@ -34,6 +34,13 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+  /** Comma-separated browser origins allowed to call the API (e.g. https://app.example.com). Required in production for web clients. */
+  CORS_ORIGINS: z.preprocess(emptyToUndefined, z.string().optional()),
+  /** When true and NODE_ENV=development, also allow http://localhost|127.0.0.1 on ports 3000 and 8080–8099. Never enable in production. */
+  CORS_ALLOW_LOCALHOST: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

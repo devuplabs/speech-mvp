@@ -13,6 +13,7 @@ class SonaAppState extends ChangeNotifier {
   bool consentAccurate = false;
   String triageOutcome = 'short_block';
   String prepStatus = 'Ready';
+  List<Map<String, dynamic>> clinicianCases = [];
 
   void resetForDemo() {
     tenantId = null;
@@ -27,6 +28,7 @@ class SonaAppState extends ChangeNotifier {
     consentAccurate = false;
     triageOutcome = 'short_block';
     prepStatus = 'Ready';
+    clinicianCases = [];
     notifyListeners();
   }
 }

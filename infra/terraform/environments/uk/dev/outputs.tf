@@ -93,6 +93,11 @@ output "api_service_uri" {
   value       = module.stack.api_service_uri
 }
 
+output "web_service_uri" {
+  description = "Hosted Flutter web demo UI."
+  value       = module.stack.web_service_uri
+}
+
 output "worker_service_uri" {
   value = module.stack.worker_service_uri
 }
