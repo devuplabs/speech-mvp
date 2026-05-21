@@ -1,3 +1,4 @@
+import type { Context } from "hono";
 import type { Env } from "./config.js";
 
 const LOCALHOST_PORTS = new Set([
@@ -39,4 +40,13 @@ export function resolveCorsOrigin(origin: string | undefined, env: Env): string 
   if (localDevOk) return origin;
 
   return null;
+}
+
+/** Ensure browser clients see CORS headers even on 4xx/5xx from app handlers. */
+export function applyCorsHeaders(c: Context, env: Env): void {
+  const allowed = resolveCorsOrigin(c.req.header("Origin"), env);
+  if (allowed) {
+    c.header("Access-Control-Allow-Origin", allowed);
+    c.header("Vary", "Origin");
+  }
 }

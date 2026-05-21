@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { buildDatabaseUrl, loadEnv } from "./config.js";
-import { resolveCorsOrigin } from "./cors.js";
+import { applyCorsHeaders, resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { SelfHostedLlmClient } from "./llm/client.js";
@@ -22,9 +22,15 @@ app.use(
   cors({
     origin: (origin) => resolveCorsOrigin(origin, env),
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", "Accept"],
   }),
 );
+
+app.onError((err, c) => {
+  applyCorsHeaders(c, env);
+  console.error(err);
+  return c.json({ error: "internal_error" }, 500);
+});
 
 app.get("/health", (c) =>
   c.json({
