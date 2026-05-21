@@ -12,6 +12,7 @@ class SonaTextField extends StatefulWidget {
     this.maxLines = 1,
     this.keyboardType,
     this.autofillHints,
+    this.errorText,
   });
 
   final String label;
@@ -22,6 +23,7 @@ class SonaTextField extends StatefulWidget {
   final int maxLines;
   final TextInputType? keyboardType;
   final Iterable<String>? autofillHints;
+  final String? errorText;
 
   @override
   State<SonaTextField> createState() => _SonaTextFieldState();
@@ -53,6 +55,9 @@ class _SonaTextFieldState extends State<SonaTextField> {
   @override
   Widget build(BuildContext context) {
     final labelText = widget.required ? '${widget.label} *' : widget.label;
+    final hasError = widget.errorText != null;
+    final borderColor = hasError ? SonaColors.dangerText : SonaColors.border;
+    final focusColor = hasError ? SonaColors.dangerText : SonaColors.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -60,10 +65,10 @@ class _SonaTextFieldState extends State<SonaTextField> {
         children: [
           Text(
             labelText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: SonaColors.textPrimary,
+              color: hasError ? SonaColors.dangerText : SonaColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -75,20 +80,21 @@ class _SonaTextFieldState extends State<SonaTextField> {
             autofillHints: widget.autofillHints,
             decoration: InputDecoration(
               hintText: widget.hint ?? 'Tap to enter',
+              errorText: widget.errorText,
               filled: true,
               fillColor: SonaColors.surface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: SonaColors.border),
+                borderSide: BorderSide(color: borderColor),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: SonaColors.border),
+                borderSide: BorderSide(color: borderColor),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: SonaColors.primary, width: 1.5),
+                borderSide: BorderSide(color: focusColor, width: 1.5),
               ),
             ),
           ),

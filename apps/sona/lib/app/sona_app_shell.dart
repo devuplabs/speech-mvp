@@ -14,6 +14,7 @@ import 'package:sona/features/parent/intake/parent_intake_step_screen.dart';
 import 'package:sona/features/parent/parent_review_screen.dart';
 import 'package:sona/features/parent/parent_summary_screen.dart';
 import 'package:sona/features/parent/parent_welcome_screen.dart';
+import 'package:sona/models/intake_form_data.dart';
 import 'package:sona/services/api_client.dart';
 import 'package:sona/services/intake_draft_storage.dart';
 import 'package:sona/services/intake_local_autosave.dart';
@@ -288,12 +289,54 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Save');
   }
 
+  void _showValidationError(({String message, String fieldKey}) err) {
+    setState(() {
+      _state.pendingValidationFieldKey = err.fieldKey;
+      _state.pendingValidationMessage = err.message;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(err.message),
+        duration: const Duration(seconds: 6),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _parentContinue() async {
-    final err = _state.intake.validateStep(_state.formStep);
-    if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    // Step 1 is paginated 1a/1b — advance the substep inside step 1 first.
+    if (_state.formStep == 1 && _state.formSubstep == 0) {
+      final pageErr = _state.intake.validateStep1a();
+      if (pageErr != null) {
+        _showValidationError(pageErr);
+        return;
+      }
+      setState(() {
+        _state.pendingValidationFieldKey = null;
+        _state.pendingValidationMessage = null;
+        _state.formSubstep = 1;
+      });
+      await _run(() async {
+        await _ensureValidParentCase();
+        await _saveDraft(quiet: true);
+      }, label: 'Save');
       return;
     }
+    final err = _state.intake.validateStep(_state.formStep);
+    if (err != null) {
+      // Step 1 page 2 might fail on a page-1 field if the user backed/edited;
+      // pop to page 1 so the highlight is visible.
+      if (_state.formStep == 1 &&
+          IntakeFormData.step1aFieldKeys.contains(err.fieldKey)) {
+        setState(() => _state.formSubstep = 0);
+      }
+      _showValidationError(err);
+      return;
+    }
+    setState(() {
+      _state.pendingValidationFieldKey = null;
+      _state.pendingValidationMessage = null;
+    });
     await _run(() async {
       await _ensureValidParentCase();
       await _saveDraft(quiet: true);
@@ -308,7 +351,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
         setState(() => _route = SonaRoute.parentReview);
         return;
       }
-      setState(() => _state.formStep += 1);
+      setState(() {
+        _state.formStep += 1;
+        _state.formSubstep = 0;
+      });
     }, label: 'Save');
   }
 
@@ -324,6 +370,15 @@ class _SonaAppShellState extends State<SonaAppShell> {
       }, label: 'Save');
       return;
     }
+    // Step 1 page 2 → page 1 (no API call, just pop the substep)
+    if (_state.formStep == 1 && _state.formSubstep == 1) {
+      setState(() {
+        _state.formSubstep = 0;
+        _state.pendingValidationFieldKey = null;
+        _state.pendingValidationMessage = null;
+      });
+      return;
+    }
     if (_state.formStep <= 1) {
       _go(SonaRoute.parentWelcome);
       return;
@@ -331,7 +386,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
     await _run(() async {
       await _ensureValidParentCase();
       await _saveDraft(quiet: true);
-      setState(() => _state.formStep -= 1);
+      setState(() {
+        _state.formStep -= 1;
+        // Returning to step 1 lands on page 2 so user can keep editing.
+        _state.formSubstep = _state.formStep == 1 ? 1 : 0;
+      });
     }, label: 'Save');
   }
 
@@ -339,6 +398,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     setState(() {
       _state.returnToReviewAfterEdit = true;
       _state.formStep = step;
+      _state.formSubstep = 0;
       _route = SonaRoute.parentIntake;
     });
   }
@@ -390,10 +450,18 @@ class _SonaAppShellState extends State<SonaAppShell> {
       final err = _state.intake.validateStep(step);
       if (err != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Step $step: $err')),
+          SnackBar(content: Text('Step $step: ${err.message}')),
         );
         setState(() {
           _state.formStep = step;
+          _state.pendingValidationFieldKey = err.fieldKey;
+          _state.pendingValidationMessage = err.message;
+          if (step == 1) {
+            _state.formSubstep =
+                IntakeFormData.step1aFieldKeys.contains(err.fieldKey) ? 0 : 1;
+          } else {
+            _state.formSubstep = 0;
+          }
           _route = SonaRoute.parentIntake;
         });
         return;
@@ -509,6 +577,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
             onBack: () {
               setState(() {
                 _state.formStep = 8;
+                _state.formSubstep = 0;
                 _route = SonaRoute.parentIntake;
               });
             },
