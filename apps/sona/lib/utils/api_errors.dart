@@ -5,7 +5,8 @@ String friendlyApiError(Object error) {
       msg.contains('ClientException') ||
       msg.contains('XMLHttpRequest')) {
     return 'Cannot reach the API from the browser (often CORS). '
-        'Redeploy the API with CORS enabled, or run the API locally on port 8080.';
+        'For local dev set NODE_ENV=development and CORS_ALLOW_LOCALHOST=true on the API. '
+        'For Cloud Run set CORS_ORIGINS to your app URL only.';
   }
   return msg;
 }

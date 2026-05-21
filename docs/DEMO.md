@@ -26,11 +26,17 @@ flutter run -d chrome --web-port=8080
 
 ## Local API + browser (CORS)
 
-Flutter web on `localhost` cannot call Cloud Run until the API is redeployed with CORS. For local dev, run the API on another port:
+Browsers block cross-origin calls unless the API allows your page origin explicitly.
+
+**Production / Cloud Run:** set `CORS_ORIGINS` to your real app URLs only (comma-separated). Do not use localhost on deployed APIs.
+
+**Local dev only** (`NODE_ENV=development`):
 
 ```bash
 # Terminal 1 — API (needs DATABASE_URL in apps/api/.env)
 cd apps/api
+set NODE_ENV=development
+set CORS_ALLOW_LOCALHOST=true
 set PORT=8081
 npm run dev
 
@@ -38,6 +44,8 @@ npm run dev
 cd apps/sona
 flutter run -d chrome --web-port=8080 --dart-define=SONA_API_BASE_URL=http://localhost:8081
 ```
+
+Optional explicit list instead of `CORS_ALLOW_LOCALHOST`: `CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080`
 
 ## API shortcuts (curl)
 

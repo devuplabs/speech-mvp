@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { buildDatabaseUrl, loadEnv } from "./config.js";
+import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { SelfHostedLlmClient } from "./llm/client.js";
@@ -15,27 +16,10 @@ const databaseUrl = buildDatabaseUrl(env);
 
 const app = new Hono();
 
-const corsOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-  : [
-      "http://localhost:8080",
-      "http://127.0.0.1:8080",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ];
-
 app.use(
   "*",
   cors({
-    origin: (origin) => {
-      if (!origin) return corsOrigins[0] ?? "*";
-      if (corsOrigins.includes(origin)) return origin;
-      // Allow Flutter web dev ports (8080–8099) without redeploying for each port.
-      if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return origin;
-      return corsOrigins[0] ?? origin;
-    },
+    origin: (origin) => resolveCorsOrigin(origin, env),
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type"],
   }),
