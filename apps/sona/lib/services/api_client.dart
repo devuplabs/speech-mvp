@@ -21,7 +21,8 @@ class SonaApiClient {
       headers: {'Content-Type': 'application/json'},
       body: '{}',
     );
-    _ensureOk(res, expected: 201);
+    // 200 when reusing existing demo tenant; 201 when first created
+    _ensureOk(res, allowedStatuses: {200, 201});
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return body['tenantId'] as String;
   }
@@ -142,9 +143,16 @@ class SonaApiClient {
     return res.body;
   }
 
-  void _ensureOk(http.Response res, {int? expected}) {
+  void _ensureOk(
+    http.Response res, {
+    int? expected,
+    Set<int>? allowedStatuses,
+  }) {
     final ok = res.statusCode >= 200 && res.statusCode < 300;
-    if (!ok || (expected != null && res.statusCode != expected)) {
+    final statusOk = allowedStatuses != null
+        ? allowedStatuses.contains(res.statusCode)
+        : expected == null || res.statusCode == expected;
+    if (!ok || !statusOk) {
       throw SonaApiException(res.statusCode, res.body);
     }
   }
