@@ -7,9 +7,16 @@ import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/trust_row.dart';
 
 class ParentWelcomeScreen extends StatelessWidget {
-  const ParentWelcomeScreen({super.key, required this.onGetStarted});
+  const ParentWelcomeScreen({
+    super.key,
+    required this.onGetStarted,
+    this.onResume,
+    this.hasDraft = false,
+  });
 
   final VoidCallback onGetStarted;
+  final VoidCallback? onResume;
+  final bool hasDraft;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +156,14 @@ class ParentWelcomeScreen extends StatelessWidget {
         child: Column(
           children: [
             SonaButton(label: 'Get started', onPressed: onGetStarted),
+            if (hasDraft && onResume != null) ...[
+              const SizedBox(height: 10),
+              SonaButton(
+                label: 'Continue where you left off',
+                variant: SonaButtonVariant.secondary,
+                onPressed: onResume,
+              ),
+            ],
             const SizedBox(height: 10),
             const Text(
               'Takes about 10 minutes  ·  Save as you go',

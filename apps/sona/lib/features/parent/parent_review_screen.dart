@@ -5,6 +5,7 @@ import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
 import 'package:sona/design_system/widgets/sona_page_title.dart';
 import 'package:sona/design_system/widgets/sona_step_progress.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
+import 'package:sona/features/parent/intake/intake_review_summary.dart';
 import 'package:sona/state/sona_app_state.dart';
 
 class ParentReviewScreen extends StatefulWidget {
@@ -13,12 +14,14 @@ class ParentReviewScreen extends StatefulWidget {
     required this.state,
     required this.onBack,
     required this.onSubmit,
+    required this.onEditStep,
     this.busy = false,
   });
 
   final SonaAppState state;
   final VoidCallback onBack;
   final VoidCallback onSubmit;
+  final void Function(int step) onEditStep;
   final bool busy;
 
   @override
@@ -29,6 +32,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final d = state.intake;
     return ParentMobileScaffold(
       header: Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
@@ -37,7 +41,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             Row(
               children: [
                 IconButton(
-                  onPressed: widget.onBack,
+                  onPressed: widget.busy ? null : widget.onBack,
                   tooltip: 'Back',
                   icon: const Icon(Icons.chevron_left),
                   style: IconButton.styleFrom(side: const BorderSide(color: SonaColors.border)),
@@ -66,23 +70,12 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             'Edit anything before submitting. Your clinician sees this before your call.',
             style: SonaTypography.body,
           ),
-          const SizedBox(height: 16),
-          _summaryCard('About Aria', [
-            ('Name', state.childName),
-            ('Age', '4y 2m'),
-            ('School', "St Anne's Nursery"),
-          ]),
+          const SizedBox(height: 20),
+          _summaryCard('Contact & child', IntakeReviewSummary.contactRows(d), onEdit: () => widget.onEditStep(1)),
           const SizedBox(height: 12),
-          _summaryCard('Main concerns', [
-            ('Speech sounds', 'Hard to understand R, S'),
-            ('Eating', 'Fussy eater; saw dentist'),
-            ('EHCP', 'No EHCP in place'),
-          ]),
+          _summaryCard('Referral & development', IntakeReviewSummary.referralRows(d), onEdit: () => widget.onEditStep(2)),
           const SizedBox(height: 12),
-          _summaryCard('Strengths', [
-            ('Loves', 'Singing, drawing'),
-            ('Best with', '1-on-1 attention'),
-          ]),
+          _summaryCard('Health & background', IntakeReviewSummary.healthRows(d), onEdit: () => widget.onEditStep(4)),
           const SizedBox(height: 12),
           _consentCard(state),
         ],
@@ -90,14 +83,14 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
       footer: Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: SonaButton(
-          label: widget.busy ? 'Submitting…' : 'Submit & book call',
+          label: widget.busy ? 'Submitting…' : 'Submit',
           onPressed: widget.busy ? null : widget.onSubmit,
         ),
       ),
     );
   }
 
-  Widget _summaryCard(String title, List<(String, String)> rows) {
+  Widget _summaryCard(String title, List<(String, String)> rows, {required VoidCallback onEdit}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -114,9 +107,17 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
               Semantics(
                 button: true,
                 label: 'Edit $title',
-                child: Text(
-                  'Edit',
-                  style: TextStyle(fontSize: 13, color: SonaColors.primary, fontWeight: FontWeight.w600),
+                child: TextButton(
+                  onPressed: widget.busy ? null : onEdit,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Edit',
+                    style: TextStyle(fontSize: 13, color: SonaColors.primary, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
             ],
@@ -141,6 +142,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
   }
 
   Widget _consentCard(SonaAppState state) {
+    final name = state.childName;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -154,19 +156,28 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           const Text('Before you submit', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           _check(
-            "I'm Aria's parent/legal guardian and consent to sharing this with Monal Gajjar SLT.",
+            "I'm $name's parent/legal guardian and consent to sharing this with Monal Gajjar SLT.",
             state.consentGuardian,
-            (v) => setState(() => state.consentGuardian = v ?? false),
+            (v) => setState(() {
+              state.consentGuardian = v ?? false;
+              state.notifyFormChanged();
+            }),
           ),
           _check(
             'I agree to the privacy notice and UK data storage.',
             state.consentPrivacy,
-            (v) => setState(() => state.consentPrivacy = v ?? false),
+            (v) => setState(() {
+              state.consentPrivacy = v ?? false;
+              state.notifyFormChanged();
+            }),
           ),
           _check(
             'I confirm the answers are accurate to the best of my knowledge.',
             state.consentAccurate,
-            (v) => setState(() => state.consentAccurate = v ?? false),
+            (v) => setState(() {
+              state.consentAccurate = v ?? false;
+              state.notifyFormChanged();
+            }),
           ),
         ],
       ),
@@ -175,7 +186,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
 
   Widget _check(String text, bool value, ValueChanged<bool?> onChanged) {
     return InkWell(
-      onTap: () => onChanged(!value),
+      onTap: widget.busy ? null : () => onChanged(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -183,7 +194,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           children: [
             Checkbox(
               value: value,
-              onChanged: onChanged,
+              onChanged: widget.busy ? null : onChanged,
               activeColor: SonaColors.primary,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

@@ -70,6 +70,24 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<void> saveIntakeDraft(
+    String caseId, {
+    required Map<String, dynamic> answers,
+    String? parentEmail,
+    String? childDisplayName,
+  }) async {
+    final res = await _client.put(
+      _base.replace(path: '/v1/cases/$caseId/intake/draft'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'answers': answers,
+        'parentEmail': parentEmail,
+        'childDisplayName': childDisplayName,
+      }),
+    );
+    _ensureOk(res);
+  }
+
   Future<Map<String, dynamic>> submitIntake(
     String caseId, {
     required Map<String, dynamic> answers,
@@ -81,7 +99,7 @@ class SonaApiClient {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'answers': answers,
-        'consentVersion': 'mvp-demo-v0.1',
+        'consentVersion': 'mvp-v1',
         'parentEmail': parentEmail,
         'childDisplayName': childDisplayName,
       }),

@@ -78,3 +78,6 @@ apps/sona/android/app/release/
 
 # Review assets with possible PII (per mvp-brief)
 _review/
+
+# Intake PDF screenshots — kept under E:\devup\customer\intake-forms\intake-pdf-pages
+docs/intake-pdf-pages/
