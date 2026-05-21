@@ -81,3 +81,8 @@ _review/
 
 # Intake PDF screenshots — kept under E:\devup\customer\intake-forms\intake-pdf-pages
 docs/intake-pdf-pages/
+
+# Local debug artefacts (e.g. compiled Flutter web bundles fetched for grep/debug)
+tmp-*.dart.js
+tmp-*.js
+tmp-*.json
