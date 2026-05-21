@@ -36,7 +36,9 @@ Requires Terraform `cloud_run` applied first. Triggers created/updated by [`../s
 - `sona-api-dev-deploy`
 - `sona-web-dev-deploy`
 
-If `sona-web-dev-deploy` is missing, merges that only touch `apps/sona/**` will **not** update [sona-web-dev](https://sona-web-dev-3rhenudy6a-nw.a.run.app). Run `setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers` after merging infra changes — do **not** use `gcloud builds submit` from a laptop.
+If `sona-web-dev-deploy` is missing, merges that only touch `apps/sona/**` will **not** update [sona-web-dev](https://sona-web-dev-3rhenudy6a-nw.a.run.app). Run `setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers` after merging infra changes (requires Owner/project admin), or create the trigger from [`triggers/sona-web-dev-deploy.yaml`](triggers/sona-web-dev-deploy.yaml) in Console. Then run the trigger once on `main` (Console **Run** or `gcloud builds triggers run sona-web-dev-deploy --branch=main`) — do **not** use `gcloud builds submit` from a laptop.
+
+Merging CI YAML alone does **not** create the trigger in GCP; terraform apply on `infra/**` also does not create Cloud Build triggers.
 
 **Hosted dev URLs** (after CI deploy): see [`../../docs/DEMO.md`](../../docs/DEMO.md).
 
