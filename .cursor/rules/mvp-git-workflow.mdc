@@ -1,9 +1,9 @@
 ---
-description: Never commit or push to main — always use a branch and pull request (see mvp-git-workflow skill)
+description: Branch + PR only for git and GCP — never commit to main or run gcloud deploys (see mvp-git-workflow skill)
 alwaysApply: true
 ---
 
-# Git: branch + PR only
+# Git and releases: branch + PR only
 
 **Never commit to `main` or `git push origin main`.** Use a feature branch and open a pull request.
 
@@ -12,10 +12,28 @@ When committing or pushing:
 2. Commit on the branch, push with `git push -u origin HEAD`.
 3. Create a PR with `gh pr create` and share the URL.
 
-Full workflow: `.cursor/skills/mvp-git-workflow/SKILL.md` (user-updated).
+Full workflow: `.cursor/skills/mvp-git-workflow/SKILL.md`
 
-## Deploys: PR → merge → Cloud Build only
+## GCP deploys: PR → merge → Cloud Build / Terraform only
 
-**Never** run `gcloud builds submit`, `gcloud run deploy`, or ad-hoc production deploys from the agent or laptop. Application releases reach GCP only when a PR merges to `main` and triggers **sona-api-dev-deploy** / **sona-web-dev-deploy** (see `infra/ci/README.md`).
+**Never** ship application or infra changes by running deploy commands from the agent or a laptop. That bypasses review and breaks team process.
 
-Only bypass if the user explicitly asks to commit/push directly to `main` or to deploy outside CI.
+### Forbidden (unless the user explicitly overrides)
+
+- `gcloud builds submit`
+- `gcloud run deploy`
+- `gcloud run services update` (images, env, traffic)
+- Pushing container images to Artifact Registry outside CI
+- “Quick fix” manual deploys to get a URL or unblock a demo
+
+### Allowed path
+
+| Change | How it reaches GCP |
+|--------|-------------------|
+| API / worker code | PR → merge `main` → **sona-api-dev-deploy** (`apps/api/**`) |
+| Flutter web | PR → merge `main` → **sona-web-dev-deploy** (`apps/sona/**`) |
+| Infra (Cloud Run, CORS, IAM) | PR → merge `main` → **sona-terraform-dev-apply** (`infra/**`, approval) |
+
+Docs: `infra/ci/README.md`. If the user needs a hosted URL, add CI/Terraform in a PR and tell them it will exist after merge — do not deploy directly.
+
+Only bypass if the user **explicitly** asks to commit/push to `main` or to deploy outside CI.
