@@ -43,10 +43,6 @@ output "db_password_secret_id" {
   value = module.stack.db_password_secret_id
 }
 
-output "postmark_secret_id" {
-  value = module.stack.postmark_secret_id
-}
-
 output "exports_bucket_name" {
   value = module.stack.exports_bucket_name
 }

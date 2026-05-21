@@ -42,10 +42,6 @@ output "db_password_secret_id" {
   value = module.cloud_sql.db_password_secret_id
 }
 
-output "postmark_secret_id" {
-  value = google_secret_manager_secret.postmark_api_token.secret_id
-}
-
 output "exports_bucket_name" {
   value = module.storage.exports_bucket_name
 }

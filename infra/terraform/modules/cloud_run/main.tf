@@ -104,21 +104,6 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      env {
-        name  = "POSTMARK_FROM_EMAIL"
-        value = var.postmark_from_email
-      }
-
-      env {
-        name = "POSTMARK_API_TOKEN"
-        value_source {
-          secret_key_ref {
-            secret  = var.postmark_api_token_secret_resource_id
-            version = "latest"
-          }
-        }
-      }
-
       resources {
         limits = {
           cpu    = "1"
