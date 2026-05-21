@@ -7,18 +7,24 @@ End-to-end **synthetic** flow on live **uk/dev** API (no Postmark, no GPU infere
 - **Hosted demo (GCP):** [https://sona-web-dev-3rhenudy6a-nw.a.run.app](https://sona-web-dev-3rhenudy6a-nw.a.run.app) → API `https://sona-api-dev-3rhenudy6a-nw.a.run.app`
 - **Local dev:** Flutter SDK installed
 
-## Automated web UI tests (Playwright)
+## Automated tests (before PR / after deploy)
 
-After deploy, run the parent intake E2E suite (no manual clicking):
+**Before opening a PR** (Flutter unit tests + API E2E, no browser):
+
+```powershell
+.\scripts\pre-deploy-verify.ps1
+```
+
+**After deploy** (full UI including 8-step intake + clinician dashboard):
 
 ```bash
 cd e2e
 npm install
 npx playwright install chromium
-npm test
+npm run test:full
 ```
 
-See [`e2e/README.md`](../e2e/README.md) for headed/UI mode and env overrides.
+See [`e2e/README.md`](../e2e/README.md) for `test:api`, `test:ui`, and env overrides.
 
 ## Run the client
 

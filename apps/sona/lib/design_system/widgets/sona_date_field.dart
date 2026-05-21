@@ -101,6 +101,7 @@ class _SonaDateFieldState extends State<SonaDateField> {
               hintText: 'DD / MM / YYYY',
               errorText: widget.errorText,
               suffixIcon: IconButton(
+                tooltip: 'Open calendar',
                 icon: const Icon(Icons.calendar_today_outlined, size: 20),
                 onPressed: () => _pick(context),
               ),
