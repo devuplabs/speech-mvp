@@ -31,6 +31,13 @@ We do **not** run Terraform apply from GitHub Actions in this layout (avoids sto
 
 Requires Terraform `cloud_run` applied first. Triggers created/updated by [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1) `-UpdateTriggers` (run once after merging trigger YAML to `main`).
 
+**Verify both app triggers exist** (Console → Cloud Build → Triggers, region `europe-west2`):
+
+- `sona-api-dev-deploy`
+- `sona-web-dev-deploy`
+
+If `sona-web-dev-deploy` is missing, merges that only touch `apps/sona/**` will **not** update [sona-web-dev](https://sona-web-dev-3rhenudy6a-nw.a.run.app). Run `setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers` after merging infra changes — do **not** use `gcloud builds submit` from a laptop.
+
 **Hosted dev URLs** (after CI deploy): see [`../../docs/DEMO.md`](../../docs/DEMO.md).
 
 When you add more **Cloud Run** services, you can either:

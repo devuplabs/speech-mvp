@@ -21,6 +21,5 @@ substitutions:
   _REPOSITORY: sona-sona
   _IMAGE: sona-web
   _WEB_SERVICE: sona-web-dev
-  _API_SERVICE: sona-api-dev
   _API_URL: https://sona-api-dev-3rhenudy6a-nw.a.run.app
 serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
