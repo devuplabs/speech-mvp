@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/widgets/sona_text_field.dart';
+
+class SonaYesNoField extends StatelessWidget {
+  const SonaYesNoField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.detailLabel,
+    this.detailValue = '',
+    this.onDetailChanged,
+    this.required = true,
+  });
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+  final String? detailLabel;
+  final String detailValue;
+  final ValueChanged<String>? onDetailChanged;
+  final bool required;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            required ? '$label *' : label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: ['yes', 'no'].map((opt) {
+              final selected = value == opt;
+              final display = opt == 'yes' ? 'Yes' : 'No';
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(display),
+                  selected: selected,
+                  onSelected: (_) => onChanged(opt),
+                  selectedColor: SonaColors.heroTint,
+                  side: BorderSide(color: selected ? SonaColors.primary : SonaColors.border),
+                ),
+              );
+            }).toList(),
+          ),
+          if (value == 'yes' && detailLabel != null && onDetailChanged != null) ...[
+            const SizedBox(height: 8),
+            SonaTextField(
+              label: detailLabel!,
+              value: detailValue,
+              onChanged: onDetailChanged!,
+              maxLines: 3,
+              required: true,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

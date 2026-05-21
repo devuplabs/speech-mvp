@@ -10,6 +10,8 @@ import {
   tenants,
   triageRecords,
 } from "../db/schema.js";
+import { saveIntakeDraftBody, submitIntakeBody } from "../schemas/intake.js";
+import { submitIntake as submitIntakeRecord, upsertIntakeDraft } from "../services/intake.js";
 import {
   getPublishedParentSummary,
   publishParentSummary,
@@ -25,13 +27,6 @@ const createTenantBody = z.object({
 
 const createCaseBody = z.object({
   tenantId: z.string().uuid(),
-  parentEmail: z.string().email().optional(),
-  childDisplayName: z.string().max(128).optional(),
-});
-
-const submitIntakeBody = z.object({
-  answers: z.record(z.unknown()),
-  consentVersion: z.string().max(64).optional(),
   parentEmail: z.string().email().optional(),
   childDisplayName: z.string().max(128).optional(),
 });
@@ -103,22 +98,52 @@ export function createV1Routes(db: Db, env: Env) {
     return c.json({ case: row, intake: intake ?? null, drafts });
   });
 
+  app.put("/cases/:caseId/intake/draft", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = saveIntakeDraftBody.parse(await c.req.json());
+
+    const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    if (existing.status !== "intake_pending") {
+      return c.json({ error: "intake_already_submitted" }, 409);
+    }
+
+    const intake = await upsertIntakeDraft(db, caseId, body.answers, {
+      parentEmail: body.parentEmail,
+      childDisplayName: body.childDisplayName,
+    });
+
+    await writeAudit(db, {
+      tenantId: existing.tenantId,
+      caseId,
+      actor: "parent",
+      action: "intake.draft_saved",
+      metadata: { step: body.answers.formStep ?? null },
+    });
+
+    return c.json({ ok: true, intake });
+  });
+
   app.post("/cases/:caseId/intake", async (c) => {
     const caseId = c.req.param("caseId");
     const body = submitIntakeBody.parse(await c.req.json());
 
     const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
     if (!existing) return c.json({ error: "not_found" }, 404);
+    if (existing.status !== "intake_pending") {
+      return c.json({ error: "intake_already_submitted" }, 409);
+    }
 
-    const [intake] = await db
-      .insert(intakeSubmissions)
-      .values({
-        caseId,
-        answers: body.answers,
-        consentVersion: body.consentVersion,
-        submittedAt: new Date(),
-      })
-      .returning();
+    const intake = await submitIntakeRecord(
+      db,
+      caseId,
+      body.answers,
+      body.consentVersion,
+      {
+        parentEmail: body.parentEmail,
+        childDisplayName: body.childDisplayName,
+      },
+    );
 
     const [updated] = await db
       .update(cases)
