@@ -14,6 +14,13 @@ resource "google_project_iam_member" "cloudsql_client" {
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
+# Cloud Tasks OIDC on worker URL requires the runtime SA to actAs itself.
+resource "google_service_account_iam_member" "runtime_act_as_self" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.runtime.email}"
+}
+
 output "runtime_service_account_email" {
   value = google_service_account.runtime.email
 }

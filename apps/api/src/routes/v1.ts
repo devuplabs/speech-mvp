@@ -143,7 +143,11 @@ export function createV1Routes(db: Db, env: Env) {
       .set({ status: "prep_drafting", updatedAt: new Date() })
       .where(eq(cases.id, caseId));
 
-    void enqueueLlmPrep(env, { caseId });
+    try {
+      await enqueueLlmPrep(env, { caseId });
+    } catch (err) {
+      console.warn("enqueueLlmPrep failed (stub prep still runs):", err);
+    }
     await draftPrepBrief(db, caseId);
 
     const [afterPrep] = await db.select().from(cases).where(eq(cases.id, caseId));

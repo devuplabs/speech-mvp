@@ -94,3 +94,7 @@ serve({ fetch: app.fetch, port: env.PORT }, (info) => {
 process.on("SIGTERM", () => {
   void closeDb();
 });
+
+process.on("unhandledRejection", (reason) => {
+  console.error("unhandledRejection", reason);
+});

@@ -37,10 +37,14 @@ export async function enqueueLlmPrep(
     httpRequest.oidcToken = { serviceAccountEmail: env.RUNTIME_SERVICE_ACCOUNT };
   }
 
-  const [task] = await client.createTask({
-    parent,
-    task: { httpRequest },
-  });
-
-  return task.name ?? null;
+  try {
+    const [task] = await client.createTask({
+      parent,
+      task: { httpRequest },
+    });
+    return task.name ?? null;
+  } catch (err) {
+    console.warn("Cloud Tasks createTask failed:", err);
+    return null;
+  }
 }
