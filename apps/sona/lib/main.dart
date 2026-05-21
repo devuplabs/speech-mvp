@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sona/design_system/theme.dart';
-import 'package:sona/features/demo/demo_screen.dart';
+import 'package:sona/app/sona_app_shell.dart';
+import 'package:sona/design_system/sona_theme.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const SonaApp());
 }
 
@@ -13,8 +14,9 @@ class SonaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sona',
+      debugShowCheckedModeBanner: false,
       theme: sonaTheme(),
-      home: const DemoScreen(),
+      home: const SonaAppShell(),
     );
   }
 }
