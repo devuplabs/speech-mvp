@@ -64,15 +64,4 @@ steps:
       - --port=8080
       - --quiet
 
-  # Allow browser calls from the hosted web origin (API CORS).
-  - id: sync-api-cors
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        WEB_URL=$$(gcloud run services describe ${_WEB_SERVICE} \
-          --region=${_REGION} --project=${_PROJECT_ID} --format='value(status.url)')
-        gcloud run services update ${_API_SERVICE} \
-          --region=${_REGION} --project=${_PROJECT_ID} \
-          --update-env-vars="CORS_ORIGINS=$${WEB_URL}" --quiet
+  # API CORS_ORIGINS is managed by Terraform (cloud_run module → web.uri). Re-run terraform apply if the web URL changes.

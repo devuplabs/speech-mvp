@@ -131,6 +131,24 @@ variable "api_container_image" {
   default     = null
 }
 
+variable "cloud_run_enable_web" {
+  description = "Provision sona-web-{env} for hosted Flutter web."
+  type        = bool
+  default     = true
+}
+
+variable "web_bootstrap_image" {
+  description = "Placeholder Cloud Run image for web until sona-web is built (nginx serves empty site until Cloud Build deploy)."
+  type        = string
+  default     = "nginx:alpine"
+}
+
+variable "web_container_image" {
+  description = "Override Cloud Run image for Flutter web. Leave null to use web_bootstrap_image until Cloud Build deploys sona-web."
+  type        = string
+  default     = null
+}
+
 variable "cloud_run_deletion_protection" {
   description = "Cloud Run deletion protection. Keep false in dev; enable in prod."
   type        = bool

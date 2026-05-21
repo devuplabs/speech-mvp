@@ -191,7 +191,8 @@ Terraform today provisions **data plane + Artifact Registry** for the **Sona API
 
 | Artifact | Build | Deploy target |
 |----------|-------|----------------|
-| **Sona API** | `docker build` → Artifact Registry | Cloud Run (regional) |
+| **Sona API** | `docker build` → Artifact Registry | Cloud Run `sona-api-{env}` |
+| **Sona web** | `flutter build web` → Docker/nginx | Cloud Run `sona-web-{env}` |
 | **Inference** | vLLM + **Gemma 3 27B IT** weights (GCS CMEK) | GKE + L4 GPU, private subnet ([ADR-003](../docs/decisions/003-self-hosted-llm-air-gap.md)) |
 | **Flutter web** | `flutter build web` | GCS + CDN or Firebase Hosting |
 | **Flutter mobile** | `flutter build apk/ipa` | Stores (post-pilot) |

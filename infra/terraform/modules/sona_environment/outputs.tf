@@ -82,6 +82,11 @@ output "worker_service_uri" {
   value = module.cloud_run.worker_uri
 }
 
+output "web_service_uri" {
+  description = "Hosted Flutter web (SONA demo UI)."
+  value       = module.cloud_run.web_uri
+}
+
 output "inference_cluster_name" {
   value = module.inference.cluster_name
 }
