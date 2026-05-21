@@ -27,8 +27,8 @@ const createTenantBody = z.object({
 
 const createCaseBody = z.object({
   tenantId: z.string().uuid(),
-  parentEmail: z.string().email().optional(),
-  childDisplayName: z.string().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).nullish(),
+  childDisplayName: z.string().trim().max(128).nullish(),
 });
 
 const triageBody = z.object({

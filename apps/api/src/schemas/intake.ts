@@ -109,13 +109,13 @@ export type IntakeAnswers = z.infer<typeof intakeAnswersSchema>;
 
 export const saveIntakeDraftBody = z.object({
   answers: intakeAnswersSchema,
-  parentEmail: z.string().trim().email().max(320).optional(),
-  childDisplayName: z.string().trim().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).nullish(),
+  childDisplayName: z.string().trim().max(128).nullish(),
 });
 
 export const submitIntakeBody = z.object({
   answers: intakeAnswersSchema,
   consentVersion: z.string().max(64).optional(),
-  parentEmail: z.string().trim().email().max(320).optional(),
-  childDisplayName: z.string().trim().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).nullish(),
+  childDisplayName: z.string().trim().max(128).nullish(),
 });
