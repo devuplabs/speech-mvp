@@ -1,4 +1,5 @@
 import 'package:sona/models/intake_constants.dart';
+import 'package:sona/utils/intake_validation.dart';
 
 /// Parent intake answers — in-memory only; persisted via encrypted channel / API draft.
 class IntakeFormData {
@@ -209,8 +210,12 @@ class IntakeFormData {
     switch (step) {
       case 1:
         if (!req(email)) return 'Email is required';
+        if (!IntakeValidation.isEmail(email)) return 'Enter a valid email address';
         if (!req(childName)) return "Child's name is required";
         if (!req(dateOfBirth)) return 'Date of birth is required';
+        if (!IntakeValidation.isDdMmYyyy(dateOfBirth)) {
+          return 'Date of birth must be DD/MM/YYYY (use the calendar)';
+        }
         if (!req(ageAtReferral)) return 'Age at referral is required';
         if (!req(childAddress)) return 'Address is required';
         if (!req(motherName)) return "Mother's name is required";
@@ -282,6 +287,9 @@ class IntakeFormData {
         if (!req(photoConsent)) return 'Photo/film consent is required';
         if (!req(completedBy)) return 'Completed by is required';
         if (!req(completionDate)) return 'Date of completion is required';
+        if (!IntakeValidation.isDdMmYyyy(completionDate)) {
+          return 'Date of completion must be DD/MM/YYYY (use the calendar)';
+        }
         return null;
       default:
         return null;

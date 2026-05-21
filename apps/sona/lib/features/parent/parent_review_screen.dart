@@ -61,9 +61,14 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-        children: [
+      body: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
+        child: Scrollbar(
+          thumbVisibility: true,
+          interactive: true,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            children: [
           const SonaPageTitle('Review your answers', style: SonaTypography.sectionTitle),
           const SizedBox(height: 8),
           const Text(
@@ -78,7 +83,9 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           _summaryCard('Health & background', IntakeReviewSummary.healthRows(d), onEdit: () => widget.onEditStep(4)),
           const SizedBox(height: 12),
           _consentCard(state),
-        ],
+            ],
+          ),
+        ),
       ),
       footer: Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -160,7 +167,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             state.consentGuardian,
             (v) => setState(() {
               state.consentGuardian = v ?? false;
-              state.notifyFormChanged();
+              state.markDraftDirty();
             }),
           ),
           _check(
@@ -168,7 +175,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             state.consentPrivacy,
             (v) => setState(() {
               state.consentPrivacy = v ?? false;
-              state.notifyFormChanged();
+              state.markDraftDirty();
             }),
           ),
           _check(
@@ -176,7 +183,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             state.consentAccurate,
             (v) => setState(() {
               state.consentAccurate = v ?? false;
-              state.notifyFormChanged();
+              state.markDraftDirty();
             }),
           ),
         ],

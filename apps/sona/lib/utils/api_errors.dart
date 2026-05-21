@@ -1,8 +1,21 @@
+import 'dart:convert';
+
 import 'package:sona/services/api_client.dart';
 
 /// User-facing hint when Flutter web cannot reach the API.
 String friendlyApiError(Object error) {
   if (error is SonaApiException) {
+    if (error.statusCode == 400 && error.body.contains('validation_failed')) {
+      try {
+        final map = jsonDecode(error.body) as Map<String, dynamic>;
+        final field = map['issues']?['fieldErrors'];
+        if (field is Map && field.isNotEmpty) {
+          final first = field.entries.first;
+          return 'Please check your answers (${first.key}).';
+        }
+      } catch (_) {}
+      return 'Some answers are invalid. Check email addresses and required fields.';
+    }
     if (error.body.contains('database_not_configured')) {
       return 'API database not configured. Add DATABASE_URL to apps/api/.env, '
           'start Cloud SQL Auth Proxy, and restart the API (see docs/DEMO.md).';
