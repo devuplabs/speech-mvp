@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class IntakeDraftStorage {
   static const _keyPrefix = 'sona_intake_draft_';
   static const _lastCaseKey = 'sona_intake_last_case_id';
+  static const _lastTenantKey = 'sona_intake_last_tenant_id';
 
   Future<void> saveLastCaseId(String caseId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,6 +20,21 @@ class IntakeDraftStorage {
   Future<void> clearLastCaseId() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_lastCaseKey);
+  }
+
+  Future<void> saveLastTenantId(String tenantId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastTenantKey, tenantId);
+  }
+
+  Future<String?> loadLastTenantId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastTenantKey);
+  }
+
+  Future<void> clearLastTenantId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastTenantKey);
   }
 
   Future<void> saveLocal({

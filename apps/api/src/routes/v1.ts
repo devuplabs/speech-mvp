@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../config.js";
@@ -241,11 +241,22 @@ export function createV1Routes(db: Db, env: Env) {
     return c.html(result.html);
   });
 
-  /** Demo bootstrap: one tenant for smoke tests. */
+  /** Demo bootstrap: reuse one demo tenant per jurisdiction (stable tenantId across sessions). */
   app.post("/demo/bootstrap", async (c) => {
+    const displayName = "Demo practice";
+    const [existing] = await db
+      .select()
+      .from(tenants)
+      .where(
+        and(eq(tenants.displayName, displayName), eq(tenants.jurisdiction, env.JURISDICTION)),
+      )
+      .limit(1);
+    if (existing) {
+      return c.json({ tenantId: existing.id, jurisdiction: existing.jurisdiction }, 200);
+    }
     const [row] = await db
       .insert(tenants)
-      .values({ displayName: "Demo practice", jurisdiction: env.JURISDICTION })
+      .values({ displayName, jurisdiction: env.JURISDICTION })
       .returning();
     return c.json({ tenantId: row.id, jurisdiction: env.JURISDICTION }, 201);
   });

@@ -101,7 +101,23 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   Future<void> _ensureTenant() async {
-    _state.tenantId ??= await _api.bootstrapDemoTenant();
+    if (_state.tenantId != null) return;
+    final stored = await _draftStorage.loadLastTenantId();
+    if (stored != null) {
+      _state.tenantId = stored;
+      return;
+    }
+    final tenantId = await _api.bootstrapDemoTenant();
+    _state.tenantId = tenantId;
+    await _draftStorage.saveLastTenantId(tenantId);
+  }
+
+  void _syncTenantFromCaseDetail(Map<String, dynamic> detail) {
+    final caseMap = detail['case'] as Map<String, dynamic>?;
+    final tenantId = caseMap?['tenantId'] as String?;
+    if (tenantId == null || tenantId.isEmpty) return;
+    _state.tenantId = tenantId;
+    unawaited(_draftStorage.saveLastTenantId(tenantId));
   }
 
   Future<void> _clearStaleCase(String caseId) async {
@@ -122,6 +138,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         final detail = await _api.getCase(existingId);
         final caseMap = detail['case'] as Map<String, dynamic>?;
         if (caseMap != null) {
+          _syncTenantFromCaseDetail(detail);
           final status = caseMap['status'] as String? ?? '';
           if (status == 'intake_pending') return;
           await _clearStaleCase(existingId);
@@ -151,6 +168,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }
     _state.caseId = newId;
     await _draftStorage.saveLastCaseId(newId);
+    await _draftStorage.saveLastTenantId(_state.tenantId!);
   }
 
   Future<void> _saveDraft({bool quiet = false}) async {
@@ -227,6 +245,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }
     try {
       final detail = await _api.getCase(caseId);
+      _syncTenantFromCaseDetail(detail);
       final intake = detail['intake'] as Map<String, dynamic>?;
       if (intake != null) {
         final answers = intake['answers'] as Map<String, dynamic>?;
@@ -328,6 +347,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     final id = _state.caseId;
     if (id == null) return;
     final detail = await _api.getCase(id);
+    _syncTenantFromCaseDetail(detail);
     final caseMap = detail['case'] as Map<String, dynamic>?;
     final status = caseMap?['status'] as String? ?? '';
     setState(() {
@@ -393,16 +413,19 @@ class _SonaAppShellState extends State<SonaAppShell> {
       await _draftStorage.clearLastCaseId();
       setState(() => _hasResumableDraft = false);
       setState(() {
-        _state.prepStatus = 'Drafting';
+        _state.caseId = null;
+        _state.formStep = 1;
+        _state.consentGuardian = false;
+        _state.consentPrivacy = false;
+        _state.consentAccurate = false;
         _status = 'Intake submitted';
-        _route = SonaRoute.clinicianToday;
-        _clinicianNav = ClinicianRoute.today;
+        _route = SonaRoute.parentWelcome;
       });
-      await _refreshCase();
-      await _loadClinicianDashboard();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Intake submitted — see Today dashboard for your case.')),
+          const SnackBar(
+            content: Text('Intake submitted successfully. Your clinician will review it before your call.'),
+          ),
         );
       }
     }, label: 'Submit intake');

@@ -20,6 +20,9 @@ String friendlyApiError(Object error) {
       return 'API database not configured. Add DATABASE_URL to apps/api/.env, '
           'start Cloud SQL Auth Proxy, and restart the API (see docs/DEMO.md).';
     }
+    if (error.statusCode == 409 && error.body.contains('intake_already_submitted')) {
+      return 'This intake was already submitted. Use Get started to begin a new form.';
+    }
     if (error.isNotFound) {
       return 'This intake session is no longer on the server. Start again or use Resume if you saved on this device.';
     }
