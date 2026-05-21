@@ -129,11 +129,6 @@ resource "google_cloud_run_v2_service" "api" {
       client_version,
     ]
   }
-
-  depends_on = concat(
-    [google_cloud_run_v2_service.worker],
-    var.enable_web ? [google_cloud_run_v2_service.web[0]] : [],
-  )
 }
 
 resource "google_cloud_run_v2_service" "worker" {
