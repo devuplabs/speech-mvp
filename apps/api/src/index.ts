@@ -20,6 +20,7 @@ app.get("/health", (c) =>
     mode: env.SONA_MODE,
     jurisdiction: env.JURISDICTION,
     inference: llm.configured ? "configured" : "pending_phase_2",
+    parentSummaryDelivery: "portal",
     database: databaseUrl ? "configured" : "not_configured",
   }),
 );

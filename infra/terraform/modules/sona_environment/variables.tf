@@ -118,6 +118,12 @@ variable "gke_master_authorized_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "postmark_from_email" {
+  description = "Verified Postmark sender (e.g. noreply@yourdomain.com). Empty until domain is verified."
+  type        = string
+  default     = ""
+}
+
 variable "cloud_run_bootstrap_image" {
   description = "Placeholder Cloud Run image for first Terraform apply (before sona-api is built). Cloud Build replaces it; Terraform ignores image changes."
   type        = string

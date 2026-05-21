@@ -16,6 +16,17 @@ variable "db_password_secret_resource_id" {
   type        = string
 }
 
+variable "postmark_api_token_secret_resource_id" {
+  description = "Secret Manager resource ID for Postmark server API token."
+  type        = string
+}
+
+variable "postmark_from_email" {
+  description = "Verified Postmark From address."
+  type        = string
+  default     = ""
+}
+
 variable "artifact_registry_docker_url" { type = string }
 
 variable "api_image" {

@@ -15,14 +15,35 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<String> bootstrapDemoTenant() async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/demo/bootstrap'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, expected: 201);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return body['tenantId'] as String;
+  }
+
   Future<Map<String, dynamic>> createTenant(String displayName) async {
     final res = await _client.post(
       _base.replace(path: '/v1/tenants'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'displayName': displayName}),
     );
-    _ensureOk(res);
+    _ensureOk(res, expected: 201);
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> listCases(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/tenants/$tenantId/cases'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final list = body['cases'] as List<dynamic>? ?? [];
+    return list.cast<Map<String, dynamic>>();
   }
 
   Future<Map<String, dynamic>> createCase({
@@ -39,7 +60,7 @@ class SonaApiClient {
         'childDisplayName': childDisplayName,
       }),
     );
-    _ensureOk(res);
+    _ensureOk(res, expected: 201);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -53,22 +74,59 @@ class SonaApiClient {
     String caseId, {
     required Map<String, dynamic> answers,
     String? parentEmail,
+    String? childDisplayName,
   }) async {
     final res = await _client.post(
       _base.replace(path: '/v1/cases/$caseId/intake'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'answers': answers,
-        'consentVersion': 'mvp-v0.1',
-        'parentEmail': ?parentEmail,
+        'consentVersion': 'mvp-demo-v0.1',
+        'parentEmail': parentEmail,
+        'childDisplayName': childDisplayName,
       }),
+    );
+    _ensureOk(res, expected: 201);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> recordTriage(
+    String caseId, {
+    required String outcome,
+    String? reason,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/triage'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'outcome': outcome, 'reason': reason}),
     );
     _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  void _ensureOk(http.Response res) {
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+  Future<Map<String, dynamic>> publishParentSummary(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/parent-summary/publish'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<String> fetchParentSummaryHtml(String caseId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/cases/$caseId/parent-summary'),
+    );
+    if (res.statusCode != 200) {
+      throw SonaApiException(res.statusCode, res.body);
+    }
+    return res.body;
+  }
+
+  void _ensureOk(http.Response res, {int? expected}) {
+    final ok = res.statusCode >= 200 && res.statusCode < 300;
+    if (!ok || (expected != null && res.statusCode != expected)) {
       throw SonaApiException(res.statusCode, res.body);
     }
   }

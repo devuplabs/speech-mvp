@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/theme.dart';
-import 'package:sona/features/home/home_screen.dart';
+import 'package:sona/features/demo/demo_screen.dart';
 
 void main() {
   runApp(const SonaApp());
@@ -14,7 +14,7 @@ class SonaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Sona',
       theme: sonaTheme(),
-      home: const HomeScreen(),
+      home: const DemoScreen(),
     );
   }
 }

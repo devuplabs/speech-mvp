@@ -3,7 +3,19 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
-import { aiDrafts, cases, intakeSubmissions, tenants, triageRecords } from "../db/schema.js";
+import {
+  aiDrafts,
+  cases,
+  intakeSubmissions,
+  tenants,
+  triageRecords,
+} from "../db/schema.js";
+import {
+  getPublishedParentSummary,
+  publishParentSummary,
+} from "../services/parent-summary.js";
+import { draftPrepBrief } from "../services/prep-brief.js";
+import { draftSessionPlanStub } from "../services/session-plan.js";
 import { writeAudit } from "../services/audit.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
 
@@ -27,6 +39,10 @@ const submitIntakeBody = z.object({
 const triageBody = z.object({
   outcome: z.enum(["strategy_only", "short_block", "full_assessment", "refer_out"]),
   reason: z.string().max(2000).optional(),
+});
+
+const publishParentSummaryBody = z.object({
+  htmlBody: z.string().min(1).max(100_000).optional(),
 });
 
 export function createV1Routes(db: Db, env: Env) {
@@ -127,9 +143,12 @@ export function createV1Routes(db: Db, env: Env) {
       .set({ status: "prep_drafting", updatedAt: new Date() })
       .where(eq(cases.id, caseId));
 
-    await enqueueLlmPrep(env, { caseId });
+    void enqueueLlmPrep(env, { caseId });
+    await draftPrepBrief(db, caseId);
 
-    return c.json({ case: updated, intake }, 201);
+    const [afterPrep] = await db.select().from(cases).where(eq(cases.id, caseId));
+
+    return c.json({ case: afterPrep ?? updated, intake }, 201);
   });
 
   app.post("/cases/:caseId/triage", async (c) => {
@@ -158,7 +177,48 @@ export function createV1Routes(db: Db, env: Env) {
       metadata: { outcome: body.outcome },
     });
 
-    return c.json({ case: updated, triage });
+    await draftSessionPlanStub(db, caseId);
+    const [afterPlan] = await db.select().from(cases).where(eq(cases.id, caseId));
+
+    return c.json({ case: afterPlan ?? updated, triage });
+  });
+
+  app.post("/cases/:caseId/parent-summary/publish", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = publishParentSummaryBody.parse(
+      (await c.req.json().catch(() => ({}))) as unknown,
+    );
+
+    const result = await publishParentSummary(db, caseId, body.htmlBody);
+    if (!result.ok) {
+      const status = result.error === "not_found" ? 404 : 400;
+      return c.json({ error: result.error }, status);
+    }
+
+    return c.json({
+      case: result.case,
+      viewPath: result.viewPath,
+      message: "Published to portal (no email). Parent opens case ID in demo app.",
+    });
+  });
+
+  app.get("/cases/:caseId/parent-summary", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await getPublishedParentSummary(db, caseId);
+    if (!result.ok) {
+      if (result.error === "not_found") return c.json({ error: result.error }, 404);
+      return c.json({ error: result.error, status: result.status }, 404);
+    }
+    return c.html(result.html);
+  });
+
+  /** Demo bootstrap: one tenant for smoke tests. */
+  app.post("/demo/bootstrap", async (c) => {
+    const [row] = await db
+      .insert(tenants)
+      .values({ displayName: "Demo practice", jurisdiction: env.JURISDICTION })
+      .returning();
+    return c.json({ tenantId: row.id, jurisdiction: env.JURISDICTION }, 201);
   });
 
   return app;

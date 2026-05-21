@@ -25,6 +25,11 @@ const envSchema = z.object({
   LLM_CLOUD_TASKS_QUEUE: z.string().default("sona-llm-dev"),
   RUNTIME_SERVICE_ACCOUNT: z.string().optional(),
   WORKER_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  POSTMARK_API_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  POSTMARK_FROM_EMAIL: z.preprocess(
+    emptyToUndefined,
+    z.string().email().optional(),
+  ),
   RUN_MIGRATIONS_ON_START: z
     .enum(["true", "false"])
     .default("true")

@@ -149,6 +149,8 @@ module "cloud_run" {
   cloud_sql_database        = module.cloud_sql.database_name
   cloud_sql_app_user        = module.cloud_sql.db_user_name
   db_password_secret_resource_id = module.cloud_sql.db_password_secret_resource_id
+  postmark_api_token_secret_resource_id = google_secret_manager_secret.postmark_api_token.id
+  postmark_from_email                   = var.postmark_from_email
 
   artifact_registry_docker_url = module.artifact_registry.docker_repository_url
   api_image                 = local.api_image
@@ -162,6 +164,7 @@ module "cloud_run" {
     module.cloud_sql,
     module.app_identity,
     google_secret_manager_secret_iam_member.runtime_db_password,
+    google_secret_manager_secret_iam_member.runtime_postmark,
   ]
 }
 
