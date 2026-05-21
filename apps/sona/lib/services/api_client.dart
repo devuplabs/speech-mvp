@@ -155,6 +155,9 @@ class SonaApiException implements Exception {
   final int statusCode;
   final String body;
 
+  bool get isNotFound =>
+      statusCode == 404 && body.contains('not_found');
+
   @override
   String toString() => 'SonaApiException($statusCode): $body';
 }
