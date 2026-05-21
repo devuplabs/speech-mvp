@@ -21,38 +21,77 @@ export async function waitForFlutterApp(page: Page) {
   ).toBeVisible({ timeout: 90_000 });
 }
 
-/** Fill visible text fields in DOM order (Flutter web exposes native inputs). */
-export async function fillVisibleTextFields(page: Page, values: string[]) {
-  const fields = page.locator("input:not([readonly]), textarea");
-  await expect(fields.first()).toBeVisible({ timeout: 15_000 });
-  const count = await fields.count();
-  for (let i = 0; i < values.length && i < count; i++) {
-    await fields.nth(i).fill(values[i]);
-  }
+export async function expectStep(page: Page, step: number) {
+  await expect(page.getByText(`Step ${step} of 8`)).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
-export async function pickFirstDateField(page: Page) {
-  const dateInput = page.locator("input[readonly]").first();
-  await dateInput.click();
-  // Material date picker — pick enabled day then OK
-  const day = page.locator('[role="gridcell"]:not([aria-disabled="true"])').first();
-  await day.click({ timeout: 10_000 });
+/** Fill a Flutter web textbox by accessibility label. */
+export async function fillLabeledField(
+  page: Page,
+  name: string | RegExp,
+  value: string,
+) {
+  const field = page.getByRole("textbox", { name });
+  await field.click();
+  await field.fill(value);
+}
+
+/** Flutter Material date picker on web uses day buttons (not role=dialog). */
+export async function pickDateInOpenDialog(page: Page) {
   const ok = page.getByRole("button", { name: /^OK$/i });
-  if (await ok.isVisible().catch(() => false)) {
-    await ok.click();
+  await expect(ok).toBeVisible({ timeout: 15_000 });
+
+  const today = page.getByRole("button", { name: /Today/i });
+  if (await today.isVisible().catch(() => false)) {
+    await today.click();
+  } else {
+    const day = page
+      .getByRole("button", {
+        name: /,( Monday| Tuesday| Wednesday| Thursday| Friday| Saturday| Sunday),/,
+      })
+      .first();
+    await day.click({ timeout: 10_000 });
   }
+
+  await ok.click();
+}
+
+/** Open date picker for a labeled field (textbox tap or calendar button). */
+export async function pickDateByLabel(page: Page, label: RegExp) {
+  const field = page.getByRole("textbox", { name: label });
+  await field.click();
+  if (
+    !(await page
+      .getByRole("button", { name: /^OK$/i })
+      .isVisible()
+      .catch(() => false))
+  ) {
+    await page.getByRole("button", { name: "Open calendar" }).click();
+  }
+  await pickDateInOpenDialog(page);
 }
 
 export async function tapChip(page: Page, label: string) {
-  await page.getByText(label, { exact: true }).click();
+  await page.getByRole("button", { name: label, exact: true }).click();
 }
 
-export async function tapYesNo(page: Page, answer: "Yes" | "No") {
-  await page.getByRole("button", { name: answer }).click();
+export async function tapYesNo(page: Page, answer: "Yes" | "No", index = 0) {
+  await page
+    .getByRole("button", { name: answer, exact: true })
+    .nth(index)
+    .click();
 }
 
-export async function continueStep(page: Page) {
-  await page.getByRole("button", { name: /Continue/i }).click();
+export async function assertNoApiErrorOnScreen(page: Page) {
+  const apiError = page.getByText(/SonaApiException/i);
+  if (await apiError.isVisible().catch(() => false)) {
+    throw new Error(
+      `API error on screen: ${await apiError.innerText()}. ` +
+        "Hard refresh the web app or run pre-deploy-verify before merging.",
+    );
+  }
 }
 
 export async function openParentIntake(page: Page) {
@@ -63,142 +102,138 @@ export async function openParentIntake(page: Page) {
   });
 }
 
-export async function getStarted(page: Page) {
-  const bootstrap = page.waitForResponse(
-    (r) => r.url().includes("/v1/demo/bootstrap") && r.status() >= 200 && r.status() < 300,
-    { timeout: 60_000 },
+/**
+ * Click Get started and capture the tenantId + caseId from the network responses.
+ * Returns the API base URL so callers can submit directly via the same backend.
+ */
+export async function getStartedCaptureCase(page: Page): Promise<{
+  tenantId: string;
+  caseId: string;
+  apiBaseUrl: string;
+}> {
+  const bootstrapResp = page.waitForResponse(
+    (r) =>
+      r.url().includes("/v1/demo/bootstrap") &&
+      r.request().method() === "POST" &&
+      r.status() >= 200 &&
+      r.status() < 300,
+    { timeout: 90_000 },
   );
-  const createCase = page.waitForResponse(
+  const createCaseResp = page.waitForResponse(
     (r) =>
       r.url().includes("/v1/cases") &&
       r.request().method() === "POST" &&
       r.status() === 201,
+    { timeout: 90_000 },
+  );
+
+  await page.getByRole("button", { name: "Get started" }).click();
+
+  const boot = await bootstrapResp;
+  await assertNoApiErrorOnScreen(page);
+  const create = await createCaseResp;
+
+  const bootBody = (await boot.json()) as { tenantId: string };
+  const createBody = (await create.json()) as { id: string };
+
+  await expect(page.getByText("Your details & referral")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expectStep(page, 1);
+
+  // Derive API base URL from the actual request, so the test works against any env.
+  const apiUrl = new URL(create.url());
+  return {
+    tenantId: bootBody.tenantId,
+    caseId: createBody.id,
+    apiBaseUrl: `${apiUrl.protocol}//${apiUrl.host}`,
+  };
+}
+
+/**
+ * Click Get started and wait for the form (legacy: pure UI flow).
+ * Use {@link getStartedCaptureCase} for hybrid tests.
+ */
+export async function getStarted(page: Page) {
+  await getStartedCaptureCase(page);
+}
+
+export async function openClinicianDashboard(page: Page) {
+  await page.getByRole("button", { name: "Home" }).click();
+  await expect(
+    page.getByRole("button", { name: "Parent intake (mobile)" }),
+  ).toBeVisible({ timeout: 30_000 });
+  const listCases = page.waitForResponse(
+    (r) =>
+      r.url().includes("/v1/tenants/") &&
+      r.url().includes("/cases") &&
+      r.request().method() === "GET" &&
+      r.status() === 200,
     { timeout: 60_000 },
   );
-  await page.getByRole("button", { name: "Get started" }).click();
-  await bootstrap;
-  const apiError = page.getByText(/SonaApiException/i);
-  if (await apiError.isVisible().catch(() => false)) {
-    throw new Error(
-      `Flutter client rejected a successful API response: ${await apiError.innerText()}. ` +
-        "Deploy the web build that accepts bootstrap HTTP 200 (see apps/sona/lib/services/api_client.dart).",
-    );
-  }
-  await createCase;
-  await expect(page.getByText("Your details & referral")).toBeVisible({
+  await page
+    .getByRole("button", { name: "Clinician workspace (desktop)" })
+    .click();
+  await listCases;
+  await expect(page.getByText("Today's cases (from API)")).toBeVisible({
     timeout: 30_000,
   });
 }
 
-export async function fillStep1(page: Page) {
-  const textValues = [
-    "e2e.parent@example.com",
-    "E2E Child",
-    "5",
-    "1 Test Lane, London",
-    "E2E Mother",
-    "",
-    "07700900001",
-    "mother@example.com",
-    "E2E Father",
-    "",
-    "07700900002",
-    "father@example.com",
-    "Test GP",
-    "GP Street",
-    "02070000000",
-    "School",
-    "Website",
-  ];
-  await fillVisibleTextFields(page, textValues);
-  await pickFirstDateField(page);
+/**
+ * Find the child's case row on the dashboard.
+ * Flutter web exposes case rows as buttons with the child name inside the
+ * accessibility label, so we match by role+name (text node match misses them).
+ */
+export function childCaseLocator(page: Page, childName: string) {
+  return page
+    .getByRole("button", { name: new RegExp(escapeRegex(childName), "i") })
+    .first();
 }
 
-export async function fillStep2(page: Page) {
-  await fillVisibleTextFields(page, ["Speech delay E2E automated test concern."]);
-  await tapChip(page, "Speech sounds");
-  await tapChip(page, "Staying on task");
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export async function fillStep3(page: Page) {
-  await tapYesNo(page, "No");
-  await tapYesNo(page, "No");
-  await fillVisibleTextFields(page, ["English", "English", "English"]);
-  await tapYesNo(page, "No");
-}
-
-export async function fillStep4(page: Page) {
-  await fillVisibleTextFields(page, [
-    "Normal pregnancy",
-    "No",
-    "3.2kg",
-    "None",
-    "None",
-  ]);
-}
-
-export async function fillStep5(page: Page) {
-  await fillVisibleTextFields(page, [
-    "None",
-    "Good",
-    "None",
-    "None",
-    "No",
-    "Yes normal",
-    "None",
-    "None",
-    "Yes normal",
-  ]);
-}
-
-export async function fillStep6(page: Page) {
-  await tapYesNo(page, "Yes");
-  await fillVisibleTextFields(page, [
-    "12 months",
-    "18 months",
-    "Variable attention",
-    "Want juice",
-    "Follows directions",
-  ]);
-}
-
-export async function fillStep7(page: Page) {
-  await fillVisibleTextFields(page, [
-    "Friendly",
-    "Good",
-    "Plays well",
-    "Blocks",
-    "Some awareness",
-  ]);
-}
-
-export async function fillStep8(page: Page) {
-  await fillVisibleTextFields(page, [
-    "Test Nursery, London",
-    "Mon-Fri",
-    "None",
-    "",
-    "E2E Parent",
-  ]);
-  await pickFirstDateField(page);
-  await tapYesNo(page, "No");
-}
-
-export async function submitReview(page: Page) {
-  const checkboxes = page.getByRole("checkbox");
-  const n = await checkboxes.count();
-  for (let i = 0; i < n; i++) {
-    await checkboxes.nth(i).check();
+/** Click Refresh on the clinician dashboard until the case shows up. */
+export async function refreshDashboardUntilChildVisible(
+  page: Page,
+  childName: string,
+  attempts = 6,
+) {
+  for (let i = 0; i < attempts; i++) {
+    const refresh = page.waitForResponse(
+      (r) =>
+        r.url().includes("/v1/tenants/") &&
+        r.url().includes("/cases") &&
+        r.request().method() === "GET",
+      { timeout: 30_000 },
+    );
+    await page.getByRole("button", { name: "Refresh" }).click();
+    await refresh;
+    if (
+      await childCaseLocator(page, childName)
+        .isVisible()
+        .catch(() => false)
+    ) {
+      return;
+    }
+    await page.waitForTimeout(1_000);
   }
-  const submit = page.waitForResponse(
-    (r) =>
-      r.url().includes("/intake") &&
-      r.request().method() === "POST" &&
-      !r.url().includes("/draft") &&
-      r.status() >= 200 &&
-      r.status() < 300,
-    { timeout: 60_000 },
+  throw new Error(
+    `Child "${childName}" did not appear on clinician dashboard after ${attempts} refresh attempts`,
   );
-  await page.getByRole("button", { name: /^Submit$/i }).click();
-  await submit;
+}
+
+export async function expectChildOnDashboard(page: Page, childName: string) {
+  await expect(childCaseLocator(page, childName)).toBeVisible({
+    timeout: 60_000,
+  });
+  // Status label on the row is "Ready" / "Drafting" / "Triaged" — never the
+  // backend value alone, so accept any non-empty status indicator.
+  await expect(
+    page
+      .getByRole("button", { name: new RegExp(escapeRegex(childName), "i") })
+      .first(),
+  ).toContainText(/Ready|Drafting|Triaged|intake/i);
 }

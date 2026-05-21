@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:sona/config/env.dart';
+import 'package:sona/utils/api_response.dart';
+import 'package:sona/utils/json_encode_util.dart';
 
 class SonaApiClient {
   SonaApiClient({http.Client? client}) : _client = client ?? http.Client();
@@ -154,11 +156,11 @@ class SonaApiClient {
     int? expected,
     Set<int>? allowedStatuses,
   }) {
-    final ok = res.statusCode >= 200 && res.statusCode < 300;
-    final statusOk = allowedStatuses != null
-        ? allowedStatuses.contains(res.statusCode)
-        : expected == null || res.statusCode == expected;
-    if (!ok || !statusOk) {
+    if (!isAcceptableHttpStatus(
+      res.statusCode,
+      expected: expected,
+      allowedStatuses: allowedStatuses,
+    )) {
       throw SonaApiException(res.statusCode, res.body);
     }
   }
