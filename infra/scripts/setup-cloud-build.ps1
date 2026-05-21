@@ -194,7 +194,6 @@ $webSubs = @{
   _REPOSITORY     = "sona-sona"
   _IMAGE          = "sona-web"
   _WEB_SERVICE    = "sona-web-dev"
-  _API_SERVICE    = "sona-api-dev"
   _API_URL        = "https://sona-api-dev-3rhenudy6a-nw.a.run.app"
 }
 
