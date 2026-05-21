@@ -4,7 +4,9 @@ const shortText = z.string().trim().max(500);
 const longText = z.string().trim().max(8000);
 const optionalShort = z.union([shortText, z.literal("")]).optional();
 const optionalLong = z.union([longText, z.literal("")]).optional();
-const optionalEmail = z.union([z.string().email().max(320), z.literal("")]).optional();
+const optionalEmail = z
+  .union([z.string().trim().email().max(320), z.literal("")])
+  .optional();
 
 const yesNo = z.union([z.enum(["yes", "no"]), z.literal("")]).optional();
 
@@ -48,7 +50,7 @@ export const intakeAnswersSchema = z
     fatherName: optionalShort,
     fatherAddress: optionalShort,
     fatherMobile: shortText.optional(),
-    fatherEmail: z.string().email().max(320).optional().or(z.literal("")),
+    fatherEmail: optionalEmail,
     gpPractice: shortText.optional(),
     gpAddress: longText.optional(),
     gpPhone: shortText.optional(),
@@ -107,13 +109,13 @@ export type IntakeAnswers = z.infer<typeof intakeAnswersSchema>;
 
 export const saveIntakeDraftBody = z.object({
   answers: intakeAnswersSchema,
-  parentEmail: z.string().email().max(320).optional(),
-  childDisplayName: z.string().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).optional(),
+  childDisplayName: z.string().trim().max(128).optional(),
 });
 
 export const submitIntakeBody = z.object({
   answers: intakeAnswersSchema,
   consentVersion: z.string().max(64).optional(),
-  parentEmail: z.string().email().max(320).optional(),
-  childDisplayName: z.string().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).optional(),
+  childDisplayName: z.string().trim().max(128).optional(),
 });

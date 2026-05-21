@@ -19,6 +19,7 @@ import 'package:sona/services/intake_draft_storage.dart';
 import 'package:sona/services/intake_local_autosave.dart';
 import 'package:sona/state/sona_app_state.dart';
 import 'package:sona/utils/api_errors.dart';
+import 'package:sona/utils/intake_validation.dart';
 import 'package:sona/utils/case_status.dart';
 
 enum SonaRoute {
@@ -57,7 +58,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
   void initState() {
     super.initState();
     _localAutosave.attach(_state, onPersisted: () {
-      if (mounted) setState(() => _hasResumableDraft = true);
+      _hasResumableDraft = true;
     });
     _checkResumableDraft();
   }
@@ -121,6 +122,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
     if (caseId == null) return;
     _localAutosave.cancelPending();
     final answers = _state.buildAnswersPayload();
+    final email = _state.intake.email.trim();
+    final parentEmail = IntakeValidation.isEmail(email) ? email : null;
     await _draftStorage.saveLocal(caseId: caseId, answers: answers, formStep: _state.formStep);
     await _draftStorage.saveLastCaseId(caseId);
     setState(() => _state.lastLocalSavedAt = DateTime.now());
@@ -128,7 +131,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       await _api.saveIntakeDraft(
         caseId,
         answers: answers,
-        parentEmail: _state.parentEmail,
+        parentEmail: parentEmail,
         childDisplayName: _state.childName,
       );
       setState(() {
@@ -326,10 +329,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
     await _run(() async {
       await _ensureParentCase();
       final caseId = _state.caseId!;
+      final email = _state.intake.email.trim();
       await _api.submitIntake(
         caseId,
         answers: _state.buildAnswersPayload(),
-        parentEmail: _state.parentEmail,
+        parentEmail: IntakeValidation.isEmail(email) ? email : null,
         childDisplayName: _state.childName,
       );
       await _draftStorage.clearLocal(caseId);

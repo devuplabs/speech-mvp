@@ -24,10 +24,10 @@ class SonaAppState extends ChangeNotifier {
   String get childName => intake.childName.trim().isNotEmpty ? intake.childName.trim() : 'Child';
   String get parentEmail => intake.email.trim().isNotEmpty ? intake.email.trim() : 'parent@example.com';
 
-  void notifyFormChanged() {
+  /// Marks draft dirty and schedules local autosave — does not rebuild the widget tree.
+  void markDraftDirty() {
     draftDirty = true;
     onFormEdited?.call();
-    notifyListeners();
   }
 
   void applyDraftAnswers(Map<String, dynamic> answers, {int? step}) {

@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ZodError } from "zod";
 import { buildDatabaseUrl, loadEnv } from "./config.js";
 import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
@@ -16,6 +17,20 @@ const llm = new SelfHostedLlmClient(env);
 const databaseUrl = buildDatabaseUrl(env);
 
 const app = new Hono();
+
+app.onError((err, c) => {
+  if (err instanceof ZodError) {
+    return c.json(
+      {
+        error: "validation_failed",
+        issues: err.flatten(),
+      },
+      400,
+    );
+  }
+  console.error(err);
+  return c.json({ error: "internal_error" }, 500);
+});
 
 app.use(
   "*",

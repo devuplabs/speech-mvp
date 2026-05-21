@@ -4,11 +4,11 @@ import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/sona_page_title.dart';
-import 'package:sona/design_system/widgets/sona_select_chip.dart';
+import 'package:sona/design_system/widgets/sona_date_field.dart';
 import 'package:sona/design_system/widgets/sona_step_progress.dart';
+import 'package:sona/features/parent/intake/difficulty_checklist.dart';
 import 'package:sona/design_system/widgets/sona_text_field.dart';
 import 'package:sona/design_system/widgets/sona_yes_no_field.dart';
-import 'package:sona/models/intake_constants.dart';
 import 'package:sona/models/intake_form_data.dart';
 import 'package:sona/state/sona_app_state.dart';
 
@@ -41,20 +41,17 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
     final meta = _stepMeta(step);
     return ParentMobileScaffold(
       header: _header(step),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-        children: [
-          _badge(meta.badge),
-          const SizedBox(height: 12),
-          SonaPageTitle(meta.title, style: SonaTypography.screenTitle),
-          if (meta.subtitle != null) ...[
-            const SizedBox(height: 8),
-            Text(meta.subtitle!, style: SonaTypography.body),
-          ],
-          const SizedBox(height: 16),
-          ..._fieldsForStep(step),
+      body: _scrollBody([
+        _badge(meta.badge),
+        const SizedBox(height: 12),
+        SonaPageTitle(meta.title, style: SonaTypography.screenTitle),
+        if (meta.subtitle != null) ...[
+          const SizedBox(height: 8),
+          Text(meta.subtitle!, style: SonaTypography.body),
         ],
-      ),
+        const SizedBox(height: 16),
+        ..._fieldsForStep(step),
+      ]),
       footer: Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
         child: Row(
@@ -159,11 +156,33 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
     );
   }
 
+  Widget _scrollBody(List<Widget> children) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
+      child: Scrollbar(
+        thumbVisibility: true,
+        interactive: true,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  /// Text edits — controllers hold display state; avoid rebuilding the whole step.
+  void _touch(VoidCallback fn) {
+    fn();
+    widget.state.markDraftDirty();
+  }
+
+  /// Yes/no, dates, or other UI that must repaint the step.
+  void _repaint(VoidCallback fn) {
+    setState(fn);
+    widget.state.markDraftDirty();
+  }
+
   List<Widget> _fieldsForStep(int step) {
-    void set(VoidCallback fn) {
-      fn();
-      widget.state.notifyFormChanged();
-    }
 
     switch (step) {
       case 1:
@@ -171,120 +190,137 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
           SonaTextField(
             label: 'Email',
             value: _d.email,
-            onChanged: (v) => set(() => _d.email = v),
+            onChanged: (v) => _touch(() => _d.email = v),
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
             required: true,
           ),
           _consentBlurb(),
-          SonaTextField(label: "Child's name", value: _d.childName, onChanged: (v) => set(() => _d.childName = v), required: true),
-          SonaTextField(label: 'Date of birth', value: _d.dateOfBirth, hint: 'DD / MM / YYYY', onChanged: (v) => set(() => _d.dateOfBirth = v), required: true),
-          SonaTextField(label: 'Age at referral', value: _d.ageAtReferral, onChanged: (v) => set(() => _d.ageAtReferral = v), required: true),
-          SonaTextField(label: "Child's address", value: _d.childAddress, onChanged: (v) => set(() => _d.childAddress = v), required: true),
-          SonaTextField(label: "Mother's name", value: _d.motherName, onChanged: (v) => set(() => _d.motherName = v), required: true),
-          SonaTextField(label: "Mother's address if different", value: _d.motherAddress, onChanged: (v) => set(() => _d.motherAddress = v)),
-          SonaTextField(label: "Mother's mobile", value: _d.motherMobile, onChanged: (v) => set(() => _d.motherMobile = v), keyboardType: TextInputType.phone, required: true),
-          SonaTextField(label: "Mother's email", value: _d.motherEmail, onChanged: (v) => set(() => _d.motherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
-          SonaTextField(label: "Father's name", value: _d.fatherName, onChanged: (v) => set(() => _d.fatherName = v)),
-          SonaTextField(label: "Father's address if different", value: _d.fatherAddress, onChanged: (v) => set(() => _d.fatherAddress = v)),
-          SonaTextField(label: "Father's mobile", value: _d.fatherMobile, onChanged: (v) => set(() => _d.fatherMobile = v), keyboardType: TextInputType.phone, required: true),
-          SonaTextField(label: "Father's email", value: _d.fatherEmail, onChanged: (v) => set(() => _d.fatherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
-          SonaTextField(label: 'GP practice', value: _d.gpPractice, onChanged: (v) => set(() => _d.gpPractice = v), required: true),
-          SonaTextField(label: 'GP address', value: _d.gpAddress, onChanged: (v) => set(() => _d.gpAddress = v), maxLines: 2, required: true),
-          SonaTextField(label: 'GP phone', value: _d.gpPhone, onChanged: (v) => set(() => _d.gpPhone = v), keyboardType: TextInputType.phone, required: true),
-          SonaTextField(label: 'Who referred your child?', value: _d.referredBy, onChanged: (v) => set(() => _d.referredBy = v), required: true),
-          SonaTextField(label: 'How did you hear about Speech Sanctuary?', value: _d.heardAbout, onChanged: (v) => set(() => _d.heardAbout = v), required: true),
+          SonaTextField(label: "Child's name", value: _d.childName, onChanged: (v) => _touch(() => _d.childName = v), required: true),
+          SonaDateField(
+            label: 'Date of birth',
+            value: _d.dateOfBirth,
+            onChanged: (v) => _repaint(() => _d.dateOfBirth = v),
+            required: true,
+            lastDate: DateTime.now(),
+          ),
+          SonaTextField(label: 'Age at referral', value: _d.ageAtReferral, onChanged: (v) => _touch(() => _d.ageAtReferral = v), required: true),
+          SonaTextField(label: "Child's address", value: _d.childAddress, onChanged: (v) => _touch(() => _d.childAddress = v), required: true),
+          SonaTextField(label: "Mother's name", value: _d.motherName, onChanged: (v) => _touch(() => _d.motherName = v), required: true),
+          SonaTextField(label: "Mother's address if different", value: _d.motherAddress, onChanged: (v) => _touch(() => _d.motherAddress = v)),
+          SonaTextField(label: "Mother's mobile", value: _d.motherMobile, onChanged: (v) => _touch(() => _d.motherMobile = v), keyboardType: TextInputType.phone, required: true),
+          SonaTextField(label: "Mother's email", value: _d.motherEmail, onChanged: (v) => _touch(() => _d.motherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
+          SonaTextField(label: "Father's name", value: _d.fatherName, onChanged: (v) => _touch(() => _d.fatherName = v)),
+          SonaTextField(label: "Father's address if different", value: _d.fatherAddress, onChanged: (v) => _touch(() => _d.fatherAddress = v)),
+          SonaTextField(label: "Father's mobile", value: _d.fatherMobile, onChanged: (v) => _touch(() => _d.fatherMobile = v), keyboardType: TextInputType.phone, required: true),
+          SonaTextField(label: "Father's email", value: _d.fatherEmail, onChanged: (v) => _touch(() => _d.fatherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
+          SonaTextField(label: 'GP practice', value: _d.gpPractice, onChanged: (v) => _touch(() => _d.gpPractice = v), required: true),
+          SonaTextField(label: 'GP address', value: _d.gpAddress, onChanged: (v) => _touch(() => _d.gpAddress = v), maxLines: 2, required: true),
+          SonaTextField(label: 'GP phone', value: _d.gpPhone, onChanged: (v) => _touch(() => _d.gpPhone = v), keyboardType: TextInputType.phone, required: true),
+          SonaTextField(label: 'Who referred your child?', value: _d.referredBy, onChanged: (v) => _touch(() => _d.referredBy = v), required: true),
+          SonaTextField(label: 'How did you hear about Speech Sanctuary?', value: _d.heardAbout, onChanged: (v) => _touch(() => _d.heardAbout = v), required: true),
         ];
       case 2:
         return [
-          SonaTextField(label: 'Main concern', value: _d.mainConcern, onChanged: (v) => set(() => _d.mainConcern = v), maxLines: 4, required: true),
+          SonaTextField(label: 'Main concern', value: _d.mainConcern, onChanged: (v) => _touch(() => _d.mainConcern = v), maxLines: 4, required: true),
           const SizedBox(height: 8),
           const Text(
             'Is your child having difficulty with (tick all that apply)',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          for (final section in IntakeConstants.difficultySections) ...[
-            _sectionLabel(section.title),
-            ...section.options.map((opt) => _difficultyChip(opt, set)),
-          ],
+          DifficultyChecklist(
+            selected: _d.difficulties,
+            onChanged: (next) {
+              _d.difficulties
+                ..clear()
+                ..addAll(next);
+              widget.state.markDraftDirty();
+            },
+          ),
         ];
       case 3:
         return [
           SonaYesNoField(
             label: 'Assessed by other professionals?',
             value: _d.assessedByOthers,
-            onChanged: (v) => set(() => _d.assessedByOthers = v),
+            onChanged: (v) => _repaint(() => _d.assessedByOthers = v),
             detailLabel: 'If yes — details',
             detailValue: _d.assessedByOthersDetails,
-            onDetailChanged: (v) => set(() => _d.assessedByOthersDetails = v),
+            onDetailChanged: (v) => _touch(() => _d.assessedByOthersDetails = v),
           ),
           SonaYesNoField(
             label: 'Receiving therapy now?',
             value: _d.receivingTherapy,
-            onChanged: (v) => set(() => _d.receivingTherapy = v),
+            onChanged: (v) => _repaint(() => _d.receivingTherapy = v),
             detailLabel: 'If yes — therapy details',
             detailValue: _d.therapyDetails,
-            onDetailChanged: (v) => set(() => _d.therapyDetails = v),
+            onDetailChanged: (v) => _touch(() => _d.therapyDetails = v),
           ),
-          SonaTextField(label: 'Languages child exposed to', value: _d.languagesExposed, onChanged: (v) => set(() => _d.languagesExposed = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Languages spoken by parents', value: _d.parentLanguages, onChanged: (v) => set(() => _d.parentLanguages = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Languages spoken by child', value: _d.childLanguages, onChanged: (v) => set(() => _d.childLanguages = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Languages child exposed to', value: _d.languagesExposed, onChanged: (v) => _touch(() => _d.languagesExposed = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Languages spoken by parents', value: _d.parentLanguages, onChanged: (v) => _touch(() => _d.parentLanguages = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Languages spoken by child', value: _d.childLanguages, onChanged: (v) => _touch(() => _d.childLanguages = v), maxLines: 2, required: true),
           SonaYesNoField(
             label: 'Family history of SLT/learning/attention difficulties?',
             value: _d.familyHistory,
-            onChanged: (v) => set(() => _d.familyHistory = v),
+            onChanged: (v) => _repaint(() => _d.familyHistory = v),
             detailLabel: 'If yes — explain',
             detailValue: _d.familyHistoryDetails,
-            onDetailChanged: (v) => set(() => _d.familyHistoryDetails = v),
+            onDetailChanged: (v) => _touch(() => _d.familyHistoryDetails = v),
           ),
         ];
       case 4:
         return [
-          SonaTextField(label: "Mother's health during pregnancy", value: _d.pregnancyHealth, onChanged: (v) => set(() => _d.pregnancyHealth = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Premature? If yes, how many weeks', value: _d.prematureDetails, onChanged: (v) => set(() => _d.prematureDetails = v), required: true),
-          SonaTextField(label: "Baby's weight at birth", value: _d.birthWeight, onChanged: (v) => set(() => _d.birthWeight = v), required: true),
-          SonaTextField(label: 'Complications during birth', value: _d.birthComplications, onChanged: (v) => set(() => _d.birthComplications = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Complications after birth', value: _d.afterBirthComplications, onChanged: (v) => set(() => _d.afterBirthComplications = v), maxLines: 3, required: true),
+          SonaTextField(label: "Mother's health during pregnancy", value: _d.pregnancyHealth, onChanged: (v) => _touch(() => _d.pregnancyHealth = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Premature? If yes, how many weeks', value: _d.prematureDetails, onChanged: (v) => _touch(() => _d.prematureDetails = v), required: true),
+          SonaTextField(label: "Baby's weight at birth", value: _d.birthWeight, onChanged: (v) => _touch(() => _d.birthWeight = v), required: true),
+          SonaTextField(label: 'Complications during birth', value: _d.birthComplications, onChanged: (v) => _touch(() => _d.birthComplications = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Complications after birth', value: _d.afterBirthComplications, onChanged: (v) => _touch(() => _d.afterBirthComplications = v), maxLines: 3, required: true),
         ];
       case 5:
         return [
-          SonaTextField(label: 'Early childhood illnesses', value: _d.earlyIllnesses, onChanged: (v) => set(() => _d.earlyIllnesses = v), maxLines: 2, required: true),
-          SonaTextField(label: 'General health', value: _d.generalHealth, onChanged: (v) => set(() => _d.generalHealth = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Known diagnosis / syndrome', value: _d.diagnosis, onChanged: (v) => set(() => _d.diagnosis = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Regular medications', value: _d.medications, onChanged: (v) => set(() => _d.medications = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Hospitalised? (details)', value: _d.hospitalised, onChanged: (v) => set(() => _d.hospitalised = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Hearing tested? (when & outcome)', value: _d.hearingTested, onChanged: (v) => set(() => _d.hearingTested = v), maxLines: 2, required: true),
-          SonaTextField(label: 'History of ear infections', value: _d.earInfections, onChanged: (v) => set(() => _d.earInfections = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Ear surgery / ENT involvement', value: _d.entInvolvement, onChanged: (v) => set(() => _d.entInvolvement = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Eyes tested? (when & outcome)', value: _d.visionTested, onChanged: (v) => set(() => _d.visionTested = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Early childhood illnesses', value: _d.earlyIllnesses, onChanged: (v) => _touch(() => _d.earlyIllnesses = v), maxLines: 2, required: true),
+          SonaTextField(label: 'General health', value: _d.generalHealth, onChanged: (v) => _touch(() => _d.generalHealth = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Known diagnosis / syndrome', value: _d.diagnosis, onChanged: (v) => _touch(() => _d.diagnosis = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Regular medications', value: _d.medications, onChanged: (v) => _touch(() => _d.medications = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Hospitalised? (details)', value: _d.hospitalised, onChanged: (v) => _touch(() => _d.hospitalised = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Hearing tested? (when & outcome)', value: _d.hearingTested, onChanged: (v) => _touch(() => _d.hearingTested = v), maxLines: 2, required: true),
+          SonaTextField(label: 'History of ear infections', value: _d.earInfections, onChanged: (v) => _touch(() => _d.earInfections = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Ear surgery / ENT involvement', value: _d.entInvolvement, onChanged: (v) => _touch(() => _d.entInvolvement = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Eyes tested? (when & outcome)', value: _d.visionTested, onChanged: (v) => _touch(() => _d.visionTested = v), maxLines: 2, required: true),
         ];
       case 6:
         return [
-          SonaYesNoField(label: 'Responds to own name?', value: _d.respondsToName, onChanged: (v) => set(() => _d.respondsToName = v)),
-          SonaTextField(label: 'Age of first words', value: _d.ageFirstWords, onChanged: (v) => set(() => _d.ageFirstWords = v), required: true),
-          SonaTextField(label: 'Age of two-word phrases', value: _d.ageTwoWordPhrases, onChanged: (v) => set(() => _d.ageTwoWordPhrases = v), required: true),
-          SonaTextField(label: 'Attention & listening skills', value: _d.attentionListening, onChanged: (v) => set(() => _d.attentionListening = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Sentence examples', value: _d.sentenceExamples, onChanged: (v) => set(() => _d.sentenceExamples = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Shows understanding by', value: _d.showsUnderstanding, onChanged: (v) => set(() => _d.showsUnderstanding = v), maxLines: 3, required: true),
+          SonaYesNoField(label: 'Responds to own name?', value: _d.respondsToName, onChanged: (v) => _repaint(() => _d.respondsToName = v)),
+          SonaTextField(label: 'Age of first words', value: _d.ageFirstWords, onChanged: (v) => _touch(() => _d.ageFirstWords = v), required: true),
+          SonaTextField(label: 'Age of two-word phrases', value: _d.ageTwoWordPhrases, onChanged: (v) => _touch(() => _d.ageTwoWordPhrases = v), required: true),
+          SonaTextField(label: 'Attention & listening skills', value: _d.attentionListening, onChanged: (v) => _touch(() => _d.attentionListening = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Sentence examples', value: _d.sentenceExamples, onChanged: (v) => _touch(() => _d.sentenceExamples = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Shows understanding by', value: _d.showsUnderstanding, onChanged: (v) => _touch(() => _d.showsUnderstanding = v), maxLines: 3, required: true),
         ];
       case 7:
         return [
-          SonaTextField(label: 'Describe your child (temperament)', value: _d.temperament, onChanged: (v) => set(() => _d.temperament = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Social skills', value: _d.socialSkills, onChanged: (v) => set(() => _d.socialSkills = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Peer interaction', value: _d.peerInteraction, onChanged: (v) => set(() => _d.peerInteraction = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Favourite play / motivators', value: _d.favouritePlay, onChanged: (v) => set(() => _d.favouritePlay = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Communication self-awareness', value: _d.communicationAwareness, onChanged: (v) => set(() => _d.communicationAwareness = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Describe your child (temperament)', value: _d.temperament, onChanged: (v) => _touch(() => _d.temperament = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Social skills', value: _d.socialSkills, onChanged: (v) => _touch(() => _d.socialSkills = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Peer interaction', value: _d.peerInteraction, onChanged: (v) => _touch(() => _d.peerInteraction = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Favourite play / motivators', value: _d.favouritePlay, onChanged: (v) => _touch(() => _d.favouritePlay = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Communication self-awareness', value: _d.communicationAwareness, onChanged: (v) => _touch(() => _d.communicationAwareness = v), maxLines: 3, required: true),
         ];
       case 8:
         return [
-          SonaTextField(label: 'School / nursery (name & address)', value: _d.schoolNameAddress, onChanged: (v) => set(() => _d.schoolNameAddress = v), maxLines: 3, required: true),
-          SonaTextField(label: 'Nursery days/times', value: _d.nurseryDays, onChanged: (v) => set(() => _d.nurseryDays = v)),
-          SonaTextField(label: 'SEN plan or EHCP', value: _d.senPlan, onChanged: (v) => set(() => _d.senPlan = v), maxLines: 2, required: true),
-          SonaTextField(label: 'Anything else about your child', value: _d.anythingElse, onChanged: (v) => set(() => _d.anythingElse = v), maxLines: 3),
-          SonaYesNoField(label: 'May child be photographed/filmed?', value: _d.photoConsent, onChanged: (v) => set(() => _d.photoConsent = v)),
-          SonaTextField(label: 'Form completed by', value: _d.completedBy, onChanged: (v) => set(() => _d.completedBy = v), required: true),
-          SonaTextField(label: 'Date of completion', value: _d.completionDate, hint: 'DD / MM / YYYY', onChanged: (v) => set(() => _d.completionDate = v), required: true),
+          SonaTextField(label: 'School / nursery (name & address)', value: _d.schoolNameAddress, onChanged: (v) => _touch(() => _d.schoolNameAddress = v), maxLines: 3, required: true),
+          SonaTextField(label: 'Nursery days/times', value: _d.nurseryDays, onChanged: (v) => _touch(() => _d.nurseryDays = v)),
+          SonaTextField(label: 'SEN plan or EHCP', value: _d.senPlan, onChanged: (v) => _touch(() => _d.senPlan = v), maxLines: 2, required: true),
+          SonaTextField(label: 'Anything else about your child', value: _d.anythingElse, onChanged: (v) => _touch(() => _d.anythingElse = v), maxLines: 3),
+          SonaYesNoField(label: 'May child be photographed/filmed?', value: _d.photoConsent, onChanged: (v) => _repaint(() => _d.photoConsent = v)),
+          SonaTextField(label: 'Form completed by', value: _d.completedBy, onChanged: (v) => _touch(() => _d.completedBy = v), required: true),
+          SonaDateField(
+            label: 'Date of completion',
+            value: _d.completionDate,
+            onChanged: (v) => _repaint(() => _d.completionDate = v),
+            required: true,
+            lastDate: DateTime.now(),
+          ),
         ];
       default:
         return [];
@@ -304,39 +340,6 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
         'The information you provide will not be released outside this agency without your consent. '
         'By completing this form, you grant permission to assess your child\'s speech and language needs.',
         style: TextStyle(fontSize: 12, height: 1.45, color: SonaColors.textSecondary),
-      ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: SonaColors.primaryDark,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _difficultyChip(String label, void Function(VoidCallback) set) {
-    final selected = _d.difficulties.contains(label);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: SonaSelectChip(
-        label: label,
-        selected: selected,
-        onChanged: (v) => set(() {
-          if (v) {
-            _d.difficulties.add(label);
-          } else {
-            _d.difficulties.remove(label);
-          }
-        }),
       ),
     );
   }
