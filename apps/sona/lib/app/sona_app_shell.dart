@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -270,6 +271,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       } else {
         _state.caseId = null;
         _state.formStep = 1;
+        _state.formSubstep = 0;
         _state.returnToReviewAfterEdit = false;
       }
       await _ensureValidParentCase();
@@ -303,11 +305,47 @@ class _SonaAppShellState extends State<SonaAppShell> {
     );
   }
 
+  /// Surface a modal so the user cannot miss that Continue was rejected and
+  /// the form silently popped back to page 1. Visible diff between substeps
+  /// is subtle, so the dialog calls it out explicitly.
+  Future<void> _showStep1PopBackDialog(String message) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Page 1 needs another look'),
+        content: Text(
+          '$message\n\nWe took you back to page 1 of step 1 so you can fix it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Emits a structured log line for parent-intake transitions; PHI-free.
+  void _logIntakeTransition(String event, Map<String, Object?> fields) {
+    if (!kDebugMode) return;
+    final pairs = fields.entries.map((e) => '${e.key}=${e.value}').join(' ');
+    developer.log('intake.$event $pairs', name: 'sona.intake');
+  }
+
   Future<void> _parentContinue() async {
+    _logIntakeTransition('continue.start', {
+      'step': _state.formStep,
+      'substep': _state.formSubstep,
+    });
     // Step 1 is paginated 1a/1b — advance the substep inside step 1 first.
     if (_state.formStep == 1 && _state.formSubstep == 0) {
       final pageErr = _state.intake.validateStep1a();
       if (pageErr != null) {
+        _logIntakeTransition('continue.blocked.step1a', {
+          'fieldKey': pageErr.fieldKey,
+        });
         _showValidationError(pageErr);
         return;
       }
@@ -316,6 +354,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         _state.pendingValidationMessage = null;
         _state.formSubstep = 1;
       });
+      _logIntakeTransition('continue.advanced.step1a_to_1b', const {});
       await _run(() async {
         await _ensureValidParentCase();
         await _saveDraft(quiet: true);
@@ -325,12 +364,24 @@ class _SonaAppShellState extends State<SonaAppShell> {
     final err = _state.intake.validateStep(_state.formStep);
     if (err != null) {
       // Step 1 page 2 might fail on a page-1 field if the user backed/edited;
-      // pop to page 1 so the highlight is visible.
-      if (_state.formStep == 1 &&
-          IntakeFormData.step1aFieldKeys.contains(err.fieldKey)) {
+      // pop to page 1 so the highlight is visible AND show a modal so the
+      // pop-back is unmissable (the visual diff between 1a and 1b is subtle).
+      final poppedToPage1 = _state.formStep == 1 &&
+          _state.formSubstep == 1 &&
+          IntakeFormData.step1aFieldKeys.contains(err.fieldKey);
+      if (poppedToPage1) {
         setState(() => _state.formSubstep = 0);
       }
+      _logIntakeTransition('continue.blocked', {
+        'step': _state.formStep,
+        'substep': _state.formSubstep,
+        'fieldKey': err.fieldKey,
+        'poppedToPage1': poppedToPage1,
+      });
       _showValidationError(err);
+      if (poppedToPage1) {
+        await _showStep1PopBackDialog(err.message);
+      }
       return;
     }
     setState(() {
@@ -341,6 +392,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       await _ensureValidParentCase();
       await _saveDraft(quiet: true);
       if (_state.returnToReviewAfterEdit) {
+        _logIntakeTransition('continue.return_to_review', const {});
         setState(() {
           _state.returnToReviewAfterEdit = false;
           _route = SonaRoute.parentReview;
@@ -348,9 +400,14 @@ class _SonaAppShellState extends State<SonaAppShell> {
         return;
       }
       if (_state.formStep >= 8) {
+        _logIntakeTransition('continue.advanced.to_review', const {});
         setState(() => _route = SonaRoute.parentReview);
         return;
       }
+      _logIntakeTransition('continue.advanced.next_step', {
+        'fromStep': _state.formStep,
+        'toStep': _state.formStep + 1,
+      });
       setState(() {
         _state.formStep += 1;
         _state.formSubstep = 0;
@@ -359,6 +416,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   Future<void> _parentBack() async {
+    _logIntakeTransition('back.start', {
+      'step': _state.formStep,
+      'substep': _state.formSubstep,
+      'returnToReview': _state.returnToReviewAfterEdit,
+    });
     if (_state.returnToReviewAfterEdit) {
       await _run(() async {
         await _ensureValidParentCase();
@@ -377,9 +439,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
         _state.pendingValidationFieldKey = null;
         _state.pendingValidationMessage = null;
       });
+      _logIntakeTransition('back.step1b_to_1a', const {});
       return;
     }
     if (_state.formStep <= 1) {
+      _logIntakeTransition('back.exit_to_welcome', const {});
       _go(SonaRoute.parentWelcome);
       return;
     }
@@ -390,6 +454,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
         _state.formStep -= 1;
         // Returning to step 1 lands on page 2 so user can keep editing.
         _state.formSubstep = _state.formStep == 1 ? 1 : 0;
+      });
+      _logIntakeTransition('back.advanced.previous_step', {
+        'toStep': _state.formStep,
+        'substep': _state.formSubstep,
       });
     }, label: 'Save');
   }
