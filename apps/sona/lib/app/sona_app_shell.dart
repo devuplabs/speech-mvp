@@ -73,12 +73,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
   Future<void> _checkResumableDraft() async {
     final lastCase = await _draftStorage.loadLastCaseId();
-    if (lastCase != null) {
-      _state.caseId = lastCase;
-      final local = await _draftStorage.loadLocal(lastCase);
-      if (local != null && mounted) {
-        setState(() => _hasResumableDraft = true);
-      }
+    if (lastCase == null) return;
+    final local = await _draftStorage.loadLocal(lastCase);
+    if (local != null && mounted) {
+      setState(() => _hasResumableDraft = true);
     }
   }
 
@@ -106,15 +104,53 @@ class _SonaAppShellState extends State<SonaAppShell> {
     _state.tenantId ??= await _api.bootstrapDemoTenant();
   }
 
-  Future<void> _ensureParentCase() async {
+  Future<void> _clearStaleCase(String caseId) async {
+    await _draftStorage.clearLocal(caseId);
+    await _draftStorage.clearLastCaseId();
+    _state.caseId = null;
+  }
+
+  /// Ensures [caseId] exists on the API; recreates the case if the stored id is stale.
+  Future<void> _ensureValidParentCase() async {
     await _ensureTenant();
-    if (_state.caseId != null) return;
+    final email = _state.intake.email.trim();
+    final parentEmail = IntakeValidation.isEmail(email) ? email : null;
+    final existingId = _state.caseId;
+
+    if (existingId != null) {
+      try {
+        final detail = await _api.getCase(existingId);
+        final caseMap = detail['case'] as Map<String, dynamic>?;
+        if (caseMap != null) {
+          final status = caseMap['status'] as String? ?? '';
+          if (status == 'intake_pending') return;
+          await _clearStaleCase(existingId);
+        }
+      } on SonaApiException catch (e) {
+        if (!e.isNotFound) rethrow;
+        await _clearStaleCase(existingId);
+      }
+    }
+
     final caseRow = await _api.createCase(
       tenantId: _state.tenantId!,
-      parentEmail: _state.parentEmail,
+      parentEmail: parentEmail,
       childDisplayName: _state.childName,
     );
-    _state.caseId = caseRow['id'] as String;
+    final newId = caseRow['id'] as String;
+    if (existingId != null && existingId != newId) {
+      final local = await _draftStorage.loadLocal(existingId);
+      if (local != null) {
+        await _draftStorage.saveLocal(
+          caseId: newId,
+          answers: local.answers,
+          formStep: local.formStep,
+        );
+      }
+      await _draftStorage.clearLocal(existingId);
+    }
+    _state.caseId = newId;
+    await _draftStorage.saveLastCaseId(newId);
   }
 
   Future<void> _saveDraft({bool quiet = false}) async {
@@ -140,9 +176,30 @@ class _SonaAppShellState extends State<SonaAppShell> {
       });
       if (!quiet && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Progress saved. You can continue later.')),
+          const SnackBar(content: Text('Progress saved to the server.')),
         );
       }
+    } on SonaApiException catch (e) {
+      if (e.isNotFound) {
+        await _ensureValidParentCase();
+        await _api.saveIntakeDraft(
+          _state.caseId!,
+          answers: answers,
+          parentEmail: parentEmail,
+          childDisplayName: _state.childName,
+        );
+        setState(() {
+          _state.lastSavedAt = DateTime.now();
+          _state.draftDirty = false;
+        });
+        if (!quiet && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('New session started — progress saved to the server.')),
+          );
+        }
+        return;
+      }
+      rethrow;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -187,19 +244,15 @@ class _SonaAppShellState extends State<SonaAppShell> {
   Future<void> _startParentIntake({bool resume = false}) async {
     await _run(() async {
       await _ensureTenant();
-      if (!resume || _state.caseId == null) {
-        final caseRow = await _api.createCase(
-          tenantId: _state.tenantId!,
-          parentEmail: _state.parentEmail,
-          childDisplayName: _state.childName,
-        );
-        _state.caseId = caseRow['id'] as String;
-        await _draftStorage.saveLastCaseId(_state.caseId!);
-        if (!resume) {
-          _state.formStep = 1;
-          _state.returnToReviewAfterEdit = false;
-        }
+      if (resume) {
+        final lastCase = await _draftStorage.loadLastCaseId();
+        _state.caseId = lastCase;
+      } else {
+        _state.caseId = null;
+        _state.formStep = 1;
+        _state.returnToReviewAfterEdit = false;
       }
+      await _ensureValidParentCase();
       await _loadParentDraft();
       setState(() {
         _route = SonaRoute.parentIntake;
@@ -210,7 +263,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
   Future<void> _parentSaveExit() async {
     await _run(() async {
-      await _ensureParentCase();
+      await _ensureValidParentCase();
       await _saveDraft(quiet: true);
       setState(() => _route = SonaRoute.parentWelcome);
     }, label: 'Save');
@@ -223,7 +276,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return;
     }
     await _run(() async {
-      await _ensureParentCase();
+      await _ensureValidParentCase();
       await _saveDraft(quiet: true);
       if (_state.returnToReviewAfterEdit) {
         setState(() {
@@ -243,7 +296,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
   Future<void> _parentBack() async {
     if (_state.returnToReviewAfterEdit) {
       await _run(() async {
-        await _ensureParentCase();
+        await _ensureValidParentCase();
         await _saveDraft(quiet: true);
         setState(() {
           _state.returnToReviewAfterEdit = false;
@@ -257,7 +310,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return;
     }
     await _run(() async {
-      await _ensureParentCase();
+      await _ensureValidParentCase();
       await _saveDraft(quiet: true);
       setState(() => _state.formStep -= 1);
     }, label: 'Save');
@@ -327,7 +380,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       }
     }
     await _run(() async {
-      await _ensureParentCase();
+      await _ensureValidParentCase();
       final caseId = _state.caseId!;
       final email = _state.intake.email.trim();
       await _api.submitIntake(

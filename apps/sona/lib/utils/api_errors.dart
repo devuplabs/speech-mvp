@@ -20,9 +20,11 @@ String friendlyApiError(Object error) {
       return 'API database not configured. Add DATABASE_URL to apps/api/.env, '
           'start Cloud SQL Auth Proxy, and restart the API (see docs/DEMO.md).';
     }
+    if (error.isNotFound) {
+      return 'This intake session is no longer on the server. Start again or use Resume if you saved on this device.';
+    }
     if (error.statusCode == 404) {
-      return 'API returned 404. If using a local API, connect DATABASE_URL; '
-          'otherwise check SONA_API_BASE_URL points at the running API.';
+      return 'API returned 404. Check SONA_API_BASE_URL points at the running API.';
     }
   }
 
