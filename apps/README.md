@@ -53,6 +53,6 @@ npm init -y && npm install hono zod
 |----------|--------|
 | API + workers | Artifact Registry → Cloud Run |
 | Inference | GKE + vLLM, `google/gemma-3-27b-it` (weights in GCS CMEK) |
-| Flutter web | `flutter build web` → GCS+CDN or Firebase Hosting |
+| Flutter web | `flutter build web` → Cloud Run (`sona-web-dev`) — see `infra/ci/cloudbuild.web.yaml` |
 
 Prod deploy: Cloud Build SA only — no developer kubectl/console on prod ([ADR-004](../docs/decisions/004-unified-environments-access.md)).

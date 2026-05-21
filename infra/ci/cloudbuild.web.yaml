@@ -1,0 +1,78 @@
+# Build Sona Flutter web and deploy to Cloud Run (static nginx).
+# Do not run gcloud builds submit locally — use trigger sona-web-dev-deploy (merge to main).
+
+substitutions:
+  _REGION: europe-west2
+  _AR_HOST: europe-west2-docker.pkg.dev
+  _PROJECT_ID: project-a625d19b-de99-48e9-9a9
+  _REPOSITORY: sona-sona
+  _IMAGE: sona-web
+  _WEB_SERVICE: sona-web-dev
+  _API_SERVICE: sona-api-dev
+  _API_URL: https://sona-api-dev-3rhenudy6a-nw.a.run.app
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
+
+timeout: 1800s
+
+steps:
+  - id: flutter-build
+    name: ghcr.io/cirruslabs/flutter:stable
+    dir: apps/sona
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        flutter pub get
+        flutter build web --release \
+          --dart-define=SONA_API_BASE_URL=${_API_URL}
+
+  - id: docker-build
+    name: gcr.io/cloud-builders/docker
+    dir: apps/sona
+    args:
+      - build
+      - -f
+      - deploy/Dockerfile
+      - -t
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+      - -t
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:latest
+      - .
+
+  - id: docker-push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}
+
+  - id: deploy-web
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_WEB_SERVICE}
+      - --image=${_AR_HOST}/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --project=${_PROJECT_ID}
+      - --allow-unauthenticated
+      - --port=8080
+      - --quiet
+
+  # Allow browser calls from the hosted web origin (API CORS).
+  - id: sync-api-cors
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        WEB_URL=$$(gcloud run services describe ${_WEB_SERVICE} \
+          --region=${_REGION} --project=${_PROJECT_ID} --format='value(status.url)')
+        gcloud run services update ${_API_SERVICE} \
+          --region=${_REGION} --project=${_PROJECT_ID} \
+          --update-env-vars="CORS_ORIGINS=$${WEB_URL}" --quiet

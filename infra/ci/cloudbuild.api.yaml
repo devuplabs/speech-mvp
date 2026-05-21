@@ -1,6 +1,6 @@
 # Build Sona API image and deploy to Cloud Run (API + worker).
 # Requires: Artifact Registry repo, Cloud Run services (Terraform cloud_run module).
-# Trigger: push to main on apps/api/** or manual run with substitutions.
+# Deploy only via Cloud Build trigger sona-api-dev-deploy (merge to main). No local gcloud builds submit.
 
 substitutions:
   _REGION: europe-west2

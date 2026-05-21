@@ -54,10 +54,24 @@ Only commit or push to `main` if the user **explicitly** says to bypass PR workf
 - [ ] …
 ```
 
+## Deploys (GCP / Cloud Run)
+
+**Hard rule:** No direct deploys. Do not run `gcloud builds submit`, `gcloud run deploy`, or manual image push to change dev/prod.
+
+| Step | Action |
+|------|--------|
+| 1 | PR with code + any `infra/ci/` trigger/YAML changes |
+| 2 | User merges to `main` |
+| 3 | Cloud Build runs **sona-api-dev-deploy** (`apps/api/**`) and/or **sona-web-dev-deploy** (`apps/sona/**`) |
+| 4 | After first web trigger merge, run `infra/scripts/setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers` once if the trigger YAML is new |
+
+Terraform infra: **sona-terraform-dev-apply** (approval required on `infra/**`).
+
 ## Do not
 
 - `git commit` while on `main`
 - `git push origin main`
+- `gcloud builds submit` / `gcloud run deploy` (unless user explicitly overrides)
 - Force-push `main` / `master` without explicit user request and warning
 - Amend commits that were already pushed to remote (unless user requests and conditions in git safety rules are met)
 

@@ -22,11 +22,16 @@ We do **not** run Terraform apply from GitHub Actions in this layout (avoids sto
 
 ## Application deploys (Cloud Run)
 
+**Policy: no direct deploys.** Do not run `gcloud builds submit`, `gcloud run deploy`, or `flutter build` + manual push from a laptop to change dev/prod. All releases go through a **pull request → merge to `main` → Cloud Build trigger**.
+
 | Trigger | Config | When |
 |---------|--------|------|
 | **sona-api-dev-deploy** | [`cloudbuild.api.yaml`](cloudbuild.api.yaml) | Push to `main` when `apps/api/**` or `infra/ci/cloudbuild.api.yaml` changes |
+| **sona-web-dev-deploy** | [`cloudbuild.web.yaml`](cloudbuild.web.yaml) | Push to `main` when `apps/sona/**` or `infra/ci/cloudbuild.web.yaml` changes |
 
-Requires Terraform `cloud_run` applied first. Created by [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1).
+Requires Terraform `cloud_run` applied first. Triggers created/updated by [`../scripts/setup-cloud-build.ps1`](../scripts/setup-cloud-build.ps1) `-UpdateTriggers` (run once after merging trigger YAML to `main`).
+
+**Hosted dev URLs** (after CI deploy): see [`../../docs/DEMO.md`](../../docs/DEMO.md).
 
 When you add more **Cloud Run** services, you can either:
 

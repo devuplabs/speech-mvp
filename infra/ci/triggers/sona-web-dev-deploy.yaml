@@ -1,0 +1,26 @@
+# Cloud Build trigger template — Sona Flutter web (uk/dev).
+# Prefer: infra/scripts/setup-cloud-build.ps1 -SkipBootstrap -UpdateTriggers
+#
+# Prerequisites:
+# - sona-api-dev Cloud Run service (Terraform cloud_run)
+# - sona-cloudbuild SA: roles/run.admin, roles/artifactregistry.writer
+
+name: sona-web-dev-deploy
+description: Build and deploy Sona Flutter web (push main, apps/sona/** only)
+filename: infra/ci/cloudbuild.web.yaml
+# 2nd gen (use setup-cloud-build.ps1 to create in GCP):
+# repository: projects/PROJECT/locations/REGION/connections/sona-github/repositories/devuplabs-speech-mvp
+# push.branch: ^main$
+includedFiles:
+  - apps/sona/**
+  - infra/ci/cloudbuild.web.yaml
+substitutions:
+  _REGION: europe-west2
+  _PROJECT_ID: project-a625d19b-de99-48e9-9a9
+  _AR_HOST: europe-west2-docker.pkg.dev
+  _REPOSITORY: sona-sona
+  _IMAGE: sona-web
+  _WEB_SERVICE: sona-web-dev
+  _API_SERVICE: sona-api-dev
+  _API_URL: https://sona-api-dev-3rhenudy6a-nw.a.run.app
+serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com

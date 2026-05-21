@@ -14,4 +14,8 @@ When committing or pushing:
 
 Full workflow: `.cursor/skills/mvp-git-workflow/SKILL.md` (user-updated).
 
-Only bypass if the user explicitly asks to commit/push directly to `main`.
+## Deploys: PR → merge → Cloud Build only
+
+**Never** run `gcloud builds submit`, `gcloud run deploy`, or ad-hoc production deploys from the agent or laptop. Application releases reach GCP only when a PR merges to `main` and triggers **sona-api-dev-deploy** / **sona-web-dev-deploy** (see `infra/ci/README.md`).
+
+Only bypass if the user explicitly asks to commit/push directly to `main` or to deploy outside CI.
