@@ -1,0 +1,13 @@
+---
+description: PHI and security guardrails for Speech MVP (health data, portal-first)
+alwaysApply: true
+---
+
+# Security reminder (Speech MVP)
+
+- **PHI** — intake, summaries, and clinical content stay in authenticated app/GCS; not in email body or third-party messaging.
+- **Secrets** — never commit `.env`, tokens, or API keys; use Secret Manager / env in deploy.
+- **Boundaries** — validate input on API routes; parameterized DB access; no client-only security checks.
+- **Integrations** — new vendors (email, AI, storage) need explicit approval; prefer GCP-only where possible.
+
+Full checklist: `.cursor/skills/security-and-hardening/SKILL.md` and `.cursor/references/security-checklist.md`

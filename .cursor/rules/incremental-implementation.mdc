@@ -1,0 +1,17 @@
+---
+description: Build in thin vertical slices — implement, test, verify, then PR (see incremental-implementation skill)
+alwaysApply: true
+---
+
+# Incremental implementation
+
+For multi-file or multi-step work:
+
+1. **One slice** — smallest complete piece (often one screen, one endpoint, or one infra change).
+2. **Test / verify** — `flutter analyze`, API smoke, or `terraform plan` as appropriate.
+3. **Commit on a feature branch** — never on `main` (see `mvp-git-workflow`).
+4. **Repeat** — next slice in the same or follow-up PR.
+
+Avoid landing large unreviewed diffs. Prefer feature flags or stubs over long-lived branches.
+
+Full workflow: `.cursor/skills/incremental-implementation/SKILL.md` (run `scripts/sync-agent-skills.ps1` if missing).

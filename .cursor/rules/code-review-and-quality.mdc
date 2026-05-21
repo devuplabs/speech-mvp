@@ -1,0 +1,18 @@
+---
+description: Review changes on five axes before merge (see code-review-and-quality skill)
+alwaysApply: true
+---
+
+# Code review before merge
+
+Before merging any PR, check:
+
+1. **Correctness** — matches spec; edge cases and errors handled; tests if behavior changed.
+2. **Readability** — clear names; matches project conventions (Flutter, API, Terraform).
+3. **Architecture** — minimal scope; reuses existing modules; no drive-by refactors.
+4. **Security** — no secrets in git; PHI not in email/logs; validate at API boundary.
+5. **Performance** — no obvious regressions for web/API paths touched.
+
+Approve when the change **improves** code health; don’t block for style-only nits.
+
+Full workflow: `.cursor/skills/code-review-and-quality/SKILL.md`

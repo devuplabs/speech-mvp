@@ -1,0 +1,17 @@
+---
+description: Never commit or push to main — always use a branch and pull request (see mvp-git-workflow skill)
+alwaysApply: true
+---
+
+# Git: branch + PR only
+
+**Never commit to `main` or `git push origin main`.** Use a feature branch and open a pull request.
+
+When committing or pushing:
+1. If on `main`, run `git checkout -b feat/<topic>` first.
+2. Commit on the branch, push with `git push -u origin HEAD`.
+3. Create a PR with `gh pr create` and share the URL.
+
+Full workflow: `.cursor/skills/mvp-git-workflow/SKILL.md` (user-updated).
+
+Only bypass if the user explicitly asks to commit/push directly to `main`.
