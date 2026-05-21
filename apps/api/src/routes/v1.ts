@@ -27,8 +27,8 @@ const createTenantBody = z.object({
 
 const createCaseBody = z.object({
   tenantId: z.string().uuid(),
-  parentEmail: z.string().email().optional(),
-  childDisplayName: z.string().max(128).optional(),
+  parentEmail: z.string().trim().email().max(320).nullish(),
+  childDisplayName: z.string().trim().max(128).nullish(),
 });
 
 const triageBody = z.object({
@@ -69,8 +69,8 @@ export function createV1Routes(db: Db, env: Env) {
       .insert(cases)
       .values({
         tenantId: body.tenantId,
-        parentEmail: body.parentEmail,
-        childDisplayName: body.childDisplayName,
+        parentEmail: body.parentEmail ?? undefined,
+        childDisplayName: body.childDisplayName ?? undefined,
         status: "intake_pending",
       })
       .returning();
@@ -109,8 +109,8 @@ export function createV1Routes(db: Db, env: Env) {
     }
 
     const intake = await upsertIntakeDraft(db, caseId, body.answers, {
-      parentEmail: body.parentEmail,
-      childDisplayName: body.childDisplayName,
+      parentEmail: body.parentEmail ?? undefined,
+      childDisplayName: body.childDisplayName ?? undefined,
     });
 
     await writeAudit(db, {
@@ -140,8 +140,8 @@ export function createV1Routes(db: Db, env: Env) {
       body.answers,
       body.consentVersion,
       {
-        parentEmail: body.parentEmail,
-        childDisplayName: body.childDisplayName,
+        parentEmail: body.parentEmail ?? undefined,
+        childDisplayName: body.childDisplayName ?? undefined,
       },
     );
 

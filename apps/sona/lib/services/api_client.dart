@@ -9,6 +9,12 @@ class SonaApiClient {
   final http.Client _client;
   Uri get _base => Uri.parse(Env.apiBaseUrl);
 
+  /// Omit null keys — Zod `.optional()` rejects JSON `null` (expects absent field).
+  static String _encodeJson(Map<String, dynamic> body) =>
+      jsonEncode(Map<String, dynamic>.fromEntries(
+        body.entries.where((e) => e.value != null),
+      ));
+
   Future<Map<String, dynamic>> health() async {
     final res = await _client.get(_base.replace(path: '/health'));
     _ensureOk(res);
@@ -55,7 +61,7 @@ class SonaApiClient {
     final res = await _client.post(
       _base.replace(path: '/v1/cases'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: _encodeJson({
         'tenantId': tenantId,
         'parentEmail': parentEmail,
         'childDisplayName': childDisplayName,
@@ -80,7 +86,7 @@ class SonaApiClient {
     final res = await _client.put(
       _base.replace(path: '/v1/cases/$caseId/intake/draft'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: _encodeJson({
         'answers': answers,
         'parentEmail': parentEmail,
         'childDisplayName': childDisplayName,
@@ -98,7 +104,7 @@ class SonaApiClient {
     final res = await _client.post(
       _base.replace(path: '/v1/cases/$caseId/intake'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
+      body: _encodeJson({
         'answers': answers,
         'consentVersion': 'mvp-v1',
         'parentEmail': parentEmail,

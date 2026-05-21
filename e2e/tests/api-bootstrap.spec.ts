@@ -16,6 +16,17 @@ test.describe("API smoke", () => {
     );
   });
 
+  test("create case with omitted parentEmail (Get started before step 1 email)", async ({
+    request,
+  }) => {
+    const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, { data: {} });
+    const { tenantId } = await boot.json();
+    const caseRes = await request.post(`${apiUrl}/v1/cases`, {
+      data: { tenantId, childDisplayName: "Child" },
+    });
+    expect(caseRes.status()).toBe(201);
+  });
+
   test("create case and save intake draft", async ({ request }) => {
     const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, { data: {} });
     const { tenantId } = await boot.json();
