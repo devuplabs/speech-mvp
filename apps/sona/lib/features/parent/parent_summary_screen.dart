@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
+import 'package:sona/design_system/widgets/sona_page_title.dart';
 import 'package:sona/design_system/widgets/trust_row.dart';
 
 /// Parent portal view — frame 07 in Figma.
@@ -24,6 +26,7 @@ class ParentSummaryScreen extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: onBack,
+                  tooltip: 'Back',
                   icon: const Icon(Icons.chevron_left),
                 ),
               ),
@@ -44,10 +47,7 @@ class ParentSummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Aria's consultation summary",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+          const SonaPageTitle("Aria's consultation summary", style: SonaTypography.sectionTitle),
           const SizedBox(height: 8),
           const Text(
             'From Monal Gajjar SLT · Published today',

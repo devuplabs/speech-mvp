@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sona/config/env.dart';
 import 'package:sona/design_system/sona_colors.dart';
@@ -204,15 +205,16 @@ class _SonaAppShellState extends State<SonaAppShell> {
                           onPressed: _busy ? null : _loadParentSummary,
                           child: const Text('Parent summary'),
                         ),
-                      Expanded(
-                        child: Text(
-                          _status ?? Env.apiBaseUrl,
-                          textAlign: TextAlign.end,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
+                      if (_status != null || kDebugMode)
+                        Expanded(
+                          child: Text(
+                            _status ?? (kDebugMode ? Env.apiBaseUrl : ''),
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -242,10 +244,13 @@ class _SonaAppShellState extends State<SonaAppShell> {
                 child: const Text('S', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Speech Therapy MVP',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+              Semantics(
+                header: true,
+                child: const Text(
+                  'Speech Therapy MVP',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(

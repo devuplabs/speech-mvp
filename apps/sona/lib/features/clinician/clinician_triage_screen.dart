@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/ai_draft_badge.dart';
+import 'package:sona/design_system/widgets/sona_page_title.dart';
 
 class ClinicianTriageScreen extends StatelessWidget {
   const ClinicianTriageScreen({
@@ -30,59 +32,66 @@ class ClinicianTriageScreen extends StatelessWidget {
             children: [
               TextButton(onPressed: onBackPrep, child: const Text('← Consult prep')),
               const Text('Aria M. · Free consultation complete', style: TextStyle(fontSize: 12, color: SonaColors.textMuted)),
-              const Text('Triage & session plan', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SonaPageTitle('Triage & session plan', style: SonaTypography.clinicianTitle),
             ],
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(32),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    children: [
-                      _triageCard(),
-                      const SizedBox(height: 16),
-                      _planCard(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final main = Column(
+                  children: [
+                    _triageCard(),
+                    const SizedBox(height: 16),
+                    _planCard(),
+                  ],
+                );
+                final aside = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: SonaColors.surface,
+                        border: Border.all(color: SonaColors.border),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Next step', style: TextStyle(fontWeight: FontWeight.w600)),
+                          SizedBox(height: 8),
+                          Text(
+                            'Publish a parent-friendly summary to the secure portal. No clinical detail in email.',
+                            style: TextStyle(fontSize: 13, color: SonaColors.textSecondary, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: busy ? null : onPublishSummary,
+                      child: Text(busy ? 'Publishing…' : 'Publish parent summary'),
+                    ),
+                  ],
+                );
+                if (constraints.maxWidth < 900) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: SonaColors.surface,
-                          border: Border.all(color: SonaColors.border),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Next step', style: TextStyle(fontWeight: FontWeight.w600)),
-                            SizedBox(height: 8),
-                            Text(
-                              'Publish a parent-friendly summary to the secure portal. No clinical detail in email.',
-                              style: TextStyle(fontSize: 13, color: SonaColors.textSecondary, height: 1.4),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: busy ? null : onPublishSummary,
-                        child: Text(busy ? 'Publishing…' : 'Publish parent summary'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    children: [main, const SizedBox(height: 24), aside],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 2, child: main),
+                    const SizedBox(width: 24),
+                    Expanded(child: aside),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -160,7 +169,12 @@ class ClinicianTriageScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Checkbox(value: true, onChanged: (_) {}, activeColor: SonaColors.primary),
+                  Checkbox(
+                    value: true,
+                    onChanged: (_) {},
+                    activeColor: SonaColors.primary,
+                    semanticLabel: item,
+                  ),
                   Expanded(child: Text(item)),
                 ],
               ),

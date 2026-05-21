@@ -25,6 +25,7 @@ class SonaButton extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: SonaColors.primary,
             foregroundColor: Colors.white,
+            minimumSize: const Size(64, 48),
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -35,6 +36,7 @@ class SonaButton extends StatelessWidget {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             foregroundColor: SonaColors.textPrimary,
+            minimumSize: const Size(64, 48),
             side: const BorderSide(color: SonaColors.border),
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/state/sona_app_state.dart';
 
 class ClinicianTodayScreen extends StatelessWidget {
@@ -23,89 +24,110 @@ class ClinicianTodayScreen extends StatelessWidget {
             color: SonaColors.surface,
             border: Border(bottom: BorderSide(color: SonaColors.border)),
           ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final stackHeader = constraints.maxWidth < 720;
+              final greeting = const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Good morning, Monal', style: SonaTypography.clinicianGreeting),
+                  Text('Monday, 11 May 2026', style: SonaTypography.label),
+                ],
+              );
+              final search = Semantics(
+                label: 'Search clients, notes, and resources',
+                child: Container(
+                  width: stackHeader ? double.infinity : 280,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: SonaColors.background,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '⌕  Search clients, notes, resources…',
+                    style: TextStyle(fontSize: 13, color: SonaColors.textMuted),
+                  ),
+                ),
+              );
+              if (stackHeader) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Good morning, Monal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text('Monday, 11 May 2026', style: TextStyle(fontSize: 12, color: SonaColors.textMuted)),
+                    greeting,
+                    const SizedBox(height: 12),
+                    search,
                   ],
-                ),
-              ),
-              Container(
-                width: 280,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: SonaColors.background,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  '⌕  Search clients, notes, resources…',
-                  style: TextStyle(fontSize: 13, color: SonaColors.textMuted),
-                ),
-              ),
-              const SizedBox(width: 12),
-              CircleAvatar(backgroundColor: SonaColors.accent, radius: 19, child: Text('MG', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold))),
-            ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: greeting),
+                  search,
+                  const SizedBox(width: 12),
+                  CircleAvatar(
+                    backgroundColor: SonaColors.accent,
+                    radius: 19,
+                    child: const Text('MG', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              );
+            },
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(32),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final stack = constraints.maxWidth < 900;
+                final main = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    stack
+                        ? Column(
+                            children: [
+                              _kpi('3', 'Consults today', SonaColors.primary, expanded: false),
+                              const SizedBox(height: 12),
+                              _kpi('1', 'Intake pending review', SonaColors.accent, expanded: false),
+                              const SizedBox(height: 12),
+                              _kpi('2', 'Plans to review', SonaColors.textSecondary, expanded: false),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              _kpi('3', 'Consults today', SonaColors.primary),
+                              const SizedBox(width: 16),
+                              _kpi('1', 'Intake pending review', SonaColors.accent),
+                              const SizedBox(width: 16),
+                              _kpi('2', 'Plans to review', SonaColors.textSecondary),
+                            ],
+                          ),
+                    const SizedBox(height: 24),
+                    _consultList(),
+                  ],
+                );
+                final aside = Column(
+                  children: [
+                    _sideCard('Up next', 'Aria M. · 10:30', 'Prep brief ${state.prepStatus.toLowerCase()}', onOpenPrep),
+                    const SizedBox(height: 16),
+                    _sideCard('Recent activity', 'Intake submitted · Aria', '2 min ago', onOpenPrep),
+                  ],
+                );
+                if (stack) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          _kpi('3', 'Consults today', SonaColors.primary),
-                          const SizedBox(width: 16),
-                          _kpi('1', 'Intake pending review', SonaColors.accent),
-                          const SizedBox(width: 16),
-                          _kpi('2', 'Plans to review', SonaColors.textSecondary),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: SonaColors.surface,
-                          border: Border.all(color: SonaColors.border),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.all(18),
-                              child: Text("Today's free consultations", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                            ),
-                            const Divider(height: 1),
-                            _consultRow('10:30', 'Aria M.', '4y · Speech + feeding', state.prepStatus, onOpenPrep, highlight: true),
-                            _consultRow('14:00', 'Leo T.', '6y · Stutter', 'Drafting', () {}),
-                            _consultRow('16:30', 'Maya K.', '3y · Language delay', 'Not started', () {}),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
-                    children: [
-                      _sideCard('Up next', 'Aria M. · 10:30', 'Prep brief ${state.prepStatus.toLowerCase()}', onOpenPrep),
-                      const SizedBox(height: 16),
-                      _sideCard('Recent activity', 'Intake submitted · Aria', '2 min ago', onOpenPrep),
-                    ],
-                  ),
-                ),
-              ],
+                    children: [main, const SizedBox(height: 24), aside],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 3, child: main),
+                    const SizedBox(width: 24),
+                    Expanded(child: aside),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -113,25 +135,49 @@ class ClinicianTodayScreen extends StatelessWidget {
     );
   }
 
-  Widget _kpi(String value, String label, Color accent) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: SonaColors.surface,
-          border: Border.all(color: SonaColors.border),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: accent)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 13, color: SonaColors.textSecondary)),
-          ],
-        ),
+  Widget _consultList() {
+    return Container(
+      decoration: BoxDecoration(
+        color: SonaColors.surface,
+        border: Border.all(color: SonaColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(18),
+            child: Text("Today's free consultations", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          ),
+          const Divider(height: 1),
+          _consultRow('10:30', 'Aria M.', '4y · Speech + feeding', state.prepStatus, onOpenPrep, highlight: true),
+          _consultRow('14:00', 'Leo T.', '6y · Stutter', 'Drafting', () {}),
+          _consultRow('16:30', 'Maya K.', '3y · Language delay', 'Not started', () {}),
+        ],
       ),
     );
+  }
+
+  Widget _kpi(String value, String label, Color accent, {bool expanded = true}) {
+    final card = Container(
+      width: expanded ? null : double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: SonaColors.surface,
+        border: Border.all(color: SonaColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: accent)),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 13, color: SonaColors.textSecondary)),
+        ],
+      ),
+    );
+    if (!expanded) return card;
+    return Expanded(child: card);
   }
 
   Widget _consultRow(
@@ -142,9 +188,12 @@ class ClinicianTodayScreen extends StatelessWidget {
     VoidCallback onTap, {
     bool highlight = false,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
+    return Semantics(
+      button: true,
+      label: '$name consultation at $time, status $status',
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
         color: highlight ? SonaColors.heroTint.withValues(alpha: 0.35) : null,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         child: Row(
@@ -179,6 +228,7 @@ class ClinicianTodayScreen extends StatelessWidget {
             const Icon(Icons.chevron_right, color: SonaColors.textMuted),
           ],
         ),
+      ),
       ),
     );
   }

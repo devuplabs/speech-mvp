@@ -7,7 +7,8 @@ class MobileStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return ExcludeSemantics(
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -30,6 +31,7 @@ class MobileStatusBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
+import 'package:sona/design_system/sona_typography.dart';
 import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
+import 'package:sona/design_system/widgets/sona_page_title.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/trust_row.dart';
 
@@ -107,14 +109,11 @@ class ParentWelcomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Tell us about your child',
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, height: 1.2),
-          ),
+          const SonaPageTitle('Tell us about your child', style: SonaTypography.pageTitle),
           const SizedBox(height: 8),
           const Text(
             'A 10-minute form before your free 20-minute consultation. The more we know, the more we can help in the call.',
-            style: TextStyle(fontSize: 14, height: 1.5, color: SonaColors.textSecondary),
+            style: SonaTypography.body,
           ),
           const SizedBox(height: 16),
           Container(

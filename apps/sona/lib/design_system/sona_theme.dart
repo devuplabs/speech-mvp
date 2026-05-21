@@ -38,6 +38,8 @@ ThemeData sonaTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
+    focusColor: SonaColors.primary.withValues(alpha: 0.12),
+    visualDensity: VisualDensity.standard,
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: SonaColors.surface,
