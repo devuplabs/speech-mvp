@@ -10,11 +10,11 @@ Provisions:
 
 First `terraform apply` uses bootstrap images (`cloud_run_bootstrap_image` / `web_bootstrap_image`) because `sona-api` / `sona-web` may not be in Artifact Registry yet. Run Cloud Build triggers **sona-api-dev-deploy** and **sona-web-dev-deploy** after merge to `main`. Terraform ignores image tag changes after create.
 
-**Adopting an existing `sona-web-dev` service** (created before this module): one-time import in `uk/dev`:
+**Adopting an existing `sona-web-dev` service** (created before this module): `uk/dev/imports.tf` imports it on the next apply. Web containers need **512Mi** memory minimum on Cloud Run (CPU always allocated).
+
+Manual import if needed:
 
 ```bash
 terraform import 'module.stack.module.cloud_run.google_cloud_run_v2_service.web[0]' \
   projects/PROJECT_ID/locations/REGION/services/sona-web-dev
 ```
-
-Then `terraform apply` aligns IAM, env on API (`CORS_ORIGINS`), and metadata without replacing the service URL.
