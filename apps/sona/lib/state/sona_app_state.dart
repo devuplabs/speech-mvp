@@ -6,6 +6,10 @@ class SonaAppState extends ChangeNotifier {
   String? caseId;
   final IntakeFormData intake = IntakeFormData();
   int formStep = 1;
+  /// Step 1 is paginated 1a/1b to keep scrolling short on mobile.
+  /// 0 = page 1 (parent + child basics + mother contacts).
+  /// 1 = page 2 (father + GP + referral).
+  int formSubstep = 0;
   bool returnToReviewAfterEdit = false;
   DateTime? lastSavedAt;
   DateTime? lastLocalSavedAt;
@@ -20,6 +24,12 @@ class SonaAppState extends ChangeNotifier {
   String triageOutcome = 'short_block';
   String prepStatus = 'Ready';
   List<Map<String, dynamic>> clinicianCases = [];
+
+  /// Field key of the most recent failed validation on the current step.
+  /// Set by `_parentContinue` when validation blocks progress; consumed by
+  /// `ParentIntakeStepScreen` to highlight + scroll to the failing field.
+  String? pendingValidationFieldKey;
+  String? pendingValidationMessage;
 
   String get childName => intake.childName.trim().isNotEmpty ? intake.childName.trim() : 'Child';
   String get parentEmail => intake.email.trim().isNotEmpty ? intake.email.trim() : 'parent@example.com';
@@ -120,6 +130,7 @@ class SonaAppState extends ChangeNotifier {
     tenantId = null;
     caseId = null;
     formStep = 1;
+    formSubstep = 0;
     returnToReviewAfterEdit = false;
     lastSavedAt = null;
     lastLocalSavedAt = null;

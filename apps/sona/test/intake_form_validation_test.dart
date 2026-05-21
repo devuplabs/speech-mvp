@@ -13,13 +13,24 @@ void main() {
     }
   });
 
-  test('missing email fails step 1', () {
+  test('missing email fails step 1 with fieldKey=email', () {
     final intake = buildValidIntakeFixture()..email = '';
-    expect(intake.validateStep(1), isNotNull);
+    final err = intake.validateStep(1);
+    expect(err, isNotNull);
+    expect(err!.fieldKey, 'email');
   });
 
-  test('empty difficulties fails step 2', () {
+  test('empty difficulties fails step 2 with fieldKey=difficulties', () {
     final intake = buildValidIntakeFixture()..difficulties.clear();
-    expect(intake.validateStep(2), isNotNull);
+    final err = intake.validateStep(2);
+    expect(err, isNotNull);
+    expect(err!.fieldKey, 'difficulties');
+  });
+
+  test('missing GP phone fails step 1 with fieldKey=gpPhone', () {
+    final intake = buildValidIntakeFixture()..gpPhone = '';
+    final err = intake.validateStep(1);
+    expect(err, isNotNull);
+    expect(err!.fieldKey, 'gpPhone');
   });
 }
