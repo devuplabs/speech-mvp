@@ -9,12 +9,12 @@
     "email": "jordan.r@example.com",
     "childName": "Mia R.",
     "dateOfBirth": "11 / 11 / 2014",
-    "ageAtReferral": "11",
     "childAddress": "7 Beechwood Avenue, Bristol BS7 9PL",
     "motherName": "Jordan R.",
     "motherAddress": "7 Beechwood Avenue, Bristol BS7 9PL",
     "motherMobile": "07700900301",
     "motherEmail": "jordan.r@example.com",
+    "fatherDetailsApplicable": true,
     "fatherName": "Sam R.",
     "fatherAddress": "7 Beechwood Avenue, Bristol BS7 9PL",
     "fatherMobile": "07700900302",
@@ -50,10 +50,10 @@
     "diagnosis": "Sensory processing differences (OT report)",
     "medications": "None",
     "hospitalised": "Day case for grommets, age 4",
-    "hearingTested": "Yes — post-grommets, normal range",
+    "hearingTested": "Yes \u2014 post-grommets, normal range",
     "earInfections": "Recurrent age 2-4; resolved after grommets",
     "entInvolvement": "Grommets age 4, discharged",
-    "visionTested": "Yes — normal",
+    "visionTested": "Yes \u2014 normal",
     "respondsToName": "yes",
     "ageFirstWords": "14 months",
     "ageTwoWordPhrases": "24 months",
@@ -70,7 +70,6 @@
     "senPlan": "No EHCP; SEN support plan in place",
     "anythingElse": "Family preparing for secondary transition in September",
     "photoConsent": "no",
-    "completedBy": "Jordan R. (parent)",
-    "completionDate": "20 / 05 / 2026"
+    "completedBy": "Jordan R. (parent)"
   }
 }

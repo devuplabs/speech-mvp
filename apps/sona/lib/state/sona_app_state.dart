@@ -55,12 +55,13 @@ class SonaAppState extends ChangeNotifier {
     intake.email = src.email;
     intake.childName = src.childName;
     intake.dateOfBirth = src.dateOfBirth;
-    intake.ageAtReferral = src.ageAtReferral;
+    // ageAtReferral is a computed getter — no assignment needed
     intake.childAddress = src.childAddress;
     intake.motherName = src.motherName;
     intake.motherAddress = src.motherAddress;
     intake.motherMobile = src.motherMobile;
     intake.motherEmail = src.motherEmail;
+    intake.fatherDetailsApplicable = src.fatherDetailsApplicable;
     intake.fatherName = src.fatherName;
     intake.fatherAddress = src.fatherAddress;
     intake.fatherMobile = src.fatherMobile;
@@ -114,7 +115,7 @@ class SonaAppState extends ChangeNotifier {
     intake.anythingElse = src.anythingElse;
     intake.photoConsent = src.photoConsent;
     intake.completedBy = src.completedBy;
-    intake.completionDate = src.completionDate;
+    // completionDate is set server-side — not copied
   }
 
   Map<String, dynamic> buildAnswersPayload() {

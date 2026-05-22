@@ -40,7 +40,6 @@ void main() {
       ..email = fixture.email
       ..childName = fixture.childName
       ..dateOfBirth = fixture.dateOfBirth
-      ..ageAtReferral = fixture.ageAtReferral
       ..childAddress = fixture.childAddress
       ..motherName = fixture.motherName
       ..motherMobile = fixture.motherMobile
@@ -118,7 +117,6 @@ void main() {
       ..email = '' // Intentionally clear an essential page-1 field
       ..childName = fixture.childName
       ..dateOfBirth = fixture.dateOfBirth
-      ..ageAtReferral = fixture.ageAtReferral
       ..childAddress = fixture.childAddress
       ..motherName = fixture.motherName
       ..motherMobile = fixture.motherMobile
@@ -172,7 +170,7 @@ void main() {
       onContinue: () async {},
       onBack: () {},
     );
-    expect(find.text('Page 1 of 2'), findsOneWidget);
+    expect(find.textContaining('Page 1 of 2'), findsOneWidget);
 
     state.formSubstep = 1;
     await tester.pumpWidget(
@@ -187,6 +185,6 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Page 2 of 2'), findsOneWidget);
+    expect(find.textContaining('Page 2 of 2'), findsOneWidget);
   });
 }

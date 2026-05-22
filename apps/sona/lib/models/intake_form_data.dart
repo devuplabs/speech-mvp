@@ -8,12 +8,20 @@ class IntakeFormData {
   String email = '';
   String childName = '';
   String dateOfBirth = '';
-  String ageAtReferral = '';
+
+  /// Read-only; auto-computed from [dateOfBirth]. Not collected from the parent.
+  /// Kept in the JSON payload so the clinician dashboard is unchanged.
+  String get ageAtReferral =>
+      IntakeValidation.computeAgeAtReferral(dateOfBirth) ?? '';
+
   String childAddress = '';
   String motherName = '';
   String motherAddress = '';
   String motherMobile = '';
   String motherEmail = '';
+  /// Whether the parent has indicated a second parent / father is involved.
+  /// When false, father fields are not required.
+  bool fatherDetailsApplicable = false;
   String fatherName = '';
   String fatherAddress = '';
   String fatherMobile = '';
@@ -65,19 +73,22 @@ class IntakeFormData {
   String anythingElse = '';
   String photoConsent = '';
   String completedBy = '';
-  String completionDate = '';
+
+  /// completionDate is set server-side from submittedAt. Not collected from the parent.
+  /// Omitted from the client payload; the API fills it on submission.
 
   Map<String, dynamic> toJson() => {
         'version': 1,
         'email': email,
         'childName': childName,
         'dateOfBirth': dateOfBirth,
-        'ageAtReferral': ageAtReferral,
+        'ageAtReferral': ageAtReferral, // computed getter — included for clinician dashboard
         'childAddress': childAddress,
         'motherName': motherName,
         'motherAddress': motherAddress,
         'motherMobile': motherMobile,
         'motherEmail': motherEmail,
+        'fatherDetailsApplicable': fatherDetailsApplicable,
         'fatherName': fatherName,
         'fatherAddress': fatherAddress,
         'fatherMobile': fatherMobile,
@@ -129,7 +140,6 @@ class IntakeFormData {
         'anythingElse': anythingElse,
         'photoConsent': photoConsent,
         'completedBy': completedBy,
-        'completionDate': completionDate,
       };
 
   static IntakeFormData fromJson(Map<String, dynamic> json) {
@@ -138,12 +148,17 @@ class IntakeFormData {
     d.email = s('email');
     d.childName = s('childName');
     d.dateOfBirth = s('dateOfBirth');
-    d.ageAtReferral = s('ageAtReferral');
+    // ageAtReferral is a computed getter — not restored from JSON
     d.childAddress = s('childAddress');
     d.motherName = s('motherName');
     d.motherAddress = s('motherAddress');
     d.motherMobile = s('motherMobile');
     d.motherEmail = s('motherEmail');
+    // Restore father section visibility: true if any father field was previously saved
+    final hasFatherData = (json['fatherMobile'] as String?)?.isNotEmpty == true ||
+        (json['fatherEmail'] as String?)?.isNotEmpty == true ||
+        (json['fatherName'] as String?)?.isNotEmpty == true;
+    d.fatherDetailsApplicable = json['fatherDetailsApplicable'] as bool? ?? hasFatherData;
     d.fatherName = s('fatherName');
     d.fatherAddress = s('fatherAddress');
     d.fatherMobile = s('fatherMobile');
@@ -200,7 +215,7 @@ class IntakeFormData {
     d.anythingElse = s('anythingElse');
     d.photoConsent = s('photoConsent');
     d.completedBy = s('completedBy');
-    d.completionDate = s('completionDate');
+    // completionDate set server-side — not restored from JSON
     return d;
   }
 
@@ -209,7 +224,6 @@ class IntakeFormData {
     'email',
     'childName',
     'dateOfBirth',
-    'ageAtReferral',
     'childAddress',
     'motherName',
     'motherAddress',
@@ -246,115 +260,115 @@ class IntakeFormData {
     bool req(String v) => v.trim().isNotEmpty;
     switch (step) {
       case 1:
-        if (!req(email)) return err('Email is required', 'email');
-        if (!IntakeValidation.isEmail(email)) return err('Enter a valid email address', 'email');
-        if (!req(childName)) return err("Child's name is required", 'childName');
-        if (!req(dateOfBirth)) return err('Date of birth is required', 'dateOfBirth');
+        if (!req(email)) return err('We need your email so your therapist can send you a link to continue', 'email');
+        if (!IntakeValidation.isEmail(email)) return err('Please enter a valid email address', 'email');
+        if (!req(childName)) return err("We need your child's name to personalise the form", 'childName');
+        if (!req(dateOfBirth)) return err("We need your child's date of birth to prepare the assessment", 'dateOfBirth');
         if (!IntakeValidation.isDdMmYyyy(dateOfBirth)) {
-          return err('Date of birth must be DD/MM/YYYY (use the calendar)', 'dateOfBirth');
+          return err('Please use the calendar to pick the date of birth', 'dateOfBirth');
         }
-        if (!req(ageAtReferral)) return err('Age at referral is required', 'ageAtReferral');
-        if (!req(childAddress)) return err('Address is required', 'childAddress');
-        if (!req(motherName)) return err("Mother's name is required", 'motherName');
-        if (!req(motherMobile)) return err("Mother's mobile is required", 'motherMobile');
-        if (!req(motherEmail)) return err("Mother's email is required", 'motherEmail');
-        if (!req(fatherMobile)) return err("Father's mobile is required", 'fatherMobile');
-        if (!req(fatherEmail)) return err("Father's email is required", 'fatherEmail');
-        if (!req(gpPractice)) return err('GP practice is required', 'gpPractice');
-        if (!req(gpAddress)) return err('GP address is required', 'gpAddress');
-        if (!req(gpPhone)) return err('GP phone is required', 'gpPhone');
-        if (!req(referredBy)) return err('Referral source is required', 'referredBy');
-        if (!req(heardAbout)) return err('How you heard about us is required', 'heardAbout');
+        // ageAtReferral is computed from dateOfBirth — no longer validated here
+        if (!req(childAddress)) return err("Your child's address helps us confirm the right service area", 'childAddress');
+        if (!req(motherName)) return err("We need a name for the primary contact", 'motherName');
+        if (!req(motherMobile)) return err("We need a mobile number so your therapist can reach you", 'motherMobile');
+        if (!req(motherEmail)) return err("We need an email address so your therapist can send you updates", 'motherEmail');
+        // Father fields only required when the parent has indicated they're applicable
+        if (fatherDetailsApplicable) {
+          if (!req(fatherMobile)) return err("Please add a mobile number for the second parent", 'fatherMobile');
+          if (!req(fatherEmail)) return err("Please add an email address for the second parent", 'fatherEmail');
+        }
+        if (!req(gpPractice)) return err("Your GP's details help us coordinate care if needed", 'gpPractice');
+        if (!req(gpAddress)) return err("Your GP's address is needed for the referral file", 'gpAddress');
+        if (!req(gpPhone)) return err("Your GP's phone number is needed for the referral file", 'gpPhone');
+        if (!req(referredBy)) return err('This helps us understand how you found us', 'referredBy');
+        if (!req(heardAbout)) return err('This helps us understand how you found us', 'heardAbout');
         return null;
       case 2:
-        if (!req(mainConcern)) return err('Main concern is required', 'mainConcern');
+        if (!req(mainConcern)) return err("Please describe your main concern \u2014 this guides the whole assessment", 'mainConcern');
         if (difficulties.isEmpty) {
-          return err('Select at least one area of difficulty', 'difficulties');
+          return err('Please select at least one area \u2014 this helps the therapist prepare', 'difficulties');
         }
         return null;
       case 3:
-        if (!req(assessedByOthers)) return err('Please answer about other professionals', 'assessedByOthers');
+        if (!req(assessedByOthers)) return err('Please answer whether your child has been assessed by other professionals', 'assessedByOthers');
         if (assessedByOthers == 'yes' && !req(assessedByOthersDetails)) {
-          return err('Please provide professional details', 'assessedByOthersDetails');
+          return err('Please briefly describe the previous professional involvement', 'assessedByOthersDetails');
         }
-        if (!req(receivingTherapy)) return err('Please answer about therapy', 'receivingTherapy');
+        if (!req(receivingTherapy)) return err('Please answer whether your child is currently receiving therapy', 'receivingTherapy');
         if (receivingTherapy == 'yes' && !req(therapyDetails)) {
-          return err('Please provide therapy details', 'therapyDetails');
+          return err('Please briefly describe the current therapy', 'therapyDetails');
         }
-        if (!req(languagesExposed)) return err('Languages exposed to is required', 'languagesExposed');
-        if (!req(parentLanguages)) return err('Parent languages are required', 'parentLanguages');
-        if (!req(childLanguages)) return err('Child languages are required', 'childLanguages');
-        if (!req(familyHistory)) return err('Please answer about family history', 'familyHistory');
+        if (!req(languagesExposed)) return err('Please list the languages your child hears at home or school', 'languagesExposed');
+        if (!req(parentLanguages)) return err('Please list the languages spoken by parents or carers', 'parentLanguages');
+        if (!req(childLanguages)) return err('Please describe the languages your child uses to communicate', 'childLanguages');
+        if (!req(familyHistory)) return err('Please answer the family history question \u2014 this helps the therapist', 'familyHistory');
         if (familyHistory == 'yes' && !req(familyHistoryDetails)) {
-          return err('Please explain family history', 'familyHistoryDetails');
+          return err('Please briefly describe the family history of speech or language difficulties', 'familyHistoryDetails');
         }
         return null;
       case 4:
-        if (!req(pregnancyHealth)) return err('Pregnancy health is required', 'pregnancyHealth');
-        if (!req(prematureDetails)) return err('Premature birth details are required', 'prematureDetails');
-        if (!req(birthWeight)) return err('Birth weight is required', 'birthWeight');
+        if (!req(pregnancyHealth)) return err("Please describe the mother\u2019s health during pregnancy, or write \u201cno concerns\u201d", 'pregnancyHealth');
+        if (!req(prematureDetails)) return err('Please answer the premature birth question, or write \u201cno\u201d if full term', 'prematureDetails');
+        if (!req(birthWeight)) return err('Please enter the birth weight, or your best estimate', 'birthWeight');
         if (!req(birthComplications)) {
-          return err('Birth complications field is required', 'birthComplications');
+          return err('Please describe any birth complications, or write \u201cnone\u201d', 'birthComplications');
         }
         if (!req(afterBirthComplications)) {
-          return err('After-birth complications field is required', 'afterBirthComplications');
+          return err('Please describe any complications after birth, or write \u201cnone\u201d', 'afterBirthComplications');
         }
         return null;
       case 5:
         final step5 = <(String, String, String)>[
-          (earlyIllnesses, 'earlyIllnesses', 'Early childhood illnesses'),
+          (earlyIllnesses, 'earlyIllnesses', 'Early childhood illnesses (write \u201cnone\u201d if not applicable)'),
           (generalHealth, 'generalHealth', 'General health'),
-          (diagnosis, 'diagnosis', 'Known diagnosis'),
-          (medications, 'medications', 'Regular medications'),
-          (hospitalised, 'hospitalised', 'Hospitalised'),
-          (hearingTested, 'hearingTested', 'Hearing tested'),
-          (earInfections, 'earInfections', 'History of ear infections'),
-          (entInvolvement, 'entInvolvement', 'ENT involvement'),
-          (visionTested, 'visionTested', 'Eyes tested'),
+          (diagnosis, 'diagnosis', 'Known diagnosis or syndrome (write \u201cnone\u201d if not applicable)'),
+          (medications, 'medications', 'Regular medications (write \u201cnone\u201d if not applicable)'),
+          (hospitalised, 'hospitalised', 'Hospitalised (write \u201cnone\u201d if not applicable)'),
+          (hearingTested, 'hearingTested', 'Hearing tested (write \u201cnot yet\u201d if not done)'),
+          (earInfections, 'earInfections', 'Ear infections (write \u201cnone\u201d if not applicable)'),
+          (entInvolvement, 'entInvolvement', 'ENT involvement (write \u201cnone\u201d if not applicable)'),
+          (visionTested, 'visionTested', 'Eyes tested (write \u201cnot yet\u201d if not done)'),
         ];
         for (final f in step5) {
-          if (!req(f.$1)) return err('${f.$3} is required', f.$2);
+          if (!req(f.$1)) return err(f.$3, f.$2);
         }
         return null;
       case 6:
         if (!req(respondsToName)) {
-          return err('Please answer if child responds to their name', 'respondsToName');
+          return err('Please answer whether your child responds to their own name', 'respondsToName');
         }
-        if (!req(ageFirstWords)) return err('Age of first words is required', 'ageFirstWords');
+        if (!req(ageFirstWords)) return err('Please enter the age your child said their first words, or your best estimate', 'ageFirstWords');
         if (!req(ageTwoWordPhrases)) {
-          return err('Age of two-word phrases is required', 'ageTwoWordPhrases');
+          return err('Please enter the age your child started joining two words together', 'ageTwoWordPhrases');
         }
         if (!req(attentionListening)) {
-          return err('Attention and listening is required', 'attentionListening');
+          return err('Please describe your child\u2019s attention and listening skills', 'attentionListening');
         }
-        if (!req(sentenceExamples)) return err('Sentence examples are required', 'sentenceExamples');
+        if (!req(sentenceExamples)) return err('Please give some examples of sentences your child uses', 'sentenceExamples');
         if (!req(showsUnderstanding)) {
-          return err('How child shows understanding is required', 'showsUnderstanding');
+          return err('Please describe how your child shows they understand what is said', 'showsUnderstanding');
         }
         return null;
       case 7:
         final step7 = <(String, String, String)>[
-          (temperament, 'temperament', 'Temperament'),
-          (socialSkills, 'socialSkills', 'Social skills'),
-          (peerInteraction, 'peerInteraction', 'Peer interaction'),
-          (favouritePlay, 'favouritePlay', 'Favourite play'),
-          (communicationAwareness, 'communicationAwareness', 'Communication self-awareness'),
+          (temperament, 'temperament', 'Please describe your child\u2019s temperament and personality'),
+          (socialSkills, 'socialSkills', 'Please describe your child\u2019s social skills'),
+          (peerInteraction, 'peerInteraction', 'Please describe how your child interacts with other children'),
+          (favouritePlay, 'favouritePlay', 'Please describe your child\u2019s favourite activities and motivators'),
+          (communicationAwareness, 'communicationAwareness', 'Please describe whether your child is aware of their communication difficulties'),
         ];
         for (final f in step7) {
-          if (!req(f.$1)) return err('${f.$3} is required', f.$2);
+          if (!req(f.$1)) return err(f.$3, f.$2);
         }
         return null;
       case 8:
         if (!req(schoolNameAddress)) {
-          return err('School / nursery details are required', 'schoolNameAddress');
+          return err("Please add your child's school or nursery name and address", 'schoolNameAddress');
         }
-        if (!req(senPlan)) return err('SEN / EHCP field is required', 'senPlan');
-        if (!req(photoConsent)) return err('Photo/film consent is required', 'photoConsent');
-        if (!req(completedBy)) return err('Completed by is required', 'completedBy');
-        if (!req(completionDate)) return err('Date of completion is required', 'completionDate');
-        if (!IntakeValidation.isDdMmYyyy(completionDate)) {
-          return err('Date of completion must be DD/MM/YYYY (use the calendar)', 'completionDate');
-        }
+        if (!req(senPlan)) return err('Please describe any SEN plan, EHCP, or write "none"', 'senPlan');
+        if (!req(photoConsent)) return err('Please answer the photo/film consent question', 'photoConsent');
+        if (!req(completedBy)) return err('Please tell us who completed this form', 'completedBy');
+        // completionDate is set server-side from submittedAt — no longer validated here
         return null;
       default:
         return null;

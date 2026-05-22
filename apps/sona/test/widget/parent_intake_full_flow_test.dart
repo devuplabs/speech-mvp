@@ -67,19 +67,21 @@ void main() {
     await _enterByLabel(tester, 'Email *', 'test.parent@example.com');
     await _enterByLabel(tester, "Child's name *", 'Alex Test');
     await _setDate(tester, 'Date of birth *', '15 / 03 / 2019');
-    await _enterByLabel(tester, 'Age at referral *', '5');
+    // ageAtReferral is now computed from dateOfBirth — no longer a form field
     await _enterByLabel(tester, "Child's address *", '1 Test Street, London');
     await _enterByLabel(tester, "Mother's name *", 'Jane Test');
     await _enterByLabel(tester, "Mother's mobile *", '07700900001');
     await _enterByLabel(tester, "Mother's email *", 'mother@example.com');
     await _continue(tester);
 
-    expect(find.text('Page 2 of 2'), findsOneWidget,
+    expect(find.textContaining('Page 2 of 2'), findsOneWidget,
         reason: 'Continue from page 1a should advance to page 1b');
 
     // ---- Step 1 page 1b (the demo-blocker transition) ----
-    await _enterByLabel(tester, "Father's mobile *", '07700900002');
-    await _enterByLabel(tester, "Father's email *", 'father@example.com');
+    // Enable father/second parent details via the toggle checkbox
+    await _tapCheckboxLabel(tester, 'Add second parent / father details');
+    await _enterByLabel(tester, "Father's / second parent's mobile *", '07700900002');
+    await _enterByLabel(tester, "Father's / second parent's email *", 'father@example.com');
     await _enterByLabel(tester, 'GP practice *', 'Test GP');
     await _enterByLabel(tester, 'GP address *', 'GP Street');
     await _enterByLabel(tester, 'GP phone *', '02070000000');
@@ -167,7 +169,7 @@ void main() {
     await _enterByLabel(tester, 'SEN plan or EHCP *', 'None');
     await _tapYesNo(tester, 'May child be photographed/filmed?', 'No');
     await _enterByLabel(tester, 'Form completed by *', 'Jane Test');
-    await _setDate(tester, 'Date of completion *', '20 / 05 / 2026');
+    // completionDate is now set server-side — field removed from client
     await _continue(tester);
 
     // ---- Review & submit ----
@@ -246,6 +248,17 @@ Future<void> _tapYesNo(WidgetTester tester, String label, String choice) async {
 Future<void> _continue(WidgetTester tester) async {
   await tester.tap(find.text('Continue →'));
   await tester.pumpAndSettle(const Duration(seconds: 2));
+}
+
+/// Taps a checkbox that has a nearby [Text] widget with the given [label].
+Future<void> _tapCheckboxLabel(WidgetTester tester, String label) async {
+  final labelFinder = find.text(label);
+  final container = find.ancestor(
+    of: labelFinder,
+    matching: find.byType(InkWell),
+  );
+  await tester.tap(container.first);
+  await tester.pump();
 }
 
 /// In-memory backend that mirrors what the parent-intake flow exercises.
