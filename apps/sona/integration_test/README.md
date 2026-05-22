@@ -1,25 +1,29 @@
 # `apps/sona/integration_test/`
 
-Reserved for `package:integration_test`-based parent-intake suites that run on
-real Chrome via `chromedriver` (Option A in the
-"Automate Flutter UI E2E for parent intake" Notion task).
+Persona-driven, full-flow parent-intake integration test that's structurally
+ready for chromedriver promotion in CI.
 
-Today the regression net for the parent-intake step 1 page 1 → page 2 → step 2
-transition lives at
-`apps/sona/test/widget/parent_intake_full_flow_test.dart`. It runs in the
-standard Dart VM under `flutter test` and walks the real `SonaApp` end to end
-via `WidgetTester.enterText` against a `MockClient`-backed `SonaApiClient`.
+## Today's regression net (always runs in `flutter test`)
 
-## Running an integration_test under chromedriver
+The fast safety net is in `apps/sona/test/widget/`:
 
-When a CI image with chromedriver is wired up, drop a sibling test file
-beside this README that imports `package:integration_test/integration_test.dart`,
-calls `IntegrationTestWidgetsFlutterBinding.ensureInitialized()`, and reuses
-the same `_FakeBackend`/`_enterByLabel`/etc helpers from the widget test (or
-extracts them into a shared `lib/test/` library). Then run:
+| File | Coverage |
+|---|---|
+| `parent_intake_full_flow_test.dart` | Demo-blocker regression net (PR #21 / #22) — hardcoded happy path, kept as-is. |
+| `parent_intake_personas_flow_test.dart` | **Persona loop** — runs every synthetic persona in `lib/test_utils/intake_personas.dart` through the full 8-step flow + submit. Adding a new persona auto-extends parent-intake coverage. Completes in < 10 s for all 4 personas locally. |
+
+Both run under `flutter test` in the Dart VM — no browser, no chromedriver.
+
+## Chromedriver-backed promotion (this folder)
+
+`parent_intake_full_test.dart` is the same persona-driven flow under
+`IntegrationTestWidgetsFlutterBinding`. It runs against real Chrome via
+`chromedriver` once the CI image has it:
 
 ```bash
+# Local one-off (Chrome + matching chromedriver must be installed):
 chromedriver --port=4444 &
+cd apps/sona
 flutter drive \
   --driver=test_driver/integration_test.dart \
   --target=integration_test/parent_intake_full_test.dart \
@@ -27,4 +31,14 @@ flutter drive \
 ```
 
 `test_driver/integration_test.dart` and the `integration_test` dev dependency
-are already in place to make that drop-in possible.
+are already in place. CI promotion is tracked separately — once
+`infra/ci/cloudbuild.web.yaml` (or a sibling job) installs chromedriver, this
+flow can block deploys.
+
+## Why two files (widget + integration_test)?
+
+The widget test is the always-on regression net (Dart VM, < 10 s). The
+integration_test mirror catches Flutter web–specific issues (accessibility
+tree races, scroll/focus interplay) that the Dart VM can't reproduce. Together
+they bracket the parent intake on both axes — keep them in sync as the form
+evolves.
