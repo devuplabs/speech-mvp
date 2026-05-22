@@ -32,22 +32,44 @@ class SonaTextField extends StatefulWidget {
 class _SonaTextFieldState extends State<SonaTextField> {
   late final TextEditingController _controller;
 
+  // Flutter web routes IME edits through a single shared hidden <input>; relying on
+  // TextField.onChanged means rapid focus changes (or programmatic input from
+  // browser autofill / Playwright) can drop keystrokes before our callback fires.
+  // Listening on the controller catches every committed text change regardless of
+  // the input pathway, which keeps IntakeFormData in sync with what the user sees.
+  bool _suppressListener = false;
+  String _lastReported = '';
+
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.value);
+    _lastReported = widget.value;
+    _controller.addListener(_handleControllerChange);
+  }
+
+  void _handleControllerChange() {
+    if (_suppressListener) return;
+    final text = _controller.text;
+    if (text == _lastReported) return;
+    _lastReported = text;
+    widget.onChanged(text);
   }
 
   @override
   void didUpdateWidget(SonaTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value && _controller.text != widget.value) {
+      _suppressListener = true;
       _controller.text = widget.value;
+      _lastReported = widget.value;
+      _suppressListener = false;
     }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_handleControllerChange);
     _controller.dispose();
     super.dispose();
   }
@@ -74,7 +96,6 @@ class _SonaTextFieldState extends State<SonaTextField> {
           const SizedBox(height: 6),
           TextField(
             controller: _controller,
-            onChanged: widget.onChanged,
             maxLines: widget.maxLines,
             keyboardType: widget.keyboardType,
             autofillHints: widget.autofillHints,

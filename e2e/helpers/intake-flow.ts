@@ -258,7 +258,8 @@ export async function getStartedCaptureCase(page: Page): Promise<{
   const bootBody = (await boot.json()) as { tenantId: string };
   const createBody = (await create.json()) as { id: string };
 
-  await expect(page.getByText("Your details & referral")).toBeVisible({
+  // Step 1 page 1a title (introduced in PR #19 when step 1 was paginated 1a/1b).
+  await expect(page.getByText("About you & your child")).toBeVisible({
     timeout: 30_000,
   });
   await expectStep(page, 1);
