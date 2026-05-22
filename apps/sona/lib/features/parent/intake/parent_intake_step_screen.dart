@@ -55,6 +55,20 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
     );
   }
 
+  /// Scrolls the field with [fieldKey] into view — used for auto-advance after
+  /// a Yes/No selection to move focus to the next input.
+  void _scrollToField(String fieldKey) {
+    final key = _fieldKeys[fieldKey];
+    final ctx = key?.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      alignment: 0.1,
+    );
+  }
+
   void _maybeScrollToPendingValidation() {
     final pending = widget.state.pendingValidationFieldKey;
     if (pending == null || pending == _lastHandledValidationKey) return;
@@ -528,21 +542,80 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
         ];
       case 5:
         return [
-          _txt('earlyIllnesses', label: 'Early childhood illnesses', value: _d.earlyIllnesses, onChanged: (v) => _touch(() => _d.earlyIllnesses = v), maxLines: 2, required: true),
-          _txt('generalHealth', label: 'General health', value: _d.generalHealth, onChanged: (v) => _touch(() => _d.generalHealth = v), maxLines: 2, required: true),
-          _txt('diagnosis', label: 'Known diagnosis / syndrome', value: _d.diagnosis, onChanged: (v) => _touch(() => _d.diagnosis = v), maxLines: 2, required: true),
-          _txt('medications', label: 'Regular medications', value: _d.medications, onChanged: (v) => _touch(() => _d.medications = v), maxLines: 2, required: true),
-          _txt('hospitalised', label: 'Hospitalised? (details)', value: _d.hospitalised, onChanged: (v) => _touch(() => _d.hospitalised = v), maxLines: 2, required: true),
-          _txt('hearingTested', label: 'Hearing tested? (when & outcome)', value: _d.hearingTested, onChanged: (v) => _touch(() => _d.hearingTested = v), maxLines: 2, required: true),
-          _txt('earInfections', label: 'History of ear infections', value: _d.earInfections, onChanged: (v) => _touch(() => _d.earInfections = v), maxLines: 2, required: true),
-          _txt('entInvolvement', label: 'Ear surgery / ENT involvement', value: _d.entInvolvement, onChanged: (v) => _touch(() => _d.entInvolvement = v), maxLines: 2, required: true),
-          _txt('visionTested', label: 'Eyes tested? (when & outcome)', value: _d.visionTested, onChanged: (v) => _touch(() => _d.visionTested = v), maxLines: 2, required: true),
+          _txt('earlyIllnesses', label: 'Early childhood illnesses', value: _d.earlyIllnesses,
+              onChanged: (v) => _touch(() => _d.earlyIllnesses = v), maxLines: 2, required: true),
+          _txt('generalHealth', label: 'General health', value: _d.generalHealth,
+              onChanged: (v) => _touch(() => _d.generalHealth = v), maxLines: 2, required: true),
+          _txt('diagnosis', label: 'Known diagnosis / syndrome', value: _d.diagnosis,
+              onChanged: (v) => _touch(() => _d.diagnosis = v), maxLines: 2, required: true),
+          _txt('medications', label: 'Regular medications', value: _d.medications,
+              onChanged: (v) => _touch(() => _d.medications = v), maxLines: 2, required: true),
+          KeyedSubtree(
+            key: _keyFor('hospitalised'),
+            child: SonaYesNoField(
+              label: 'Has your child been hospitalised?',
+              value: _d.hospitalised,
+              onChanged: (v) => _repaint(() => _d.hospitalised = v),
+              detailLabel: 'When and why (brief description)',
+              detailValue: _d.hospitalisedDetails,
+              onDetailChanged: (v) => _touch(() => _d.hospitalisedDetails = v),
+            ),
+          ),
+          KeyedSubtree(
+            key: _keyFor('hearingTested'),
+            child: SonaYesNoField(
+              label: "Has your child's hearing been tested?",
+              value: _d.hearingTested,
+              onChanged: (v) => _repaint(() => _d.hearingTested = v),
+              detailLabel: 'When and what was the outcome?',
+              detailValue: _d.hearingTestedDetails,
+              onDetailChanged: (v) => _touch(() => _d.hearingTestedDetails = v),
+            ),
+          ),
+          KeyedSubtree(
+            key: _keyFor('earInfections'),
+            child: SonaYesNoField(
+              label: 'History of ear infections?',
+              value: _d.earInfections,
+              onChanged: (v) => _repaint(() => _d.earInfections = v),
+              detailLabel: 'Please describe (frequency, treatment)',
+              detailValue: _d.earInfectionsDetails,
+              onDetailChanged: (v) => _touch(() => _d.earInfectionsDetails = v),
+            ),
+          ),
+          KeyedSubtree(
+            key: _keyFor('entInvolvement'),
+            child: SonaYesNoField(
+              label: 'Any ear surgery or ENT involvement?',
+              value: _d.entInvolvement,
+              onChanged: (v) => _repaint(() => _d.entInvolvement = v),
+              detailLabel: 'Please describe (type and when)',
+              detailValue: _d.entInvolvementDetails,
+              onDetailChanged: (v) => _touch(() => _d.entInvolvementDetails = v),
+            ),
+          ),
+          KeyedSubtree(
+            key: _keyFor('visionTested'),
+            child: SonaYesNoField(
+              label: "Have your child's eyes been tested?",
+              value: _d.visionTested,
+              onChanged: (v) => _repaint(() => _d.visionTested = v),
+              detailLabel: 'Vision test — date and outcome',
+              detailValue: _d.visionTestedDetails,
+              onDetailChanged: (v) => _touch(() => _d.visionTestedDetails = v),
+            ),
+          ),
         ];
       case 6:
         return [
           KeyedSubtree(
             key: _keyFor('respondsToName'),
-            child: SonaYesNoField(label: 'Responds to own name?', value: _d.respondsToName, onChanged: (v) => _repaint(() => _d.respondsToName = v)),
+            child: SonaYesNoField(
+              label: 'Responds to own name?',
+              value: _d.respondsToName,
+              onChanged: (v) => _repaint(() => _d.respondsToName = v),
+              onAutoAdvance: () => _scrollToField('ageFirstWords'),
+            ),
           ),
           _txt('ageFirstWords', label: 'Age of first words', value: _d.ageFirstWords, onChanged: (v) => _touch(() => _d.ageFirstWords = v), required: true),
           _txt('ageTwoWordPhrases', label: 'Age of two-word phrases', value: _d.ageTwoWordPhrases, onChanged: (v) => _touch(() => _d.ageTwoWordPhrases = v), required: true),
@@ -566,7 +639,12 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
           _txt('anythingElse', label: 'Anything else about your child', value: _d.anythingElse, onChanged: (v) => _touch(() => _d.anythingElse = v), maxLines: 3),
           KeyedSubtree(
             key: _keyFor('photoConsent'),
-            child: SonaYesNoField(label: 'May child be photographed/filmed?', value: _d.photoConsent, onChanged: (v) => _repaint(() => _d.photoConsent = v)),
+            child: SonaYesNoField(
+              label: 'May child be photographed/filmed?',
+              value: _d.photoConsent,
+              onChanged: (v) => _repaint(() => _d.photoConsent = v),
+              onAutoAdvance: () => _scrollToField('completedBy'),
+            ),
           ),
           _txt('completedBy', label: 'Form completed by', value: _d.completedBy, onChanged: (v) => _touch(() => _d.completedBy = v), required: true),
           // completionDate is set automatically when you submit — no need to enter it

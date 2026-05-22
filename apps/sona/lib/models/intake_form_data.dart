@@ -62,11 +62,17 @@ class IntakeFormData {
   String generalHealth = '';
   String diagnosis = '';
   String medications = '';
+  // Step 5 binary fields — stored as 'yes'/'no'; detail text in _details companion
   String hospitalised = '';
+  String hospitalisedDetails = '';
   String hearingTested = '';
+  String hearingTestedDetails = '';
   String earInfections = '';
+  String earInfectionsDetails = '';
   String entInvolvement = '';
+  String entInvolvementDetails = '';
   String visionTested = '';
+  String visionTestedDetails = '';
   String respondsToName = '';
   String ageFirstWords = '';
   String ageTwoWordPhrases = '';
@@ -87,6 +93,30 @@ class IntakeFormData {
 
   /// completionDate is set server-side from submittedAt. Not collected from the parent.
   /// Omitted from the client payload; the API fills it on submission.
+
+  /// Parses a combined "Yes — detail" or "No" string back into separate parts.
+  /// Handles legacy free-text values by treating them as the detail with "yes".
+  static void _parseBinary(String raw, void Function(String yn, String details) out) {
+    final v = raw.trim();
+    if (v.isEmpty) { out('', ''); return; }
+    if (v.toLowerCase() == 'no') { out('no', ''); return; }
+    if (v.startsWith('Yes — ')) { out('yes', v.substring(6)); return; }
+    if (v.toLowerCase() == 'yes') { out('yes', ''); return; }
+    // Legacy free-text (e.g. "Yes normal") — treat as a "yes" with the full text as detail
+    out('yes', v);
+  }
+
+  /// Produces a rich text string for the clinician dashboard from a yes/no
+  /// binary value and optional detail text, e.g. "Yes — Normal results".
+  /// Falls back to [yesNo] alone when details are empty.
+  static String _combine(String yesNo, String details) {
+    final yn = yesNo.trim();
+    final d = details.trim();
+    if (yn == 'yes') return d.isNotEmpty ? 'Yes — $d' : 'Yes';
+    if (yn == 'no') return 'No';
+    // Legacy free-text value — return as-is
+    return yn;
+  }
 
   Map<String, dynamic> toJson() => {
         'version': 1,
@@ -130,11 +160,11 @@ class IntakeFormData {
         'generalHealth': generalHealth,
         'diagnosis': diagnosis,
         'medications': medications,
-        'hospitalised': hospitalised,
-        'hearingTested': hearingTested,
-        'earInfections': earInfections,
-        'entInvolvement': entInvolvement,
-        'visionTested': visionTested,
+        'hospitalised': _combine(hospitalised, hospitalisedDetails),
+        'hearingTested': _combine(hearingTested, hearingTestedDetails),
+        'earInfections': _combine(earInfections, earInfectionsDetails),
+        'entInvolvement': _combine(entInvolvement, entInvolvementDetails),
+        'visionTested': _combine(visionTested, visionTestedDetails),
         'respondsToName': respondsToName,
         'ageFirstWords': ageFirstWords,
         'ageTwoWordPhrases': ageTwoWordPhrases,
@@ -210,11 +240,28 @@ class IntakeFormData {
     d.generalHealth = s('generalHealth');
     d.diagnosis = s('diagnosis');
     d.medications = s('medications');
-    d.hospitalised = s('hospitalised');
-    d.hearingTested = s('hearingTested');
-    d.earInfections = s('earInfections');
-    d.entInvolvement = s('entInvolvement');
-    d.visionTested = s('visionTested');
+    // When loading from a draft that already stores separate _details keys (new format),
+    // use those directly. Fall back to _parseBinary for combined legacy strings.
+    _parseBinary(s('hospitalised'), (yn, det) {
+      d.hospitalised = yn;
+      d.hospitalisedDetails = s('hospitalisedDetails').isNotEmpty ? s('hospitalisedDetails') : det;
+    });
+    _parseBinary(s('hearingTested'), (yn, det) {
+      d.hearingTested = yn;
+      d.hearingTestedDetails = s('hearingTestedDetails').isNotEmpty ? s('hearingTestedDetails') : det;
+    });
+    _parseBinary(s('earInfections'), (yn, det) {
+      d.earInfections = yn;
+      d.earInfectionsDetails = s('earInfectionsDetails').isNotEmpty ? s('earInfectionsDetails') : det;
+    });
+    _parseBinary(s('entInvolvement'), (yn, det) {
+      d.entInvolvement = yn;
+      d.entInvolvementDetails = s('entInvolvementDetails').isNotEmpty ? s('entInvolvementDetails') : det;
+    });
+    _parseBinary(s('visionTested'), (yn, det) {
+      d.visionTested = yn;
+      d.visionTestedDetails = s('visionTestedDetails').isNotEmpty ? s('visionTestedDetails') : det;
+    });
     d.respondsToName = s('respondsToName');
     d.ageFirstWords = s('ageFirstWords');
     d.ageTwoWordPhrases = s('ageTwoWordPhrases');
@@ -339,19 +386,23 @@ class IntakeFormData {
         }
         return null;
       case 5:
-        final step5 = <(String, String, String)>[
-          (earlyIllnesses, 'earlyIllnesses', 'Early childhood illnesses (write \u201cnone\u201d if not applicable)'),
-          (generalHealth, 'generalHealth', 'General health'),
-          (diagnosis, 'diagnosis', 'Known diagnosis or syndrome (write \u201cnone\u201d if not applicable)'),
-          (medications, 'medications', 'Regular medications (write \u201cnone\u201d if not applicable)'),
-          (hospitalised, 'hospitalised', 'Hospitalised (write \u201cnone\u201d if not applicable)'),
-          (hearingTested, 'hearingTested', 'Hearing tested (write \u201cnot yet\u201d if not done)'),
-          (earInfections, 'earInfections', 'Ear infections (write \u201cnone\u201d if not applicable)'),
-          (entInvolvement, 'entInvolvement', 'ENT involvement (write \u201cnone\u201d if not applicable)'),
-          (visionTested, 'visionTested', 'Eyes tested (write \u201cnot yet\u201d if not done)'),
-        ];
-        for (final f in step5) {
-          if (!req(f.$1)) return err(f.$3, f.$2);
+        if (!req(earlyIllnesses)) return err('Early childhood illnesses (write \u201cnone\u201d if not applicable)', 'earlyIllnesses');
+        if (!req(generalHealth)) return err('General health', 'generalHealth');
+        if (!req(diagnosis)) return err('Known diagnosis or syndrome (write \u201cnone\u201d if not applicable)', 'diagnosis');
+        if (!req(medications)) return err('Regular medications (write \u201cnone\u201d if not applicable)', 'medications');
+        if (!req(hospitalised)) return err('Please answer whether your child has been hospitalised', 'hospitalised');
+        if (hospitalised == 'yes' && !req(hospitalisedDetails)) {
+          return err('Please briefly describe when and why your child was hospitalised', 'hospitalisedDetails');
+        }
+        if (!req(hearingTested)) return err('Please answer whether your child\u2019s hearing has been tested', 'hearingTested');
+        if (hearingTested == 'yes' && !req(hearingTestedDetails)) {
+          return err('Please describe when the hearing test was done and the outcome', 'hearingTestedDetails');
+        }
+        if (!req(earInfections)) return err('Please answer whether your child has had ear infections', 'earInfections');
+        if (!req(entInvolvement)) return err('Please answer whether your child has had ENT involvement', 'entInvolvement');
+        if (!req(visionTested)) return err('Please answer whether your child\u2019s eyes have been tested', 'visionTested');
+        if (visionTested == 'yes' && !req(visionTestedDetails)) {
+          return err('Please add the date and outcome of the vision test', 'visionTestedDetails');
         }
         return null;
       case 6:

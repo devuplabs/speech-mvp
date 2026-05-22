@@ -133,13 +133,13 @@ void main() {
     await _enterByLabel(tester, 'General health *', 'Good');
     await _enterByLabel(tester, 'Known diagnosis / syndrome *', 'None');
     await _enterByLabel(tester, 'Regular medications *', 'None');
-    await _enterByLabel(tester, 'Hospitalised? (details) *', 'No');
-    await _enterByLabel(
-        tester, 'Hearing tested? (when & outcome) *', 'Yes normal');
-    await _enterByLabel(tester, 'History of ear infections *', 'None');
-    await _enterByLabel(tester, 'Ear surgery / ENT involvement *', 'None');
-    await _enterByLabel(
-        tester, 'Eyes tested? (when & outcome) *', 'Yes normal');
+    await _tapYesNo(tester, 'Has your child been hospitalised?', 'No');
+    await _tapYesNo(tester, "Has your child's hearing been tested?", 'Yes');
+    await _enterByLabel(tester, 'When and what was the outcome? *', 'Normal results');
+    await _tapYesNo(tester, 'History of ear infections?', 'No');
+    await _tapYesNo(tester, 'Any ear surgery or ENT involvement?', 'No');
+    await _tapYesNo(tester, "Have your child's eyes been tested?", 'Yes');
+    await _enterByLabel(tester, 'Vision test — date and outcome *', 'Normal results');
     await _continue(tester);
 
     // ---- Step 6 ----
