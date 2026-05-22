@@ -65,6 +65,16 @@ export async function submitIntake(
     .where(eq(intakeSubmissions.caseId, caseId));
 
   const submittedAt = new Date();
+
+  // completionDate is no longer collected from the client; derive it server-side
+  // so the clinician dashboard continues to receive the expected field.
+  if (!answers.completionDate) {
+    const d = submittedAt.getDate().toString().padStart(2, "0");
+    const m = (submittedAt.getMonth() + 1).toString().padStart(2, "0");
+    const y = submittedAt.getFullYear();
+    answers = { ...answers, completionDate: `${d} / ${m} / ${y}` };
+  }
+
   let intake;
 
   if (existing) {

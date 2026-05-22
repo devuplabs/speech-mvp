@@ -40,12 +40,15 @@ class SonaYesNoField extends StatelessWidget {
               final display = opt == 'yes' ? 'Yes' : 'No';
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(display),
-                  selected: selected,
-                  onSelected: (_) => onChanged(opt),
-                  selectedColor: SonaColors.heroTint,
-                  side: BorderSide(color: selected ? SonaColors.primary : SonaColors.border),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48, minWidth: 72),
+                  child: ChoiceChip(
+                    label: Text(display, style: const TextStyle(fontSize: 14)),
+                    selected: selected,
+                    onSelected: (_) => onChanged(opt),
+                    selectedColor: SonaColors.heroTint,
+                    side: BorderSide(color: selected ? SonaColors.primary : SonaColors.border),
+                  ),
                 ),
               );
             }).toList(),

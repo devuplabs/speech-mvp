@@ -9,12 +9,12 @@
     "email": "sam.k@example.com",
     "childName": "Theo K.",
     "dateOfBirth": "08 / 06 / 2023",
-    "ageAtReferral": "3",
     "childAddress": "3 Maple Close, Manchester M21 9LH",
     "motherName": "Sam K.",
     "motherAddress": "3 Maple Close, Manchester M21 9LH",
     "motherMobile": "07700900401",
     "motherEmail": "sam.k@example.com",
+    "fatherDetailsApplicable": true,
     "fatherName": "Alex K.",
     "fatherAddress": "3 Maple Close, Manchester M21 9LH",
     "fatherMobile": "07700900402",
@@ -30,7 +30,7 @@
       "Following directions/instructions"
     ],
     "assessedByOthers": "yes",
-    "assessedByOthersDetails": "Pediatrician saw March 2026 — no medical cause for food refusal. OT review pending.",
+    "assessedByOthersDetails": "Pediatrician saw March 2026 \u2014 no medical cause for food refusal. OT review pending.",
     "receivingTherapy": "no",
     "therapyDetails": "",
     "languagesExposed": "English",
@@ -48,7 +48,7 @@
     "diagnosis": "None",
     "medications": "None",
     "hospitalised": "No",
-    "hearingTested": "Yes — newborn screen normal",
+    "hearingTested": "Yes \u2014 newborn screen normal",
     "earInfections": "One",
     "entInvolvement": "None",
     "visionTested": "No",
@@ -68,7 +68,6 @@
     "senPlan": "None",
     "anythingElse": "Parents would like joined-up plan with OT and feeding strategies for home",
     "photoConsent": "no",
-    "completedBy": "Sam K. (parent)",
-    "completionDate": "20 / 05 / 2026"
+    "completedBy": "Sam K. (parent)"
   }
 }

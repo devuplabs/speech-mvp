@@ -1,6 +1,18 @@
+import 'dart:math' show min;
+
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/mobile_status_bar.dart';
+
+/// Responsive column widths for the parent intake form.
+/// On narrow devices the form fills the width; on wider viewports it centers
+/// in a comfortable reading column rather than a narrow 375px phone shell.
+double _formColumnWidth(double screenWidth) {
+  if (screenWidth < 480) return screenWidth;           // phone: full width
+  if (screenWidth < 768) return min(screenWidth, 480); // large phone / small tablet
+  if (screenWidth < 1024) return 600;                  // tablet portrait
+  return 720;                                          // tablet landscape / desktop
+}
 
 class ParentMobileScaffold extends StatelessWidget {
   const ParentMobileScaffold({
@@ -18,7 +30,9 @@ class ParentMobileScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Row gives the inner Column a bounded height; Center + Expanded often renders blank on web.
+    final screenWidth = MediaQuery.of(context).size.width;
+    final columnWidth = _formColumnWidth(screenWidth);
+    // Row gives the inner Column a bounded height; Center + Expanded renders blank on web.
     return Scaffold(
       backgroundColor: SonaColors.background,
       body: SafeArea(
@@ -26,14 +40,14 @@ class ParentMobileScaffold extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 375,
+              width: columnWidth,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (showStatusBar) const MobileStatusBar(),
-                  if (header != null) header!,
+                  if (showStatusBar && screenWidth < 480) const MobileStatusBar(),
+                  ?header,
                   Expanded(child: body),
-                  if (footer != null) footer!,
+                  ?footer,
                 ],
               ),
             ),

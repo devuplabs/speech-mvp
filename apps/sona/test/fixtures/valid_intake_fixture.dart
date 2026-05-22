@@ -1,5 +1,4 @@
 import 'package:sona/models/intake_form_data.dart';
-import 'package:sona/utils/intake_validation.dart';
 
 /// Canonical valid intake used by unit tests and mirrored in e2e/fixtures.
 IntakeFormData buildValidIntakeFixture({String childName = 'E2E Test Child'}) {
@@ -7,11 +6,13 @@ IntakeFormData buildValidIntakeFixture({String childName = 'E2E Test Child'}) {
     ..email = 'e2e.parent@example.com'
     ..childName = childName
     ..dateOfBirth = '01 / 05 / 2019'
-    ..ageAtReferral = '5'
+    // ageAtReferral is now a computed getter — not set here
     ..childAddress = '1 Test Lane, London'
     ..motherName = 'E2E Mother'
     ..motherMobile = '07700900001'
     ..motherEmail = 'mother@example.com'
+    // fatherDetailsApplicable defaults to false so father fields are optional
+    ..fatherDetailsApplicable = true
     ..fatherMobile = '07700900002'
     ..fatherEmail = 'father@example.com'
     ..gpPractice = 'Test GP'
@@ -55,7 +56,7 @@ IntakeFormData buildValidIntakeFixture({String childName = 'E2E Test Child'}) {
     ..schoolNameAddress = 'Test Nursery, London'
     ..senPlan = 'None'
     ..photoConsent = 'no'
-    ..completedBy = 'E2E Parent'
-    ..completionDate = IntakeValidation.formatDdMmYyyy(DateTime(2026, 5, 1));
+    ..completedBy = 'E2E Parent';
+    // completionDate is set server-side — not set in client fixture
   return d;
 }

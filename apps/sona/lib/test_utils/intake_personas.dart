@@ -104,12 +104,12 @@ const Map<String, dynamic> _ariaAnswers = {
   'email': 'anna.m@example.com',
   'childName': 'Aria M.',
   'dateOfBirth': '15 / 03 / 2022',
-  'ageAtReferral': '4',
   'childAddress': '12 Linden Grove, London NW3 2EE',
   'motherName': 'Anna M.',
   'motherAddress': '12 Linden Grove, London NW3 2EE',
   'motherMobile': '07700900101',
   'motherEmail': 'anna.m@example.com',
+    'fatherDetailsApplicable': true,
   'fatherName': 'David M.',
   'fatherAddress': '12 Linden Grove, London NW3 2EE',
   'fatherMobile': '07700900102',
@@ -162,7 +162,6 @@ const Map<String, dynamic> _ariaAnswers = {
   'anythingElse': 'Parents would like home-practice ideas',
   'photoConsent': 'no',
   'completedBy': 'Anna M. (mother)',
-  'completionDate': '20 / 05 / 2026',
 };
 
 const Map<String, dynamic> _jadenAnswers = {
@@ -170,12 +169,12 @@ const Map<String, dynamic> _jadenAnswers = {
   'email': 'lisa.o@example.com',
   'childName': 'Jaden O.',
   'dateOfBirth': '02 / 09 / 2018',
-  'ageAtReferral': '7',
   'childAddress': '22 Park Crescent, Leeds LS8 1AB',
   'motherName': 'Lisa O.',
   'motherAddress': '22 Park Crescent, Leeds LS8 1AB',
   'motherMobile': '07700900201',
   'motherEmail': 'lisa.o@example.com',
+    'fatherDetailsApplicable': true,
   'fatherName': 'Mike O.',
   'fatherAddress': '22 Park Crescent, Leeds LS8 1AB',
   'fatherMobile': '07700900202',
@@ -235,7 +234,6 @@ const Map<String, dynamic> _jadenAnswers = {
   'anythingElse': 'Parents want strategies before secondary transition',
   'photoConsent': 'no',
   'completedBy': 'Lisa O. (mother)',
-  'completionDate': '20 / 05 / 2026',
 };
 
 const Map<String, dynamic> _miaAnswers = {
@@ -243,12 +241,12 @@ const Map<String, dynamic> _miaAnswers = {
   'email': 'jordan.r@example.com',
   'childName': 'Mia R.',
   'dateOfBirth': '11 / 11 / 2014',
-  'ageAtReferral': '11',
   'childAddress': '7 Beechwood Avenue, Bristol BS7 9PL',
   'motherName': 'Jordan R.',
   'motherAddress': '7 Beechwood Avenue, Bristol BS7 9PL',
   'motherMobile': '07700900301',
   'motherEmail': 'jordan.r@example.com',
+    'fatherDetailsApplicable': true,
   'fatherName': 'Sam R.',
   'fatherAddress': '7 Beechwood Avenue, Bristol BS7 9PL',
   'fatherMobile': '07700900302',
@@ -309,7 +307,6 @@ const Map<String, dynamic> _miaAnswers = {
   'anythingElse': 'Family preparing for secondary transition in September',
   'photoConsent': 'no',
   'completedBy': 'Jordan R. (parent)',
-  'completionDate': '20 / 05 / 2026',
 };
 
 const Map<String, dynamic> _theoAnswers = {
@@ -317,12 +314,12 @@ const Map<String, dynamic> _theoAnswers = {
   'email': 'sam.k@example.com',
   'childName': 'Theo K.',
   'dateOfBirth': '08 / 06 / 2023',
-  'ageAtReferral': '3',
   'childAddress': '3 Maple Close, Manchester M21 9LH',
   'motherName': 'Sam K.',
   'motherAddress': '3 Maple Close, Manchester M21 9LH',
   'motherMobile': '07700900401',
   'motherEmail': 'sam.k@example.com',
+    'fatherDetailsApplicable': true,
   'fatherName': 'Alex K.',
   'fatherAddress': '3 Maple Close, Manchester M21 9LH',
   'fatherMobile': '07700900402',
@@ -380,5 +377,4 @@ const Map<String, dynamic> _theoAnswers = {
       'Parents would like joined-up plan with OT and feeding strategies for home',
   'photoConsent': 'no',
   'completedBy': 'Sam K. (parent)',
-  'completionDate': '20 / 05 / 2026',
 };

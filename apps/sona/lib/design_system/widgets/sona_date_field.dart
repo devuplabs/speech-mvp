@@ -66,6 +66,8 @@ class _SonaDateFieldState extends State<SonaDateField> {
       firstDate: widget.firstDate ?? DateTime(1900),
       lastDate: widget.lastDate ?? now,
       helpText: 'Select date',
+      // Text-input mode is more reliable on mobile web than the calendar grid.
+      initialEntryMode: DatePickerEntryMode.input,
     );
     if (picked != null) {
       widget.onChanged(IntakeValidation.formatDdMmYyyy(picked));
