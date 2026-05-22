@@ -95,7 +95,17 @@ export function createV1Routes(db: Db, env: Env) {
 
     const drafts = await db.select().from(aiDrafts).where(eq(aiDrafts.caseId, caseId));
 
-    return c.json({ case: row, intake: intake ?? null, drafts });
+    const triage = await db
+      .select()
+      .from(triageRecords)
+      .where(eq(triageRecords.caseId, caseId));
+
+    return c.json({
+      case: row,
+      intake: intake ?? null,
+      drafts,
+      triage,
+    });
   });
 
   app.put("/cases/:caseId/intake/draft", async (c) => {

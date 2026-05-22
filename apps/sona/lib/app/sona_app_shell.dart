@@ -573,6 +573,32 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Submit intake');
   }
 
+  /// Records a triage outcome for the active case. The API persists the row,
+  /// drafts the stub session plan, and advances status to `plan_ready`. We
+  /// immediately reload the case so the triage rehydrates on next paint.
+  Future<void> _saveTriage({
+    required String outcome,
+    required String reason,
+  }) async {
+    final id = _state.caseId;
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No case selected — open one from Today first.')),
+      );
+      return;
+    }
+    await _run(() async {
+      await _api.recordTriage(id, outcome: outcome, reason: reason.isEmpty ? null : reason);
+      _state.triageOutcome = outcome;
+      await _refreshCase();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Triage recorded. Session plan drafted.')),
+        );
+      }
+    }, label: 'Save triage');
+  }
+
   Future<void> _publishSummary() async {
     final id = _state.caseId;
     if (id == null) {
@@ -582,7 +608,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return;
     }
     await _run(() async {
-      await _api.recordTriage(id, outcome: _state.triageOutcome, reason: 'MVP demo');
+      // Triage is recorded explicitly on the triage screen now; publishing the
+      // summary only writes the parent-facing artifact.
       await _api.publishParentSummary(id);
       final html = await _api.fetchParentSummaryHtml(id);
       setState(() {
@@ -807,8 +834,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
           onRefresh: _state.caseId == null ? null : _refreshCase,
         ),
       SonaRoute.clinicianTriage => ClinicianTriageScreen(
+          caseDetail: _state.caseDetail,
           busy: _busy,
           onBackPrep: () => _go(SonaRoute.clinicianPrep),
+          onSaveTriage: _saveTriage,
           onPublishSummary: _publishSummary,
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(

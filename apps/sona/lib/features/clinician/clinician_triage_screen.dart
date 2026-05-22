@@ -1,20 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/sona_typography.dart';
-import 'package:sona/design_system/widgets/ai_draft_badge.dart';
 import 'package:sona/design_system/widgets/sona_page_title.dart';
 
-class ClinicianTriageScreen extends StatelessWidget {
+/// One of the 4 MVP triage outcomes (matches the API enum).
+class TriageOutcome {
+  const TriageOutcome(this.id, this.label, this.subtitle);
+  final String id;
+  final String label;
+  final String subtitle;
+
+  static const all = [
+    TriageOutcome(
+      'strategy_only',
+      'Strategy only',
+      'Parent-led carryover; no further sessions booked.',
+    ),
+    TriageOutcome(
+      'short_block',
+      'Short block',
+      '4–6 sessions targeting one or two goals.',
+    ),
+    TriageOutcome(
+      'full_assessment',
+      'Full assessment',
+      'Standardised assessment then formal plan.',
+    ),
+    TriageOutcome(
+      'refer_out',
+      'Refer onward',
+      'Direct to NHS / OT / ENT / paediatrician with a written summary.',
+    ),
+  ];
+}
+
+/// Clinician triage capture.
+///
+/// Surfaces the 4 MVP triage outcomes from `docs/mvp-brief.md`:
+/// strategy_only / short_block / full_assessment / refer_out.
+///
+/// Rehydrates from `caseDetail['triage']` so revisiting the case shows the
+/// previously-recorded outcome + reason. Saving POSTs to
+/// `/v1/cases/:id/triage`; the parent shell handles drafting the session
+/// plan + advancing case status after a successful save.
+class ClinicianTriageScreen extends StatefulWidget {
   const ClinicianTriageScreen({
     super.key,
+    required this.onSaveTriage,
     required this.onPublishSummary,
     required this.onBackPrep,
+    this.caseDetail,
     this.busy = false,
   });
 
+  /// `{case: {...}, intake: {...}, drafts: [...], triage: [...]}`.
+  final Map<String, dynamic>? caseDetail;
+  final Future<void> Function({required String outcome, required String reason})
+      onSaveTriage;
   final VoidCallback onPublishSummary;
   final VoidCallback onBackPrep;
   final bool busy;
+
+  @override
+  State<ClinicianTriageScreen> createState() => _ClinicianTriageScreenState();
+}
+
+class _ClinicianTriageScreenState extends State<ClinicianTriageScreen> {
+  String _selectedOutcome = 'short_block';
+  final TextEditingController _reason = TextEditingController();
+  bool _initialized = false;
+
+  @override
+  void didUpdateWidget(ClinicianTriageScreen old) {
+    super.didUpdateWidget(old);
+    if (old.caseDetail != widget.caseDetail) _hydrateFromCase();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _hydrateFromCase();
+  }
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  /// Pull the latest triage row (if any) and pre-select it. The user can
+  /// change the outcome / edit the reason and re-save — the route writes a
+  /// fresh row so the audit trail keeps each clinician decision.
+  void _hydrateFromCase() {
+    if (_initialized) return;
+    final triage = (widget.caseDetail?['triage'] as List?)?.cast<Map<String, dynamic>>();
+    if (triage == null || triage.isEmpty) {
+      _initialized = true;
+      return;
+    }
+    final latest = triage.reduce((a, b) {
+      final aAt = a['recordedAt'] as String? ?? '';
+      final bAt = b['recordedAt'] as String? ?? '';
+      return aAt.compareTo(bAt) > 0 ? a : b;
+    });
+    setState(() {
+      _selectedOutcome = (latest['outcome'] as String?) ?? _selectedOutcome;
+      _reason.text = (latest['reason'] as String?) ?? '';
+      _initialized = true;
+    });
+  }
+
+  String? get _childName {
+    final c = widget.caseDetail?['case'] as Map<String, dynamic>?;
+    final name = (c?['childDisplayName'] as String?)?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final answers = widget.caseDetail?['intake']?['answers'] as Map<String, dynamic>?;
+    return (answers?['childName'] as String?)?.trim();
+  }
+
+  bool get _alreadyRecorded {
+    final triage = (widget.caseDetail?['triage'] as List?)?.cast<Map<String, dynamic>>();
+    return triage != null && triage.isNotEmpty;
+  }
+
+  Future<void> _save() async {
+    if (widget.busy) return;
+    await widget.onSaveTriage(
+      outcome: _selectedOutcome,
+      reason: _reason.text.trim(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +145,15 @@ class ClinicianTriageScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextButton(onPressed: onBackPrep, child: const Text('← Consult prep')),
-              const Text('Aria M. · Free consultation complete', style: TextStyle(fontSize: 12, color: SonaColors.textMuted)),
-              const SonaPageTitle('Triage & session plan', style: SonaTypography.clinicianTitle),
+              TextButton(onPressed: widget.onBackPrep, child: const Text('← Consult prep')),
+              Text(
+                _childName == null
+                    ? 'Free consultation complete'
+                    : '$_childName · Free consultation complete',
+                style: const TextStyle(fontSize: 12, color: SonaColors.textMuted),
+              ),
+              const SonaPageTitle('Triage & session plan',
+                  style: SonaTypography.clinicianTitle),
             ],
           ),
         ),
@@ -43,37 +164,30 @@ class ClinicianTriageScreen extends StatelessWidget {
               builder: (context, constraints) {
                 final main = Column(
                   children: [
-                    _triageCard(),
+                    _outcomePicker(),
                     const SizedBox(height: 16),
-                    _planCard(),
+                    _reasonCard(),
                   ],
                 );
                 final aside = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: SonaColors.surface,
-                        border: Border.all(color: SonaColors.border),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Next step', style: TextStyle(fontWeight: FontWeight.w600)),
-                          SizedBox(height: 8),
-                          Text(
-                            'Publish a parent-friendly summary to the secure portal. No clinical detail in email.',
-                            style: TextStyle(fontSize: 13, color: SonaColors.textSecondary, height: 1.4),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    _nextStepCard(),
+                    const SizedBox(height: 12),
                     FilledButton(
-                      onPressed: busy ? null : onPublishSummary,
-                      child: Text(busy ? 'Publishing…' : 'Publish parent summary'),
+                      onPressed: widget.busy ? null : _save,
+                      child: Text(widget.busy
+                          ? 'Saving…'
+                          : _alreadyRecorded
+                              ? 'Update triage'
+                              : 'Save triage'),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: widget.busy || !_alreadyRecorded
+                          ? null
+                          : widget.onPublishSummary,
+                      child: const Text('Publish parent summary →'),
                     ),
                   ],
                 );
@@ -99,7 +213,7 @@ class ClinicianTriageScreen extends StatelessWidget {
     );
   }
 
-  Widget _triageCard() {
+  Widget _outcomePicker() {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -110,74 +224,97 @@ class ClinicianTriageScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Text('Triage outcome', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              Spacer(),
-              AiDraftBadge(compact: true),
-            ],
+          const Text('Triage outcome',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          const Text(
+            'Pick one. Recorded against the case for funnel analytics.',
+            style: TextStyle(fontSize: 12, color: SonaColors.textMuted),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _chip('Speech sound disorder', selected: true),
-              _chip('Feeding concern', selected: true),
-              _chip('Language delay', selected: false),
-              _chip('Refer onward', selected: false),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const TextField(
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Clinician notes (internal)',
-              hintText: 'Articulation assessment recommended; monitor feeding…',
-            ),
-          ),
+          ...TriageOutcome.all.map(_outcomeCard),
         ],
       ),
     );
   }
 
-  Widget _planCard() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: SonaColors.surface,
-        border: Border.all(color: SonaColors.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Text('Session plan (draft)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              Spacer(),
-              AiDraftBadge(compact: true),
-            ],
+  Widget _outcomeCard(TriageOutcome opt) {
+    final selected = _selectedOutcome == opt.id;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: widget.busy ? null : () => setState(() => _selectedOutcome = opt.id),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected ? SonaColors.heroTint : SonaColors.background,
+            border: Border.all(
+              color: selected ? SonaColors.primary : SonaColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 12),
-          ...[
-            'Formal assessment — speech sounds (DEAP)',
-            'Parent strategies — carry-over at home',
-            'Review in 4 weeks',
-          ].map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: true,
-                    onChanged: (_) {},
-                    activeColor: SonaColors.primary,
-                    semanticLabel: item,
-                  ),
-                  Expanded(child: Text(item)),
-                ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                color: selected ? SonaColors.primary : SonaColors.textMuted,
+                size: 20,
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(opt.label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: selected ? SonaColors.primaryDark : SonaColors.textPrimary,
+                        )),
+                    const SizedBox(height: 2),
+                    Text(opt.subtitle,
+                        style: const TextStyle(
+                            fontSize: 12, color: SonaColors.textSecondary, height: 1.35)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _reasonCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: SonaColors.surface,
+        border: Border.all(color: SonaColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Reason / notes (internal)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          const Text(
+            'Why this outcome. Not shared with parent. Captured for funnel + audit.',
+            style: TextStyle(fontSize: 12, color: SonaColors.textMuted),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _reason,
+            maxLines: 4,
+            enabled: !widget.busy,
+            decoration: const InputDecoration(
+              hintText:
+                  'Articulation assessment recommended; monitor feeding alongside short block…',
+              border: OutlineInputBorder(),
             ),
           ),
         ],
@@ -185,21 +322,28 @@ class ClinicianTriageScreen extends StatelessWidget {
     );
   }
 
-  Widget _chip(String label, {required bool selected}) {
+  Widget _nextStepCard() {
+    final msg = _alreadyRecorded
+        ? 'Triage saved. AI-drafted session plan ready in the next step.'
+        : 'Pick an outcome and save. The session-plan draft is generated on save.';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: selected ? SonaColors.navActiveBg : SonaColors.background,
-        border: Border.all(color: selected ? SonaColors.primary : SonaColors.chipBorder),
-        borderRadius: BorderRadius.circular(999),
+        color: SonaColors.surface,
+        border: Border.all(color: SonaColors.border),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: selected ? SonaColors.primaryDark : SonaColors.textSecondary,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Next step', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(
+            msg,
+            style: const TextStyle(
+                fontSize: 13, color: SonaColors.textSecondary, height: 1.4),
+          ),
+        ],
       ),
     );
   }
