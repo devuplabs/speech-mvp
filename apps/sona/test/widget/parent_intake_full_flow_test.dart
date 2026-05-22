@@ -78,10 +78,11 @@ void main() {
         reason: 'Continue from page 1a should advance to page 1b');
 
     // ---- Step 1 page 1b (the demo-blocker transition) ----
-    // Enable father/second parent details via the toggle checkbox
-    await _tapCheckboxLabel(tester, 'Add second parent / father details');
-    await _enterByLabel(tester, "Father's / second parent's mobile *", '07700900002');
-    await _enterByLabel(tester, "Father's / second parent's email *", 'father@example.com');
+    // Enable second parent / guardian section via the toggle checkbox
+    await _tapCheckboxLabel(tester, 'Add second parent / guardian details');
+    await _enterByLabel(tester, 'Relationship to child *', 'Father');
+    await _enterByLabel(tester, "Second parent's mobile *", '07700900002');
+    await _enterByLabel(tester, "Second parent's email *", 'father@example.com');
     await _enterByLabel(tester, 'GP practice *', 'Test GP');
     await _enterByLabel(tester, 'GP address *', 'GP Street');
     await _enterByLabel(tester, 'GP phone *', '02070000000');

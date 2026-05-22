@@ -391,7 +391,12 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
                   widget.state.pendingValidationFieldKey = null;
                   widget.state.pendingValidationMessage = null;
                 }
-                _repaint(() => _d.dateOfBirth = v);
+                _repaint(() {
+                  _d.dateOfBirth = v;
+                  // Clear any manual override so the newly-computed age shows
+                  _d.ageAtReferralOverride = '';
+                  _editingAgeAtReferral = false;
+                });
               },
               required: true,
               errorText: _errorTextFor('dateOfBirth'),
@@ -408,10 +413,15 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
         return [
           _fatherDetailsToggle(),
           if (_d.fatherDetailsApplicable) ...[
-            _txt('fatherName', label: "Father's / second parent's name", value: _d.fatherName, onChanged: (v) => _touch(() => _d.fatherName = v)),
-            _txt('fatherAddress', label: "Father's address if different", value: _d.fatherAddress, onChanged: (v) => _touch(() => _d.fatherAddress = v)),
-            _txt('fatherMobile', label: "Father's / second parent's mobile", value: _d.fatherMobile, onChanged: (v) => _touch(() => _d.fatherMobile = v), keyboardType: TextInputType.phone, required: true),
-            _txt('fatherEmail', label: "Father's / second parent's email", value: _d.fatherEmail, onChanged: (v) => _touch(() => _d.fatherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
+            _txt('secondParentRelationship',
+                label: 'Relationship to child',
+                value: _d.secondParentRelationship,
+                onChanged: (v) => _touch(() => _d.secondParentRelationship = v),
+                required: true),
+            _txt('fatherName', label: "Second parent's full name", value: _d.fatherName, onChanged: (v) => _touch(() => _d.fatherName = v)),
+            _txt('fatherAddress', label: "Second parent's address if different", value: _d.fatherAddress, onChanged: (v) => _touch(() => _d.fatherAddress = v)),
+            _txt('fatherMobile', label: "Second parent's mobile", value: _d.fatherMobile, onChanged: (v) => _touch(() => _d.fatherMobile = v), keyboardType: TextInputType.phone, required: true),
+            _txt('fatherEmail', label: "Second parent's email", value: _d.fatherEmail, onChanged: (v) => _touch(() => _d.fatherEmail = v), keyboardType: TextInputType.emailAddress, required: true),
           ],
           _txt('gpPractice', label: 'GP practice', value: _d.gpPractice, onChanged: (v) => _touch(() => _d.gpPractice = v), required: true),
           _txt('gpAddress', label: 'GP address', value: _d.gpAddress, onChanged: (v) => _touch(() => _d.gpAddress = v), maxLines: 2, required: true),
@@ -637,38 +647,93 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
     };
   }
 
-  /// Read-only computed age display shown below the Date of birth field.
+  /// Computed age display shown below the Date of birth field.
+  /// Shows the auto-computed value with an Edit button. When editing, a text
+  /// field pre-filled with the computed value lets the parent correct it
+  /// (e.g. when the referral was made months before filling this form).
   Widget _ageAtReferralDisplay() {
-    final age = IntakeValidation.computeAgeAtReferral(_d.dateOfBirth);
-    if (age == null) return const SizedBox.shrink();
+    final computed = IntakeValidation.computeAgeAtReferral(_d.dateOfBirth);
+    if (computed == null) return const SizedBox.shrink();
+
+    final isEditing = _editingAgeAtReferral;
+    final displayValue = _d.ageAtReferralOverride.trim().isNotEmpty
+        ? _d.ageAtReferralOverride
+        : computed;
+
     return Padding(
+      key: _keyFor('ageAtReferral'),
       padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: SonaColors.heroTint,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: SonaColors.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.cake_outlined, size: 16, color: SonaColors.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Age at referral: $age',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: SonaColors.primaryDark,
+      child: isEditing
+          ? SonaTextField(
+              label: 'Age at referral',
+              value: displayValue,
+              onChanged: (v) => _touch(() => _d.ageAtReferralOverride = v),
+              maxLines: 1,
+              autofillHints: null,
+            )
+          : Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+              decoration: BoxDecoration(
+                color: _d.ageAtReferralOverride.trim().isNotEmpty
+                    ? SonaColors.surface
+                    : SonaColors.heroTint,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _d.ageAtReferralOverride.trim().isNotEmpty
+                      ? SonaColors.border
+                      : SonaColors.primary.withValues(alpha: 0.3),
                 ),
               ),
+              child: Row(
+                children: [
+                  const Icon(Icons.cake_outlined, size: 16, color: SonaColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Age at referral',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: SonaColors.textMuted,
+                          ),
+                        ),
+                        Text(
+                          displayValue,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: SonaColors.primaryDark,
+                          ),
+                        ),
+                        if (_d.ageAtReferralOverride.isEmpty)
+                          const Text(
+                            'Computed from date of birth',
+                            style: TextStyle(fontSize: 11, color: SonaColors.textMuted),
+                          ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _repaint(() => _editingAgeAtReferral = true),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(44, 44),
+                      foregroundColor: SonaColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: Text(
+                      _d.ageAtReferralOverride.isEmpty ? 'Edit' : 'Change',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
+
+  bool _editingAgeAtReferral = false;
 
   /// Toggle for second parent / father details on Step 1b.
   Widget _fatherDetailsToggle() {
@@ -700,13 +765,23 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
               ),
               const SizedBox(width: 8),
               const Expanded(
-                child: Text(
-                  'Add second parent / father details',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: SonaColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Add second parent / guardian details',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: SonaColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Father, mother, guardian, carer — anyone involved',
+                      style: TextStyle(fontSize: 11, color: SonaColors.textMuted),
+                    ),
+                  ],
                 ),
               ),
             ],
