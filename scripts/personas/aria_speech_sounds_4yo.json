@@ -15,6 +15,7 @@
     "motherMobile": "07700900101",
     "motherEmail": "anna.m@example.com",
     "fatherDetailsApplicable": true,
+    "secondParentRelationship": "Father",
     "fatherName": "David M.",
     "fatherAddress": "12 Linden Grove, London NW3 2EE",
     "fatherMobile": "07700900102",

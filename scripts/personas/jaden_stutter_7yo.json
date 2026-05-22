@@ -15,6 +15,7 @@
     "motherMobile": "07700900201",
     "motherEmail": "lisa.o@example.com",
     "fatherDetailsApplicable": true,
+    "secondParentRelationship": "Father",
     "fatherName": "Mike O.",
     "fatherAddress": "22 Park Crescent, Leeds LS8 1AB",
     "fatherMobile": "07700900202",

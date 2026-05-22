@@ -15,6 +15,7 @@
     "motherMobile": "07700900401",
     "motherEmail": "sam.k@example.com",
     "fatherDetailsApplicable": true,
+    "secondParentRelationship": "Father",
     "fatherName": "Alex K.",
     "fatherAddress": "3 Maple Close, Manchester M21 9LH",
     "fatherMobile": "07700900402",
