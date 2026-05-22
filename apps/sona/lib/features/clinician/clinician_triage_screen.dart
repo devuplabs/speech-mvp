@@ -187,7 +187,7 @@ class _ClinicianTriageScreenState extends State<ClinicianTriageScreen> {
                       onPressed: widget.busy || !_alreadyRecorded
                           ? null
                           : widget.onPublishSummary,
-                      child: const Text('Publish parent summary →'),
+                      child: const Text('Continue to session plan →'),
                     ),
                   ],
                 );

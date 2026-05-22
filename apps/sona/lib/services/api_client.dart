@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:sona/config/env.dart';
 import 'package:sona/utils/api_response.dart';
-import 'package:sona/utils/json_encode_util.dart';
 
 class SonaApiClient {
   SonaApiClient({http.Client? client}) : _client = client ?? http.Client();
@@ -126,6 +125,25 @@ class SonaApiClient {
       _base.replace(path: '/v1/cases/$caseId/triage'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'outcome': outcome, 'reason': reason}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Update the AI-drafted session plan with clinician edits and/or finalise.
+  /// [sections] mirrors the API shape: each value is a list of bullet strings.
+  Future<Map<String, dynamic>> updateSessionPlan(
+    String caseId, {
+    Map<String, List<String>>? sections,
+    String? reviewStatus,
+  }) async {
+    final res = await _client.put(
+      _base.replace(path: '/v1/cases/$caseId/session-plan'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        if (sections != null) 'sections': sections,
+        if (reviewStatus != null) 'reviewStatus': reviewStatus,
+      }),
     );
     _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
