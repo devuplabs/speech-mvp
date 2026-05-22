@@ -5,6 +5,7 @@ import 'package:sona/design_system/widgets/parent_mobile_scaffold.dart';
 import 'package:sona/design_system/widgets/sona_page_title.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/trust_row.dart';
+import 'package:sona/test_utils/intake_personas.dart';
 
 class ParentWelcomeScreen extends StatelessWidget {
   const ParentWelcomeScreen({
@@ -12,11 +13,16 @@ class ParentWelcomeScreen extends StatelessWidget {
     required this.onGetStarted,
     this.onResume,
     this.hasDraft = false,
+    this.onFillSample,
   });
 
   final VoidCallback onGetStarted;
   final VoidCallback? onResume;
   final bool hasDraft;
+
+  /// Set by the shell when the build is dev + non-prod; when null the
+  /// "Fill with sample data" affordance is not rendered.
+  final void Function(IntakePersona persona)? onFillSample;
 
   @override
   Widget build(BuildContext context) {
@@ -169,9 +175,92 @@ class ParentWelcomeScreen extends StatelessWidget {
               'Takes about 10 minutes  ·  Save as you go',
               style: TextStyle(fontSize: 12, color: SonaColors.textMuted, fontWeight: FontWeight.w500),
             ),
+            if (onFillSample != null) ...[
+              const SizedBox(height: 18),
+              _DevFillSampleButton(onFillSample: onFillSample!),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+/// Dev-only affordance: presents the persona picker and forwards the choice to
+/// [onFillSample]. Never built in prod — `SonaAppShell` only passes a non-null
+/// `onFillSample` when `kDebugMode` AND the API base URL is not prod.
+class _DevFillSampleButton extends StatelessWidget {
+  const _DevFillSampleButton({required this.onFillSample});
+
+  final void Function(IntakePersona persona) onFillSample;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: SonaColors.warningBg,
+        border: Border.all(color: SonaColors.warningText.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'DEV ONLY · Fill with sample data',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: SonaColors.warningText,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Synthetic personas only. Never ships to prod.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: SonaColors.textMuted),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () => _showPicker(context),
+            child: const Text('Pick a sample persona'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showPicker(BuildContext context) async {
+    final picked = await showModalBottomSheet<IntakePersona>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            itemCount: intakePersonas.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (_, i) {
+              final p = intakePersonas[i];
+              return Card(
+                margin: EdgeInsets.zero,
+                child: ListTile(
+                  title: Text(p.label,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(p.summary,
+                      style: const TextStyle(fontSize: 12)),
+                  onTap: () => Navigator.of(ctx).pop(p),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (picked != null) onFillSample(picked);
   }
 }

@@ -20,6 +20,7 @@ import 'package:sona/services/api_client.dart';
 import 'package:sona/services/intake_draft_storage.dart';
 import 'package:sona/services/intake_local_autosave.dart';
 import 'package:sona/state/sona_app_state.dart';
+import 'package:sona/test_utils/intake_personas.dart';
 import 'package:sona/utils/api_errors.dart';
 import 'package:sona/utils/intake_validation.dart';
 import 'package:sona/utils/case_status.dart';
@@ -614,6 +615,43 @@ class _SonaAppShellState extends State<SonaAppShell> {
     setState(() => _route = route);
   }
 
+  /// Dev-only: persona-fill is enabled if we're a debug build AND the API base
+  /// URL doesn't look like prod. Hard guard — we never want this affordance to
+  /// hydrate real client data even by accident.
+  bool get _devFillSampleEnabled {
+    if (!kDebugMode) return false;
+    final url = Env.apiBaseUrl.toLowerCase();
+    if (url.contains('prod') || url.contains('production')) return false;
+    return true;
+  }
+
+  /// Hydrate `_state` from [persona], save a server-side draft, and jump
+  /// straight to the review screen so the demo / human tester can submit with
+  /// a single tap.
+  Future<void> _fillSampleAndOpenReview(IntakePersona persona) async {
+    await _run(() async {
+      await _ensureTenant();
+      _state.caseId = null;
+      _state.formStep = 8;
+      _state.formSubstep = 0;
+      _state.returnToReviewAfterEdit = false;
+      _state.applyDraftAnswers({
+        ...persona.answers,
+        'consentGuardian': false,
+        'consentPrivacy': false,
+        'consentAccurate': false,
+      }, step: 8);
+      _state.intake.childName = persona.childDisplayName;
+      _state.intake.email = persona.parentEmail;
+      await _ensureValidParentCase();
+      await _saveDraft(quiet: true);
+      setState(() {
+        _route = SonaRoute.parentReview;
+        _status = 'Filled with sample persona: ${persona.label}';
+      });
+    }, label: 'Fill sample');
+  }
+
   Future<void> _openClinicianToday() async {
     _go(SonaRoute.clinicianToday);
     await _run(() async {
@@ -635,6 +673,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
             hasDraft: _hasResumableDraft,
             onGetStarted: () => _startParentIntake(resume: false),
             onResume: _hasResumableDraft ? () => _startParentIntake(resume: true) : null,
+            onFillSample: _devFillSampleEnabled ? _fillSampleAndOpenReview : null,
           ),
         SonaRoute.parentIntake => ParentIntakeStepScreen(
             state: _state,
