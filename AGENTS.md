@@ -37,11 +37,24 @@ PostgreSQL 16 is required locally for the API data routes.
 - The LLM inference service (`INFERENCE_OPENAI_BASE_URL`) is not available locally — the API gracefully degrades and uses stub drafts.
 - Migrations run automatically on API start when `RUN_MIGRATIONS_ON_START=true`.
 
-### Lint & typecheck
+### Lint, typecheck & tests
 
-- **API**: `cd apps/api && npx tsc --noEmit`
-- **Flutter**: `cd apps/sona && flutter analyze` (2 info-level lint hints are expected, not errors)
-- **E2E tests**: `cd e2e && SONA_API_URL=http://localhost:8081 SONA_WEB_URL=http://localhost:8080 npx playwright test`
+- **API typecheck**: `cd apps/api && npx tsc --noEmit`
+- **Flutter analyze**: `cd apps/sona && flutter analyze` (info-level lint hints are expected, not errors)
+- **Flutter unit/widget tests**: `cd apps/sona && flutter test` (includes full 8-step intake flow widget test)
+- **E2E tests (Playwright)**: `cd e2e && SONA_API_URL=http://localhost:8081 SONA_WEB_URL=http://localhost:8080 npx playwright test`
+- **Flutter integration tests** (requires chromedriver + running web server):
+  ```bash
+  chromedriver --port=4444 &
+  cd apps/sona
+  flutter drive --driver=test_driver/integration_test.dart \
+    --target=integration_test/<test_file>.dart \
+    -d web-server --browser-name=chrome --headless --web-port=8090
+  ```
+
+### Chromedriver
+
+Chromedriver is installed at `/usr/local/bin/chromedriver`, version-matched to the VM's Chrome. The update script auto-updates it when Chrome changes.
 
 ### Local database credentials
 
