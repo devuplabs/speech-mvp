@@ -12,6 +12,44 @@ tweaks against Figma.
 | `pre-deploy-verify.ps1` | Fast local check that runs the critical Flutter unit tests (when SDK is on PATH), API typecheck, and the Playwright API-only intake suite before opening a PR. Run from the repo root: `pwsh scripts/pre-deploy-verify.ps1`. |
 | `sync-agent-skills.ps1` | Refresh the per-workspace Cursor agent skills under `.cursor/skills/`. |
 
+## Synthetic intake personas
+
+| Location | Role |
+|---|---|
+| `scripts/personas/*.json` | **Canonical** persona definitions (one file per persona). |
+| `e2e/fixtures/intake-personas.ts` | TypeScript mirror — imported by Playwright specs. |
+| `apps/sona/lib/test_utils/intake_personas.dart` | Dart mirror — imported by widget / integration tests and the dev-only "Fill with sample data" affordance on parent welcome. |
+
+Parity across the three is asserted by:
+
+- `e2e/tests/personas-parity.spec.ts` — JSON ↔ TS.
+- `apps/sona/test/intake_personas_parity_test.dart` — JSON ↔ Dart.
+- `apps/sona/test/intake_personas_validation_test.dart` — every persona passes the 8-step intake validator.
+
+**Synthetic only.** Never replace these with real client data. PHI guardrails
+(`docs/mvp-brief.md` + `.cursor/rules/mvp-security-reminder.mdc`) still apply.
+
+### Seed the dev API
+
+```bash
+# Local API
+SONA_API_URL=http://localhost:8081 npx tsx scripts/seed-dev.ts
+
+# Hosted dev (synthetic only — never prod)
+SONA_API_URL=https://sona-api-dev-3rhenudy6a-nw.a.run.app \
+  SEED_STAGES=intake_submitted,prep_ready,triaged,plan_ready \
+  SEED_PER_STAGE=1 \
+  npx tsx scripts/seed-dev.ts
+
+# Just a couple of personas
+PERSONAS=aria_speech_sounds_4yo,theo_feeding_3yo \
+  npx tsx scripts/seed-dev.ts
+```
+
+`scripts/seed-dev.ts` refuses to run against any URL containing `prod` /
+`production`. Run it before manually exercising the clinician dashboard so
+there's data to render.
+
 ## Intake API test payloads
 
 Use these with `curl` or any HTTP client against `apps/api` (locally or the

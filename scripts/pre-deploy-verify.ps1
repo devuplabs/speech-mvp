@@ -26,6 +26,11 @@ Set-Location "$root\e2e"
 npm run test:api
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host "==> Playwright persona parity (JSON <-> TS)"
+Set-Location "$root\e2e"
+npx playwright test tests/personas-parity.spec.ts
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Write-Host ""
 Write-Host "Pre-deploy verify passed (local + API E2E)."
 Write-Host "Optional full UI + dashboard:  cd e2e; npm run test:full"
