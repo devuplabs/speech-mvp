@@ -15,6 +15,7 @@
     "motherMobile": "07700900301",
     "motherEmail": "jordan.r@example.com",
     "fatherDetailsApplicable": true,
+    "secondParentRelationship": "Father",
     "fatherName": "Sam R.",
     "fatherAddress": "7 Beechwood Avenue, Bristol BS7 9PL",
     "fatherMobile": "07700900302",

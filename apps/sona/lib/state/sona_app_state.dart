@@ -62,6 +62,8 @@ class SonaAppState extends ChangeNotifier {
     intake.motherMobile = src.motherMobile;
     intake.motherEmail = src.motherEmail;
     intake.fatherDetailsApplicable = src.fatherDetailsApplicable;
+    intake.secondParentRelationship = src.secondParentRelationship;
+    intake.ageAtReferralOverride = src.ageAtReferralOverride;
     intake.fatherName = src.fatherName;
     intake.fatherAddress = src.fatherAddress;
     intake.fatherMobile = src.fatherMobile;

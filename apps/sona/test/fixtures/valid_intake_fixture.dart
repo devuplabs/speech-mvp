@@ -11,8 +11,8 @@ IntakeFormData buildValidIntakeFixture({String childName = 'E2E Test Child'}) {
     ..motherName = 'E2E Mother'
     ..motherMobile = '07700900001'
     ..motherEmail = 'mother@example.com'
-    // fatherDetailsApplicable defaults to false so father fields are optional
     ..fatherDetailsApplicable = true
+    ..secondParentRelationship = 'Father'
     ..fatherMobile = '07700900002'
     ..fatherEmail = 'father@example.com'
     ..gpPractice = 'Test GP'

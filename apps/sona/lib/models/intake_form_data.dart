@@ -9,19 +9,30 @@ class IntakeFormData {
   String childName = '';
   String dateOfBirth = '';
 
-  /// Read-only; auto-computed from [dateOfBirth]. Not collected from the parent.
+  /// Optional manual override for [ageAtReferral].
+  /// When non-empty, the parent has explicitly edited the computed value
+  /// (e.g. referral happened months before today).
+  String ageAtReferralOverride = '';
+
+  /// Effective age at referral — uses the parent's manual edit when provided,
+  /// otherwise auto-computed from [dateOfBirth].
   /// Kept in the JSON payload so the clinician dashboard is unchanged.
   String get ageAtReferral =>
-      IntakeValidation.computeAgeAtReferral(dateOfBirth) ?? '';
+      ageAtReferralOverride.trim().isNotEmpty
+          ? ageAtReferralOverride
+          : IntakeValidation.computeAgeAtReferral(dateOfBirth) ?? '';
 
   String childAddress = '';
   String motherName = '';
   String motherAddress = '';
   String motherMobile = '';
   String motherEmail = '';
-  /// Whether the parent has indicated a second parent / father is involved.
-  /// When false, father fields are not required.
+  /// Whether the parent has indicated a second parent / guardian is involved.
+  /// When false, second parent fields are not required.
   bool fatherDetailsApplicable = false;
+  /// Relationship of the second parent to the child (e.g. Father, Mother, Guardian, Carer).
+  /// Kept as free text to be inclusive of all family structures.
+  String secondParentRelationship = '';
   String fatherName = '';
   String fatherAddress = '';
   String fatherMobile = '';
@@ -82,13 +93,14 @@ class IntakeFormData {
         'email': email,
         'childName': childName,
         'dateOfBirth': dateOfBirth,
-        'ageAtReferral': ageAtReferral, // computed getter — included for clinician dashboard
+        'ageAtReferral': ageAtReferral, // effective value (override ?? computed) for clinician dashboard
         'childAddress': childAddress,
         'motherName': motherName,
         'motherAddress': motherAddress,
         'motherMobile': motherMobile,
         'motherEmail': motherEmail,
         'fatherDetailsApplicable': fatherDetailsApplicable,
+        'secondParentRelationship': secondParentRelationship,
         'fatherName': fatherName,
         'fatherAddress': fatherAddress,
         'fatherMobile': fatherMobile,
@@ -148,7 +160,11 @@ class IntakeFormData {
     d.email = s('email');
     d.childName = s('childName');
     d.dateOfBirth = s('dateOfBirth');
-    // ageAtReferral is a computed getter — not restored from JSON
+    // Restore override only if the saved value differs from the freshly computed value;
+    // if it matches, leave override empty so re-computation keeps it up to date.
+    final savedAge = s('ageAtReferral');
+    final computed = IntakeValidation.computeAgeAtReferral(d.dateOfBirth) ?? '';
+    d.ageAtReferralOverride = (savedAge.isNotEmpty && savedAge != computed) ? savedAge : '';
     d.childAddress = s('childAddress');
     d.motherName = s('motherName');
     d.motherAddress = s('motherAddress');
@@ -159,6 +175,7 @@ class IntakeFormData {
         (json['fatherEmail'] as String?)?.isNotEmpty == true ||
         (json['fatherName'] as String?)?.isNotEmpty == true;
     d.fatherDetailsApplicable = json['fatherDetailsApplicable'] as bool? ?? hasFatherData;
+    d.secondParentRelationship = s('secondParentRelationship');
     d.fatherName = s('fatherName');
     d.fatherAddress = s('fatherAddress');
     d.fatherMobile = s('fatherMobile');
@@ -231,8 +248,9 @@ class IntakeFormData {
     'motherEmail',
   };
 
-  /// Field keys rendered on step 1 page 2 (1b): father contacts, GP, referral.
+  /// Field keys rendered on step 1 page 2 (1b): second parent, GP, referral.
   static const Set<String> step1bFieldKeys = {
+    'secondParentRelationship',
     'fatherName',
     'fatherAddress',
     'fatherMobile',
@@ -272,10 +290,13 @@ class IntakeFormData {
         if (!req(motherName)) return err("We need a name for the primary contact", 'motherName');
         if (!req(motherMobile)) return err("We need a mobile number so your therapist can reach you", 'motherMobile');
         if (!req(motherEmail)) return err("We need an email address so your therapist can send you updates", 'motherEmail');
-        // Father fields only required when the parent has indicated they're applicable
+        // Second parent fields only required when the section is enabled
         if (fatherDetailsApplicable) {
-          if (!req(fatherMobile)) return err("Please add a mobile number for the second parent", 'fatherMobile');
-          if (!req(fatherEmail)) return err("Please add an email address for the second parent", 'fatherEmail');
+          if (!req(secondParentRelationship)) {
+            return err("Please enter the relationship to the child (e.g. Father, Guardian, Carer)", 'secondParentRelationship');
+          }
+          if (!req(fatherMobile)) return err("Please add a mobile number for the second parent / guardian", 'fatherMobile');
+          if (!req(fatherEmail)) return err("Please add an email address for the second parent / guardian", 'fatherEmail');
         }
         if (!req(gpPractice)) return err("Your GP's details help us coordinate care if needed", 'gpPractice');
         if (!req(gpAddress)) return err("Your GP's address is needed for the referral file", 'gpAddress');
