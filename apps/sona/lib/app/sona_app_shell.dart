@@ -484,6 +484,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     final caseMap = detail['case'] as Map<String, dynamic>?;
     final status = caseMap?['status'] as String? ?? '';
     setState(() {
+      _state.caseDetail = detail;
       _status = 'Case: $status';
       _state.prepStatus = prepLabelFromCaseStatus(status);
       final name = caseMap?['childDisplayName'] as String?;
@@ -800,8 +801,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
   Widget _clinicianBody() {
     final child = switch (_route) {
       SonaRoute.clinicianPrep => ClinicianPrepScreen(
+          caseDetail: _state.caseDetail,
           onBackToday: () => _go(SonaRoute.clinicianToday),
           onContinueTriage: () => _go(SonaRoute.clinicianTriage),
+          onRefresh: _state.caseId == null ? null : _refreshCase,
         ),
       SonaRoute.clinicianTriage => ClinicianTriageScreen(
           busy: _busy,
