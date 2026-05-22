@@ -25,6 +25,11 @@ class SonaAppState extends ChangeNotifier {
   String prepStatus = 'Ready';
   List<Map<String, dynamic>> clinicianCases = [];
 
+  /// Last full case detail (case + intake + drafts) loaded for [caseId].
+  /// Powers the clinician prep / triage / plan screens — they should render
+  /// from this rather than reaching back to the API on every paint.
+  Map<String, dynamic>? caseDetail;
+
   /// Field key of the most recent failed validation on the current step.
   /// Set by `_parentContinue` when validation blocks progress; consumed by
   /// `ParentIntakeStepScreen` to highlight + scroll to the failing field.
@@ -142,6 +147,7 @@ class SonaAppState extends ChangeNotifier {
     triageOutcome = 'short_block';
     prepStatus = 'Ready';
     clinicianCases = [];
+    caseDetail = null;
     intake
       ..email = ''
       ..childName = ''
