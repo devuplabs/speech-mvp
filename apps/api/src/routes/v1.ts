@@ -17,7 +17,7 @@ import {
   publishParentSummary,
 } from "../services/parent-summary.js";
 import { draftPrepBrief } from "../services/prep-brief.js";
-import { draftSessionPlanStub } from "../services/session-plan.js";
+import { draftSessionPlanStub, updateSessionPlan } from "../services/session-plan.js";
 import { writeAudit } from "../services/audit.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
 
@@ -38,6 +38,20 @@ const triageBody = z.object({
 
 const publishParentSummaryBody = z.object({
   htmlBody: z.string().min(1).max(100_000).optional(),
+});
+
+const sectionItem = z.string().trim().min(1).max(1000);
+const sessionPlanSections = z.object({
+  goals: z.array(sectionItem).max(20),
+  activities: z.array(sectionItem).max(20),
+  homePractice: z.array(sectionItem).max(20),
+  materials: z.array(sectionItem).max(20),
+  parentGoals: z.array(sectionItem).max(20),
+});
+
+const updateSessionPlanBody = z.object({
+  sections: sessionPlanSections.optional(),
+  reviewStatus: z.enum(["draft", "final"]).optional(),
 });
 
 export function createV1Routes(db: Db, env: Env) {
@@ -220,6 +234,18 @@ export function createV1Routes(db: Db, env: Env) {
     const [afterPlan] = await db.select().from(cases).where(eq(cases.id, caseId));
 
     return c.json({ case: afterPlan ?? updated, triage });
+  });
+
+  app.put("/cases/:caseId/session-plan", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = updateSessionPlanBody.parse(await c.req.json());
+
+    const result = await updateSessionPlan(db, caseId, body);
+    if (!result.ok) {
+      const status = result.error === "not_found" ? 404 : 409;
+      return c.json({ error: result.error }, status);
+    }
+    return c.json({ draft: result.draft });
   });
 
   app.post("/cases/:caseId/parent-summary/publish", async (c) => {

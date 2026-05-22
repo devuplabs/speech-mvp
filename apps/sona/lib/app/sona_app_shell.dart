@@ -8,6 +8,7 @@ import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
+import 'package:sona/features/clinician/clinician_session_plan_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
 import 'package:sona/features/clinician/clinician_today_screen.dart';
 import 'package:sona/features/clinician/clinician_triage_screen.dart';
@@ -34,6 +35,7 @@ enum SonaRoute {
   clinicianToday,
   clinicianPrep,
   clinicianTriage,
+  clinicianSessionPlan,
   clinicianSummaryPreview,
 }
 
@@ -599,6 +601,33 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Save triage');
   }
 
+  /// Persists clinician edits to the session-plan AI draft. `reviewStatus`
+  /// is `'draft'` or `'final'` — final unlocks the parent-summary publish step.
+  Future<void> _saveSessionPlan({
+    required Map<String, List<String>> sections,
+    required String reviewStatus,
+  }) async {
+    final id = _state.caseId;
+    if (id == null) return;
+    await _run(() async {
+      await _api.updateSessionPlan(
+        id,
+        sections: sections,
+        reviewStatus: reviewStatus,
+      );
+      await _refreshCase();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reviewStatus == 'final'
+                ? 'Session plan saved as final.'
+                : 'Session plan draft saved.'),
+          ),
+        );
+      }
+    }, label: 'Save plan');
+  }
+
   Future<void> _publishSummary() async {
     final id = _state.caseId;
     if (id == null) {
@@ -730,6 +759,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.clinicianToday ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
+        SonaRoute.clinicianSessionPlan ||
         SonaRoute.clinicianSummaryPreview =>
           _clinicianBody(),
       },
@@ -838,6 +868,13 @@ class _SonaAppShellState extends State<SonaAppShell> {
           busy: _busy,
           onBackPrep: () => _go(SonaRoute.clinicianPrep),
           onSaveTriage: _saveTriage,
+          onPublishSummary: () => _go(SonaRoute.clinicianSessionPlan),
+        ),
+      SonaRoute.clinicianSessionPlan => ClinicianSessionPlanScreen(
+          caseDetail: _state.caseDetail,
+          busy: _busy,
+          onBackTriage: () => _go(SonaRoute.clinicianTriage),
+          onSavePlan: _saveSessionPlan,
           onPublishSummary: _publishSummary,
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(
