@@ -149,15 +149,39 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> publishParentSummary(String caseId) async {
+  Future<Map<String, dynamic>> publishParentSummary(
+    String caseId, {
+    Map<String, dynamic>? options,
+  }) async {
     final res = await _client.post(
       _base.replace(path: '/v1/cases/$caseId/parent-summary/publish'),
       headers: {'Content-Type': 'application/json'},
-      body: '{}',
+      body: jsonEncode({if (options != null) 'options': options}),
     );
     _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  /// Preview the parent summary — does not persist. Returns
+  /// `{html, projection: {title, sections:[{heading,bullets[]}], disclosure}}`.
+  Future<Map<String, dynamic>> previewParentSummary(
+    String caseId, {
+    required Map<String, dynamic> options,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/parent-summary/preview'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'options': options}),
+    );
+    if (res.statusCode != 200) {
+      throw SonaApiException(res.statusCode, res.body);
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Absolute URL to the PDF download — handed to the browser via `_blank`.
+  Uri parentSummaryPdfUrl(String caseId) =>
+      _base.replace(path: '/v1/cases/$caseId/parent-summary.pdf');
 
   Future<String> fetchParentSummaryHtml(String caseId) async {
     final res = await _client.get(

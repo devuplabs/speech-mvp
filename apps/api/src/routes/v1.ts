@@ -13,9 +13,14 @@ import {
 import { saveIntakeDraftBody, submitIntakeBody } from "../schemas/intake.js";
 import { submitIntake as submitIntakeRecord, upsertIntakeDraft } from "../services/intake.js";
 import {
+  buildParentSummaryText,
+  defaultParentSummaryOptions,
   getPublishedParentSummary,
+  previewParentSummary,
   publishParentSummary,
+  type ParentSummaryOptions,
 } from "../services/parent-summary.js";
+import { renderParentSummaryPdf } from "../services/parent-summary-pdf.js";
 import { draftPrepBrief } from "../services/prep-brief.js";
 import { draftSessionPlanStub, updateSessionPlan } from "../services/session-plan.js";
 import { writeAudit } from "../services/audit.js";
@@ -36,8 +41,25 @@ const triageBody = z.object({
   reason: z.string().max(2000).optional(),
 });
 
+const parentSummaryOptionsSchema = z.object({
+  tone: z.enum(["warm", "balanced", "clinical"]),
+  readingLevel: z.enum(["simple", "standard", "detailed"]),
+  sections: z.object({
+    whatWeDiscussed: z.boolean(),
+    planForFirstSession: z.boolean(),
+    homePractice: z.boolean(),
+    nextSteps: z.boolean(),
+  }),
+  aiDisclosure: z.boolean(),
+});
+
 const publishParentSummaryBody = z.object({
   htmlBody: z.string().min(1).max(100_000).optional(),
+  options: parentSummaryOptionsSchema.optional(),
+});
+
+const previewParentSummaryBody = z.object({
+  options: parentSummaryOptionsSchema.optional(),
 });
 
 const sectionItem = z.string().trim().min(1).max(1000);
@@ -248,13 +270,49 @@ export function createV1Routes(db: Db, env: Env) {
     return c.json({ draft: result.draft });
   });
 
+  app.post("/cases/:caseId/parent-summary/preview", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = previewParentSummaryBody.parse(
+      (await c.req.json().catch(() => ({}))) as unknown,
+    );
+    const options = body.options ?? defaultParentSummaryOptions;
+    const result = await previewParentSummary(db, caseId, options);
+    if (!result.ok) {
+      const status = result.error === "not_found" ? 404 : 400;
+      return c.json({ error: result.error }, status);
+    }
+    // Also include the structured projection so the Flutter preview can render
+    // styled cards without parsing HTML on the client.
+    const [intake] = await db
+      .select()
+      .from(intakeSubmissions)
+      .where(eq(intakeSubmissions.caseId, caseId));
+    const [caseRow] = await db.select().from(cases).where(eq(cases.id, caseId));
+    const drafts = await db.select().from(aiDrafts).where(eq(aiDrafts.caseId, caseId));
+    const plan = drafts.find((d) => d.kind === "session_plan");
+    const projection = buildParentSummaryText({
+      childDisplayName: caseRow?.childDisplayName ?? null,
+      answers: (intake?.answers ?? {}) as Record<string, unknown>,
+      sessionPlan: (plan?.content ?? null) as Parameters<
+        typeof buildParentSummaryText
+      >[0]["sessionPlan"],
+      options,
+    });
+    return c.json({ html: result.html, projection });
+  });
+
   app.post("/cases/:caseId/parent-summary/publish", async (c) => {
     const caseId = c.req.param("caseId");
     const body = publishParentSummaryBody.parse(
       (await c.req.json().catch(() => ({}))) as unknown,
     );
 
-    const result = await publishParentSummary(db, caseId, body.htmlBody);
+    const result = await publishParentSummary(
+      db,
+      caseId,
+      body.htmlBody,
+      body.options,
+    );
     if (!result.ok) {
       const status = result.error === "not_found" ? 404 : 400;
       return c.json({ error: result.error }, status);
@@ -263,7 +321,50 @@ export function createV1Routes(db: Db, env: Env) {
     return c.json({
       case: result.case,
       viewPath: result.viewPath,
+      pdfPath: `/v1/cases/${caseId}/parent-summary.pdf`,
       message: "Published to portal (no email). Parent opens case ID in demo app.",
+    });
+  });
+
+  app.get("/cases/:caseId/parent-summary.pdf", async (c) => {
+    const caseId = c.req.param("caseId");
+    const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!row) return c.json({ error: "not_found" }, 404);
+
+    // Use whatever options the clinician published with; fall back to defaults.
+    const drafts = await db
+      .select()
+      .from(aiDrafts)
+      .where(eq(aiDrafts.caseId, caseId));
+    const summary = drafts.find((d) => d.kind === "parent_summary");
+    const plan = drafts.find((d) => d.kind === "session_plan");
+    const [intake] = await db
+      .select()
+      .from(intakeSubmissions)
+      .where(eq(intakeSubmissions.caseId, caseId));
+
+    const summaryContent = summary?.content as
+      | { options?: ParentSummaryOptions | null }
+      | undefined;
+    const options: ParentSummaryOptions =
+      summaryContent?.options ?? defaultParentSummaryOptions;
+
+    const pdf = await renderParentSummaryPdf({
+      childDisplayName: row.childDisplayName,
+      answers: (intake?.answers ?? {}) as Record<string, unknown>,
+      sessionPlan: (plan?.content ?? null) as Parameters<
+        typeof renderParentSummaryPdf
+      >[0]["sessionPlan"],
+      options,
+    });
+    // Copy into a fresh ArrayBuffer-backed Uint8Array — Hono's `body()` typing
+    // rejects Node's Buffer (which can be SharedArrayBuffer-backed).
+    const out = new Uint8Array(new ArrayBuffer(pdf.byteLength));
+    out.set(pdf);
+    return c.body(out, 200, {
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="sona-summary-${caseId}.pdf"`,
+      "cache-control": "no-store",
     });
   });
 
