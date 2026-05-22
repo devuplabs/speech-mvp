@@ -74,6 +74,20 @@ Clinician UI → Refresh button → case appears   (real)
 
 Shared fixtures: `fixtures/valid-intake.ts` (mirrors `apps/sona/test/fixtures/valid_intake_fixture.dart`).
 
+## Layered Flutter test strategy
+
+Parent-intake correctness is guarded at four layers, cheapest first:
+
+| Layer | Where | What it catches | Run with |
+|---|---|---|---|
+| **Unit** | `apps/sona/test/intake_form_validation_test.dart` | `IntakeFormData.validateStep` rules per step | `flutter test` |
+| **Widget** | `apps/sona/test/widget/sona_text_field_test.dart`, `apps/sona/test/widget/parent_intake_step_screen_test.dart` | Substep transitions, pop-back, controller-listener race | `flutter test` |
+| **Widget full-flow** | `apps/sona/test/widget/parent_intake_full_flow_test.dart` | All 8 steps + submit driven via `WidgetTester.enterText` against a `MockClient`-backed API. Deterministic safety net for the demo-blocker fix shipped in PR #21. | `flutter test` |
+| **API E2E** | `e2e/tests/api-bootstrap.spec.ts`, `e2e/tests/intake-api-full.spec.ts` | Real Cloud Run API; full draft + submit + tenant list | `npm run test:api` |
+| **Hybrid UI E2E** | `e2e/tests/parent-intake-smoke.spec.ts`, `e2e/tests/parent-intake-full.spec.ts` | Real Flutter web for Get started + real clinician dashboard refresh | `npm run test:ui` |
+
+`apps/sona/integration_test/` and `apps/sona/test_driver/integration_test.dart` are scaffolded so a chromedriver-backed integration test (the long-term replacement for the brittle Playwright UI flow on Flutter web) can drop in without infra changes. See `apps/sona/integration_test/README.md` for the run command.
+
 ## Reports
 
 ```bash

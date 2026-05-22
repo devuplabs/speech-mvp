@@ -37,14 +37,18 @@ enum SonaRoute {
 }
 
 class SonaAppShell extends StatefulWidget {
-  const SonaAppShell({super.key});
+  const SonaAppShell({super.key, this.apiClient});
+
+  /// Optional override; integration tests inject a [SonaApiClient] backed by
+  /// a `MockClient` so the full 8-step flow can run with no live API.
+  final SonaApiClient? apiClient;
 
   @override
   State<SonaAppShell> createState() => _SonaAppShellState();
 }
 
 class _SonaAppShellState extends State<SonaAppShell> {
-  final _api = SonaApiClient();
+  late final SonaApiClient _api = widget.apiClient ?? SonaApiClient();
   final _draftStorage = IntakeDraftStorage();
   late final IntakeLocalAutosave _localAutosave = IntakeLocalAutosave(_draftStorage);
   final _state = SonaAppState();

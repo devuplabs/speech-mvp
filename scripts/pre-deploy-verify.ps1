@@ -8,12 +8,12 @@ $root = Split-Path -Parent $PSScriptRoot
 $flutterAvailable = $null -ne (Get-Command flutter -ErrorAction SilentlyContinue)
 
 if ($flutterAvailable) {
-    Write-Host "==> Flutter unit tests (intake + API client contracts)"
+    Write-Host "==> Flutter unit + widget tests (intake validation, controller race, full 8-step flow)"
     Set-Location "$root\apps\sona"
-    flutter test test/json_encode_util_test.dart test/api_response_test.dart test/intake_form_validation_test.dart
+    flutter test
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } else {
-    Write-Host "==> Skipping Flutter unit tests (flutter not on PATH)"
+    Write-Host "==> Skipping Flutter unit + widget tests (flutter not on PATH)"
 }
 
 Write-Host "==> API TypeScript typecheck"
