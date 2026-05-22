@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:sona/config/env.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
@@ -628,7 +629,38 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Save plan');
   }
 
-  Future<void> _publishSummary() async {
+  /// Drives the live preview pane on the parent-summary screen. Pure proxy
+  /// to the preview endpoint; the screen owns debouncing.
+  Future<Map<String, dynamic>> _previewParentSummary(
+    ({
+      String tone,
+      String readingLevel,
+      bool whatWeDiscussed,
+      bool planForFirstSession,
+      bool homePractice,
+      bool nextSteps,
+      bool aiDisclosure,
+    }) options,
+  ) async {
+    final id = _state.caseId;
+    if (id == null) {
+      throw StateError('No case selected');
+    }
+    return _api.previewParentSummary(id, options: _toApiOptions(options));
+  }
+
+  /// Publish using the clinician's chosen tone / reading level / sections.
+  Future<void> _publishParentSummaryWithOptions(
+    ({
+      String tone,
+      String readingLevel,
+      bool whatWeDiscussed,
+      bool planForFirstSession,
+      bool homePractice,
+      bool nextSteps,
+      bool aiDisclosure,
+    }) options,
+  ) async {
     final id = _state.caseId;
     if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -637,16 +669,61 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return;
     }
     await _run(() async {
-      // Triage is recorded explicitly on the triage screen now; publishing the
-      // summary only writes the parent-facing artifact.
-      await _api.publishParentSummary(id);
+      await _api.publishParentSummary(id, options: _toApiOptions(options));
       final html = await _api.fetchParentSummaryHtml(id);
+      await _refreshCase();
       setState(() {
         _parentSummaryHtml = html;
-        _route = SonaRoute.clinicianSummaryPreview;
         _status = 'Summary published to portal';
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Summary published to portal. Download the PDF or share via the secure portal link.'),
+          ),
+        );
+      }
     }, label: 'Publish summary');
+  }
+
+  Map<String, dynamic> _toApiOptions(
+    ({
+      String tone,
+      String readingLevel,
+      bool whatWeDiscussed,
+      bool planForFirstSession,
+      bool homePractice,
+      bool nextSteps,
+      bool aiDisclosure,
+    }) o,
+  ) =>
+      {
+        'tone': o.tone,
+        'readingLevel': o.readingLevel,
+        'sections': {
+          'whatWeDiscussed': o.whatWeDiscussed,
+          'planForFirstSession': o.planForFirstSession,
+          'homePractice': o.homePractice,
+          'nextSteps': o.nextSteps,
+        },
+        'aiDisclosure': o.aiDisclosure,
+      };
+
+  /// Web doesn't ship a built-in tab opener, and we don't want to add a
+  /// url_launcher dep just for this. Copy the absolute PDF URL to the
+  /// clipboard + show a snackbar so the clinician can open or share it.
+  Future<void> _downloadParentSummaryPdf() async {
+    final id = _state.caseId;
+    if (id == null) return;
+    final url = _api.parentSummaryPdfUrl(id).toString();
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('PDF URL copied to clipboard:\n$url'),
+        duration: const Duration(seconds: 6),
+      ),
+    );
   }
 
   Future<void> _loadParentSummary() async {
@@ -875,11 +952,16 @@ class _SonaAppShellState extends State<SonaAppShell> {
           busy: _busy,
           onBackTriage: () => _go(SonaRoute.clinicianTriage),
           onSavePlan: _saveSessionPlan,
-          onPublishSummary: _publishSummary,
+          onPublishSummary: () => _go(SonaRoute.clinicianSummaryPreview),
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(
-          summaryHtml: _parentSummaryHtml,
-          onBackClinician: () => _go(SonaRoute.clinicianTriage),
+          caseId: _state.caseId,
+          busy: _busy,
+          alreadyPublished: _state.caseDetail?['case']?['status'] == 'summary_sent',
+          onBackPlan: () => _go(SonaRoute.clinicianSessionPlan),
+          onPreview: _previewParentSummary,
+          onPublish: _publishParentSummaryWithOptions,
+          onDownloadPdf: _downloadParentSummaryPdf,
         ),
       _ => ClinicianTodayScreen(
           state: _state,
