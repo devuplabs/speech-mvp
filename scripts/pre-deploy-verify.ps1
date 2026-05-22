@@ -21,7 +21,12 @@ Set-Location "$root\apps\api"
 npm run typecheck
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host "==> Playwright API intake specs (hosted dev API)"
+Write-Host "==> API vitest unit tests (prep brief, session plan, parent summary generators)"
+Set-Location "$root\apps\api"
+npm test
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Host "==> Playwright API specs (intake, triage, session plan, parent summary, happy path) — hosted dev API"
 Set-Location "$root\e2e"
 npm run test:api
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

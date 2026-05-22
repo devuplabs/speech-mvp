@@ -20,9 +20,11 @@ From repo root (~10s if Flutter SDK is on PATH, otherwise skip step 1):
 
 This runs:
 
-1. **Flutter unit tests** — valid intake passes all 8 steps; JSON omits null keys; bootstrap HTTP 200/201 accepted (skipped if `flutter` not on PATH)
-2. **API TypeScript typecheck**
-3. **Playwright API specs** — bootstrap, create case, draft, full submit, case appears in tenant list
+1. **Flutter unit + widget tests** — valid intake, 8-step persona-driven flow, clinician prep / triage / session plan / parent-summary widget tests (skipped if `flutter` not on PATH).
+2. **API TypeScript typecheck**.
+3. **API Vitest unit tests** — prep brief, session plan, parent-summary HTML + text generators.
+4. **Playwright API specs** — bootstrap, intake, triage, session plan, parent summary preview/publish/PDF, and the full MVP happy-path E2E.
+5. **Persona parity (TS ↔ JSON)** — guards `scripts/personas/*.json` and `e2e/fixtures/intake-personas.ts` against drift.
 
 ## Full test matrix
 
@@ -54,6 +56,11 @@ npm run test:full
 |------|----------------|
 | `tests/api-bootstrap.spec.ts` | Bootstrap 200/201, create case (with and without parentEmail), save draft |
 | `tests/intake-api-full.spec.ts` | Full answers payload draft + submit; case visible in tenant list with the child name |
+| `tests/triage-api.spec.ts` | 4 outcomes accepted; unknown rejected; triage[] surfaces in GET; repeat triage allowed (audit trail) |
+| `tests/session-plan-api.spec.ts` | PUT /session-plan persists sections + reviewStatus; per-bullet validation; 404 + 409 error paths |
+| `tests/parent-summary-api.spec.ts` | Preview returns html + projection; tone/section/AI-disclosure toggles flip output; publish persists options; PDF magic bytes valid |
+| `tests/mvp-happy-path.spec.ts` | **Pure-API end-to-end happy path** — intake submit → dashboard → prep brief → triage → session plan edit (final) → preview summary → publish → portal HTML → PDF download. Runs in ~150ms. Deploy verification for the entire MVP loop. |
+| `tests/personas-parity.spec.ts` | JSON ↔ TS persona parity (sister to `apps/sona/test/intake_personas_parity_test.dart`) |
 | `tests/parent-intake-smoke.spec.ts` | Parent intake UI → Get started → step 1 (no `SonaApiException`) |
 | `tests/parent-intake-full.spec.ts` | **Hybrid demo flow** — real parent UI starts a session, identical API path submits the full intake, clinician UI Refresh shows the child's case with status |
 
@@ -83,7 +90,10 @@ Parent-intake correctness is guarded at four layers, cheapest first:
 | **Unit** | `apps/sona/test/intake_form_validation_test.dart` | `IntakeFormData.validateStep` rules per step | `flutter test` |
 | **Widget** | `apps/sona/test/widget/sona_text_field_test.dart`, `apps/sona/test/widget/parent_intake_step_screen_test.dart` | Substep transitions, pop-back, controller-listener race | `flutter test` |
 | **Widget full-flow** | `apps/sona/test/widget/parent_intake_full_flow_test.dart` | All 8 steps + submit driven via `WidgetTester.enterText` against a `MockClient`-backed API. Deterministic safety net for the demo-blocker fix shipped in PR #21. | `flutter test` |
-| **API E2E** | `e2e/tests/api-bootstrap.spec.ts`, `e2e/tests/intake-api-full.spec.ts` | Real Cloud Run API; full draft + submit + tenant list | `npm run test:api` |
+| **Widget personas full-flow** | `apps/sona/test/widget/parent_intake_personas_flow_test.dart` | Same 8-step flow looped over every synthetic persona — adding a new persona to `scripts/personas/` automatically extends coverage. | `flutter test` |
+| **Clinician screen widget tests** | `apps/sona/test/widget/clinician_{prep,triage,session_plan,parent_summary}_screen_test.dart` | Live data render, action callbacks, rehydration, gating between stages. | `flutter test` |
+| **API E2E (single-endpoint)** | `e2e/tests/api-bootstrap.spec.ts`, `e2e/tests/intake-api-full.spec.ts`, `e2e/tests/triage-api.spec.ts`, `e2e/tests/session-plan-api.spec.ts`, `e2e/tests/parent-summary-api.spec.ts` | Per-endpoint coverage of validation, persistence, error paths. | `npm run test:api` |
+| **API E2E (full flow)** | `e2e/tests/mvp-happy-path.spec.ts` | Intake → dashboard → prep → triage → plan → summary → PDF, one persona, ~150 ms. The deploy-verification net for the whole MVP loop. | `npm run test:api` |
 | **Hybrid UI E2E** | `e2e/tests/parent-intake-smoke.spec.ts`, `e2e/tests/parent-intake-full.spec.ts` | Real Flutter web for Get started + real clinician dashboard refresh | `npm run test:ui` |
 
 `apps/sona/integration_test/` and `apps/sona/test_driver/integration_test.dart` are scaffolded so a chromedriver-backed integration test (the long-term replacement for the brittle Playwright UI flow on Flutter web) can drop in without infra changes. See `apps/sona/integration_test/README.md` for the run command.
