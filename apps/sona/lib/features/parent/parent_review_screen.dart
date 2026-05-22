@@ -76,12 +76,30 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             style: SonaTypography.body,
           ),
           const SizedBox(height: 20),
-          _summaryCard('Contact & child', IntakeReviewSummary.contactRows(d), onEdit: () => widget.onEditStep(1)),
-          const SizedBox(height: 12),
-          _summaryCard('Referral & development', IntakeReviewSummary.referralRows(d), onEdit: () => widget.onEditStep(2)),
-          const SizedBox(height: 12),
-          _summaryCard('Health & background', IntakeReviewSummary.healthRows(d), onEdit: () => widget.onEditStep(4)),
-          const SizedBox(height: 12),
+          _summaryCard('About your family', IntakeReviewSummary.contactRows(d),
+              badge: 'Step 1', onEdit: () => widget.onEditStep(1)),
+          const SizedBox(height: 10),
+          _summaryCard('Reason for referral', IntakeReviewSummary.referralRows(d),
+              badge: 'Step 2', onEdit: () => widget.onEditStep(2)),
+          const SizedBox(height: 10),
+          _summaryCard('History & languages', IntakeReviewSummary.backgroundRows(d),
+              badge: 'Step 3', onEdit: () => widget.onEditStep(3)),
+          const SizedBox(height: 10),
+          _summaryCard('Pregnancy & birth', IntakeReviewSummary.birthRows(d),
+              badge: 'Step 4', onEdit: () => widget.onEditStep(4)),
+          const SizedBox(height: 10),
+          _summaryCard('Health & sensory', IntakeReviewSummary.healthRows(d),
+              badge: 'Step 5', onEdit: () => widget.onEditStep(5)),
+          const SizedBox(height: 10),
+          _summaryCard('Communication milestones', IntakeReviewSummary.milestoneRows(d),
+              badge: 'Step 6', onEdit: () => widget.onEditStep(6)),
+          const SizedBox(height: 10),
+          _summaryCard('Temperament & play', IntakeReviewSummary.temperamentRows(d),
+              badge: 'Step 7', onEdit: () => widget.onEditStep(7)),
+          const SizedBox(height: 10),
+          _summaryCard('School & sign-off', IntakeReviewSummary.schoolRows(d),
+              badge: 'Step 8', onEdit: () => widget.onEditStep(8)),
+          const SizedBox(height: 16),
           _consentCard(state),
             ],
           ),
@@ -97,7 +115,12 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
     );
   }
 
-  Widget _summaryCard(String title, List<(String, String)> rows, {required VoidCallback onEdit}) {
+  Widget _summaryCard(
+    String title,
+    List<(String, String)> rows, {
+    required VoidCallback onEdit,
+    String? badge,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -109,8 +132,27 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
         children: [
           Row(
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              const Spacer(),
+              if (badge != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: SonaColors.heroTint,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: SonaColors.primaryDark,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
               Semantics(
                 button: true,
                 label: 'Edit $title',
@@ -118,7 +160,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
                   onPressed: widget.busy ? null : onEdit,
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    minimumSize: Size.zero,
+                    minimumSize: const Size(44, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: const Text(

@@ -96,10 +96,15 @@ class SonaAppState extends ChangeNotifier {
     intake.diagnosis = src.diagnosis;
     intake.medications = src.medications;
     intake.hospitalised = src.hospitalised;
+    intake.hospitalisedDetails = src.hospitalisedDetails;
     intake.hearingTested = src.hearingTested;
+    intake.hearingTestedDetails = src.hearingTestedDetails;
     intake.earInfections = src.earInfections;
+    intake.earInfectionsDetails = src.earInfectionsDetails;
     intake.entInvolvement = src.entInvolvement;
+    intake.entInvolvementDetails = src.entInvolvementDetails;
     intake.visionTested = src.visionTested;
+    intake.visionTestedDetails = src.visionTestedDetails;
     intake.respondsToName = src.respondsToName;
     intake.ageFirstWords = src.ageFirstWords;
     intake.ageTwoWordPhrases = src.ageTwoWordPhrases;

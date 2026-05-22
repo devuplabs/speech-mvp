@@ -12,6 +12,7 @@ class SonaYesNoField extends StatelessWidget {
     this.detailValue = '',
     this.onDetailChanged,
     this.required = true,
+    this.onAutoAdvance,
   });
 
   final String label;
@@ -21,6 +22,11 @@ class SonaYesNoField extends StatelessWidget {
   final String detailValue;
   final ValueChanged<String>? onDetailChanged;
   final bool required;
+
+  /// When non-null and [detailLabel] is null, the field will call this after
+  /// selection to trigger an auto-advance to the next field or step.
+  /// The caller is responsible for the 300ms delay and undo affordance.
+  final VoidCallback? onAutoAdvance;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +51,13 @@ class SonaYesNoField extends StatelessWidget {
                   child: ChoiceChip(
                     label: Text(display, style: const TextStyle(fontSize: 14)),
                     selected: selected,
-                    onSelected: (_) => onChanged(opt),
+                    onSelected: (_) {
+                      onChanged(opt);
+                      // Auto-advance only when no conditional detail is shown
+                      if (detailLabel == null && onAutoAdvance != null) {
+                        Future.delayed(const Duration(milliseconds: 300), onAutoAdvance!);
+                      }
+                    },
                     selectedColor: SonaColors.heroTint,
                     side: BorderSide(color: selected ? SonaColors.primary : SonaColors.border),
                   ),
