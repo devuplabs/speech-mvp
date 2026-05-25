@@ -41,10 +41,23 @@ export const cases = pgTable("cases", {
     .references(() => tenants.id, { onDelete: "cascade" }),
   status: caseStatusEnum("status").notNull().default("intake_pending"),
   parentEmail: varchar("parent_email", { length: 320 }),
+  parentPhone: varchar("parent_phone", { length: 64 }),
   childDisplayName: varchar("child_display_name", { length: 128 }),
+  referralSource: varchar("referral_source", { length: 32 }),
   consultAt: timestamp("consult_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const caseIntakeLinks = pgTable("case_intake_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 /** Branching intake answers (JSON from form engine). */

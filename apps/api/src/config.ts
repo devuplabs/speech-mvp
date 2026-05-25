@@ -41,6 +41,11 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  /** Parent web app base URL for magic intake links (no trailing slash required). */
+  SONA_WEB_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().optional(),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

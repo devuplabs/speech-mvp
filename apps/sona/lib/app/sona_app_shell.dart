@@ -7,6 +7,7 @@ import 'package:sona/config/env.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
+import 'package:sona/features/clinician/clinician_clients_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
 import 'package:sona/features/clinician/clinician_today_screen.dart';
@@ -32,17 +33,21 @@ enum SonaRoute {
   parentReview,
   parentSummary,
   clinicianToday,
+  clinicianClients,
   clinicianPrep,
   clinicianTriage,
   clinicianSummaryPreview,
 }
 
 class SonaAppShell extends StatefulWidget {
-  const SonaAppShell({super.key, this.apiClient});
+  const SonaAppShell({super.key, this.apiClient, this.intakeToken});
 
   /// Optional override; integration tests inject a [SonaApiClient] backed by
   /// a `MockClient` so the full 8-step flow can run with no live API.
   final SonaApiClient? apiClient;
+
+  /// Magic-link token from parent web URL `?t=`.
+  final String? intakeToken;
 
   @override
   State<SonaAppShell> createState() => _SonaAppShellState();
@@ -68,6 +73,37 @@ class _SonaAppShellState extends State<SonaAppShell> {
       _hasResumableDraft = true;
     });
     _checkResumableDraft();
+    final token = widget.intakeToken;
+    if (token != null && token.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_openFromIntakeToken(token));
+      });
+    }
+  }
+
+  Future<void> _openFromIntakeToken(String token) async {
+    await _run(() async {
+      final resolved = await _api.resolveIntakeLink(token);
+      final caseId = resolved['caseId'] as String;
+      _state.caseId = caseId;
+      await _draftStorage.saveLastCaseId(caseId);
+      final detail = await _api.getCase(caseId);
+      _syncTenantFromCaseDetail(detail);
+      final caseMap = detail['case'] as Map<String, dynamic>?;
+      final status = caseMap?['status'] as String? ?? '';
+      if (status != 'intake_pending') {
+        setState(() {
+          _status = 'This intake link has already been used.';
+          _route = SonaRoute.parentWelcome;
+        });
+        return;
+      }
+      await _loadParentDraft();
+      setState(() {
+        _route = SonaRoute.parentWelcome;
+        _status = 'Intake link opened — tap Get started when ready.';
+      });
+    }, label: 'Open intake link');
   }
 
   @override
@@ -669,6 +705,49 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Fill sample');
   }
 
+  Future<void> _registerPatient({
+    required String childFirstName,
+    required String dateOfBirth,
+    required String parentName,
+    required String parentEmail,
+    String? parentPhone,
+    required String referralSource,
+    String? initialConcerns,
+    required bool sendIntakeLink,
+  }) async {
+    await _ensureTenant();
+    final result = await _api.registerPatient(
+      tenantId: _state.tenantId!,
+      childFirstName: childFirstName,
+      dateOfBirth: dateOfBirth,
+      parentName: parentName,
+      parentEmail: parentEmail,
+      parentPhone: parentPhone,
+      referralSource: referralSource,
+      initialConcerns: initialConcerns,
+      sendIntakeLink: sendIntakeLink,
+    );
+    final caseMap = result['case'] as Map<String, dynamic>;
+    _state.caseId = caseMap['id'] as String;
+    await _loadClinicianDashboard();
+    final link = result['intakeLink'] as Map<String, dynamic>?;
+    if (link != null && mounted) {
+      await showIntakeLinkCopiedSnackBar(context, url: link['url'] as String);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Patient registered.')),
+      );
+    }
+  }
+
+  Future<void> _openClinicianClients() async {
+    _go(SonaRoute.clinicianClients);
+    await _run(() async {
+      await _ensureTenant();
+      await _loadClinicianDashboard();
+    }, label: 'Load clients');
+  }
+
   Future<void> _openClinicianToday() async {
     _go(SonaRoute.clinicianToday);
     await _run(() async {
@@ -717,6 +796,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
             onBack: () => _go(SonaRoute.launcher),
           ),
         SonaRoute.clinicianToday ||
+        SonaRoute.clinicianClients ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
         SonaRoute.clinicianSummaryPreview =>
@@ -816,6 +896,16 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
   Widget _clinicianBody() {
     final child = switch (_route) {
+      SonaRoute.clinicianClients => ClinicianClientsScreen(
+          state: _state,
+          onRefresh: _loadClinicianDashboard,
+          onOpenCase: (caseId) {
+            setState(() => _state.caseId = caseId);
+            _refreshCase();
+            _go(SonaRoute.clinicianPrep);
+          },
+          onRegisterPatient: _registerPatient,
+        ),
       SonaRoute.clinicianPrep => ClinicianPrepScreen(
           onBackToday: () => _go(SonaRoute.clinicianToday),
           onContinueTriage: () => _go(SonaRoute.clinicianTriage),
@@ -844,11 +934,18 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return child;
     }
 
+    final navRoute =
+        _route == SonaRoute.clinicianClients ? ClinicianRoute.clients : _clinicianNav;
+
     return ClinicianShell(
-      route: _clinicianNav,
+      route: navRoute,
       onNavigate: (r) {
         setState(() => _clinicianNav = r);
-        if (r == ClinicianRoute.today) _go(SonaRoute.clinicianToday);
+        if (r == ClinicianRoute.today) {
+          unawaited(_openClinicianToday());
+        } else if (r == ClinicianRoute.clients) {
+          unawaited(_openClinicianClients());
+        }
       },
       child: child,
     );
