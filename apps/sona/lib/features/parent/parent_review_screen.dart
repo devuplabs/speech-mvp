@@ -16,6 +16,7 @@ class ParentReviewScreen extends StatefulWidget {
     required this.onSubmit,
     required this.onEditStep,
     this.busy = false,
+    this.readOnly = false,
   });
 
   final SonaAppState state;
@@ -23,6 +24,7 @@ class ParentReviewScreen extends StatefulWidget {
   final VoidCallback onSubmit;
   final void Function(int step) onEditStep;
   final bool busy;
+  final bool readOnly;
 
   @override
   State<ParentReviewScreen> createState() => _ParentReviewScreenState();
@@ -41,7 +43,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
             Row(
               children: [
                 IconButton(
-                  onPressed: widget.busy ? null : widget.onBack,
+                  onPressed: widget.readOnly || widget.busy ? null : widget.onBack,
                   tooltip: 'Back',
                   icon: const Icon(Icons.chevron_left),
                   style: IconButton.styleFrom(side: const BorderSide(color: SonaColors.border)),
@@ -57,7 +59,10 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const SonaStepProgress(currentStep: 8, totalSteps: 8),
+            SonaStepProgress(
+              currentStep: state.templateTotalSteps,
+              totalSteps: state.templateTotalSteps,
+            ),
           ],
         ),
       ),
@@ -99,19 +104,23 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           const SizedBox(height: 10),
           _summaryCard('School & sign-off', IntakeReviewSummary.schoolRows(d),
               badge: 'Step 8', onEdit: () => widget.onEditStep(8)),
-          const SizedBox(height: 16),
-          _consentCard(state),
+          if (!widget.readOnly) ...[
+            const SizedBox(height: 16),
+            _consentCard(state),
+          ],
             ],
           ),
         ),
       ),
-      footer: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-        child: SonaButton(
-          label: widget.busy ? 'Submitting…' : 'Submit',
-          onPressed: widget.busy ? null : widget.onSubmit,
-        ),
-      ),
+      footer: widget.readOnly
+          ? null
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: SonaButton(
+                label: widget.busy ? 'Submitting…' : 'Submit',
+                onPressed: widget.busy ? null : widget.onSubmit,
+              ),
+            ),
     );
   }
 
@@ -157,7 +166,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
                 button: true,
                 label: 'Edit $title',
                 child: TextButton(
-                  onPressed: widget.busy ? null : onEdit,
+                  onPressed: widget.readOnly || widget.busy ? null : onEdit,
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     minimumSize: const Size(44, 36),
@@ -235,7 +244,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
 
   Widget _check(String text, bool value, ValueChanged<bool?> onChanged) {
     return InkWell(
-      onTap: widget.busy ? null : () => onChanged(!value),
+      onTap: widget.readOnly || widget.busy ? null : () => onChanged(!value),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -243,7 +252,7 @@ class _ParentReviewScreenState extends State<ParentReviewScreen> {
           children: [
             Checkbox(
               value: value,
-              onChanged: widget.busy ? null : onChanged,
+              onChanged: widget.readOnly || widget.busy ? null : onChanged,
               activeColor: SonaColors.primary,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

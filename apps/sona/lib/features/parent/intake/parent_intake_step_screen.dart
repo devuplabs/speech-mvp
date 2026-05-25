@@ -243,7 +243,10 @@ class _ParentIntakeStepScreenState extends State<ParentIntakeStepScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          SonaStepProgress(currentStep: step, totalSteps: 8),
+          SonaStepProgress(
+            currentStep: widget.state.templateProgressForStep(step),
+            totalSteps: widget.state.templateTotalSteps,
+          ),
           const SizedBox(height: 6),
           if (widget.state.lastLocalSavedAt != null)
             Row(

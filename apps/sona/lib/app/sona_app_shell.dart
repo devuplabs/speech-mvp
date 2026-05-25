@@ -8,6 +8,8 @@ import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
 import 'package:sona/features/clinician/clinician_clients_screen.dart';
+import 'package:sona/features/clinician/clinician_intake_forms_screen.dart';
+import 'package:sona/features/clinician/clinician_intake_review_screen.dart';
 import 'package:sona/features/clinician/clinician_settings_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
@@ -18,6 +20,7 @@ import 'package:sona/features/parent/parent_review_screen.dart';
 import 'package:sona/features/parent/parent_summary_screen.dart';
 import 'package:sona/features/parent/parent_welcome_screen.dart';
 import 'package:sona/models/intake_form_data.dart';
+import 'package:sona/models/intake_template.dart';
 import 'package:sona/services/api_client.dart';
 import 'package:sona/services/intake_draft_storage.dart';
 import 'package:sona/services/intake_local_autosave.dart';
@@ -35,6 +38,8 @@ enum SonaRoute {
   parentSummary,
   clinicianToday,
   clinicianClients,
+  clinicianIntakeForms,
+  clinicianIntakeReview,
   clinicianSettings,
   clinicianPrep,
   clinicianTriage,
@@ -69,6 +74,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
   bool _hasResumableDraft = false;
   List<Map<String, dynamic>> _availabilityRules = [];
   bool _needsAvailabilityConfirm = true;
+  List<Map<String, dynamic>> _intakeFormItems = [];
 
   @override
   void initState() {
@@ -87,26 +93,43 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
   Future<void> _openFromIntakeToken(String token) async {
     await _run(() async {
-      final resolved = await _api.resolveIntakeLink(token);
-      final caseId = resolved['caseId'] as String;
-      _state.caseId = caseId;
-      await _draftStorage.saveLastCaseId(caseId);
-      final detail = await _api.getCase(caseId);
-      _syncTenantFromCaseDetail(detail);
-      final caseMap = detail['case'] as Map<String, dynamic>?;
-      final status = caseMap?['status'] as String? ?? '';
-      if (status != 'intake_pending') {
+      try {
+        final resolved = await _api.resolveIntakeLink(token);
+        final caseId = resolved['caseId'] as String;
+        _state.caseId = caseId;
+        _state.intakeTemplateId = intakeTemplateIdFromApi(resolved['templateId'] as String?);
+        _state.intakeLocked = resolved['locked'] as bool? ?? false;
+        _state.intakeLinkExpired = false;
+        await _draftStorage.saveLastCaseId(caseId);
+        final detail = await _api.getCase(caseId);
+        _syncTenantFromCaseDetail(detail);
+        final caseMap = detail['case'] as Map<String, dynamic>?;
+        final status = caseMap?['status'] as String? ?? '';
+        if (status != 'intake_pending') {
+          setState(() {
+            _status = 'This intake link has already been used.';
+            _route = SonaRoute.parentWelcome;
+          });
+          return;
+        }
+        await _loadParentDraft();
         setState(() {
-          _status = 'This intake link has already been used.';
           _route = SonaRoute.parentWelcome;
+          _status = _state.intakeLocked
+              ? 'This intake is locked by your clinician.'
+              : 'Intake link opened — tap Get started when ready.';
         });
-        return;
+      } on SonaApiException catch (e) {
+        if (e.statusCode == 410) {
+          setState(() {
+            _state.intakeLinkExpired = true;
+            _route = SonaRoute.parentWelcome;
+            _status = 'This intake link has expired. Ask your clinician for a new link.';
+          });
+          return;
+        }
+        rethrow;
       }
-      await _loadParentDraft();
-      setState(() {
-        _route = SonaRoute.parentWelcome;
-        _status = 'Intake link opened — tap Get started when ready.';
-      });
     }, label: 'Open intake link');
   }
 
@@ -295,6 +318,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       _syncTenantFromCaseDetail(detail);
       final intake = detail['intake'] as Map<String, dynamic>?;
       if (intake != null) {
+        _state.intakeLocked = intake['locked'] as bool? ?? false;
         final answers = intake['answers'] as Map<String, dynamic>?;
         final submitted = intake['submittedAt'];
         if (answers != null && submitted == null) {
@@ -380,6 +404,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   Future<void> _parentContinue() async {
+    if (_state.intakeLocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This intake is locked by your clinician.')),
+      );
+      return;
+    }
     _logIntakeTransition('continue.start', {
       'step': _state.formStep,
       'substep': _state.formSubstep,
@@ -444,17 +474,24 @@ class _SonaAppShellState extends State<SonaAppShell> {
         });
         return;
       }
-      if (_state.formStep >= 8) {
+      final templateSteps = stepsForTemplate(_state.intakeTemplateId);
+      final lastStep = templateSteps.last;
+      if (_state.formStep >= lastStep) {
         _logIntakeTransition('continue.advanced.to_review', const {});
+        setState(() => _route = SonaRoute.parentReview);
+        return;
+      }
+      final next = _state.advanceTemplateStep(_state.formStep);
+      if (next == null) {
         setState(() => _route = SonaRoute.parentReview);
         return;
       }
       _logIntakeTransition('continue.advanced.next_step', {
         'fromStep': _state.formStep,
-        'toStep': _state.formStep + 1,
+        'toStep': next,
       });
       setState(() {
-        _state.formStep += 1;
+        _state.formStep = next;
         _state.formSubstep = 0;
       });
     }, label: 'Save');
@@ -487,7 +524,9 @@ class _SonaAppShellState extends State<SonaAppShell> {
       _logIntakeTransition('back.step1b_to_1a', const {});
       return;
     }
-    if (_state.formStep <= 1) {
+    final templateSteps = stepsForTemplate(_state.intakeTemplateId);
+    final stepIndex = templateSteps.indexOf(_state.formStep);
+    if (stepIndex <= 0) {
       _logIntakeTransition('back.exit_to_welcome', const {});
       _go(SonaRoute.parentWelcome);
       return;
@@ -495,9 +534,9 @@ class _SonaAppShellState extends State<SonaAppShell> {
     await _run(() async {
       await _ensureValidParentCase();
       await _saveDraft(quiet: true);
+      final prev = templateSteps[stepIndex - 1];
       setState(() {
-        _state.formStep -= 1;
-        // Returning to step 1 lands on page 2 so user can keep editing.
+        _state.formStep = prev;
         _state.formSubstep = _state.formStep == 1 ? 1 : 0;
       });
       _logIntakeTransition('back.advanced.previous_step', {
@@ -508,6 +547,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   void _parentEditStep(int step) {
+    if (!_state.stepAllowed(step)) return;
     setState(() {
       _state.returnToReviewAfterEdit = true;
       _state.formStep = step;
@@ -550,6 +590,62 @@ class _SonaAppShellState extends State<SonaAppShell> {
       }
       _status = '${rows.length} case(s) loaded';
     });
+  }
+
+  Future<void> _loadIntakeForms() async {
+    await _ensureTenant();
+    final items = await _api.listIntakeSubmissions(_state.tenantId!);
+    setState(() {
+      _intakeFormItems = items;
+      _status = '${items.length} intake form(s)';
+    });
+  }
+
+  Future<void> _openClinicianIntakeForms() async {
+    _go(SonaRoute.clinicianIntakeForms);
+    await _run(_loadIntakeForms, label: 'Load intake forms');
+  }
+
+  Future<void> _openIntakeReview(String caseId) async {
+    await _run(() async {
+      _state.caseId = caseId;
+      final detail = await _api.getCase(caseId);
+      _syncTenantFromCaseDetail(detail);
+      final intake = detail['intake'] as Map<String, dynamic>?;
+      if (intake != null) {
+        final answers = intake['answers'] as Map<String, dynamic>?;
+        if (answers != null) {
+          final step = answers['formStep'] as int? ?? 1;
+          _state.applyDraftAnswers(answers, step: step);
+        }
+        _state.intakeLocked = intake['locked'] as bool? ?? false;
+      }
+      setState(() => _route = SonaRoute.clinicianIntakeReview);
+    }, label: 'Load intake');
+  }
+
+  Future<String?> _resendIntakeLink(String caseId) async {
+    String? url;
+    await _run(() async {
+      final result = await _api.resendIntakeLink(caseId);
+      url = result['url'] as String?;
+      await _loadIntakeForms();
+    }, label: 'Resend link');
+    return url;
+  }
+
+  Future<void> _revokeIntakeLink(String caseId) async {
+    await _run(() async {
+      await _api.revokeIntakeLink(caseId);
+      await _loadIntakeForms();
+    }, label: 'Revoke link');
+  }
+
+  Future<void> _lockIntake(String caseId) async {
+    await _run(() async {
+      await _api.lockIntake(caseId);
+      await _loadIntakeForms();
+    }, label: 'Lock intake');
   }
 
   Future<void> _submitParentIntake() async {
@@ -718,6 +814,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     required String referralSource,
     String? initialConcerns,
     required bool sendIntakeLink,
+    String? templateId,
     String? bookConsultStart,
   }) async {
     await _ensureTenant();
@@ -731,6 +828,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       referralSource: referralSource,
       initialConcerns: initialConcerns,
       sendIntakeLink: sendIntakeLink,
+      templateId: templateId,
       bookConsultStart: bookConsultStart,
     );
     final caseMap = result['case'] as Map<String, dynamic>;
@@ -789,8 +887,14 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.launcher => _launcher(),
         SonaRoute.parentWelcome => ParentWelcomeScreen(
             hasDraft: _hasResumableDraft,
-            onGetStarted: () => _startParentIntake(resume: false),
-            onResume: _hasResumableDraft ? () => _startParentIntake(resume: true) : null,
+            linkExpired: _state.intakeLinkExpired,
+            intakeLocked: _state.intakeLocked,
+            onGetStarted: _state.intakeLocked || _state.intakeLinkExpired
+                ? null
+                : () => _startParentIntake(resume: false),
+            onResume: (_hasResumableDraft && !_state.intakeLocked && !_state.intakeLinkExpired)
+                ? () => _startParentIntake(resume: true)
+                : null,
             onFillSample: _devFillSampleEnabled ? _fillSampleAndOpenReview : null,
           ),
         SonaRoute.parentIntake => ParentIntakeStepScreen(
@@ -805,7 +909,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
             busy: _busy,
             onBack: () {
               setState(() {
-                _state.formStep = 8;
+                _state.formStep = stepsForTemplate(_state.intakeTemplateId).last;
                 _state.formSubstep = 0;
                 _route = SonaRoute.parentIntake;
               });
@@ -819,6 +923,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
           ),
         SonaRoute.clinicianToday ||
         SonaRoute.clinicianClients ||
+        SonaRoute.clinicianIntakeForms ||
+        SonaRoute.clinicianIntakeReview ||
         SonaRoute.clinicianSettings ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
@@ -932,6 +1038,18 @@ class _SonaAppShellState extends State<SonaAppShell> {
               ? null
               : () => _api.fetchAvailabilitySlots(_state.tenantId!),
         ),
+      SonaRoute.clinicianIntakeForms => ClinicianIntakeFormsScreen(
+          items: _intakeFormItems,
+          onRefresh: _loadIntakeForms,
+          onOpenReview: (caseId) => unawaited(_openIntakeReview(caseId)),
+          onResendLink: _resendIntakeLink,
+          onRevokeLink: _revokeIntakeLink,
+          onLock: _lockIntake,
+        ),
+      SonaRoute.clinicianIntakeReview => ClinicianIntakeReviewScreen(
+          state: _state,
+          onBack: () => _go(SonaRoute.clinicianIntakeForms),
+        ),
       SonaRoute.clinicianSettings => ClinicianSettingsScreen(
           initialRules: _availabilityRules,
           onSave: (rules) async {
@@ -971,6 +1089,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
     final navRoute = switch (_route) {
       SonaRoute.clinicianClients => ClinicianRoute.clients,
+      SonaRoute.clinicianIntakeForms || SonaRoute.clinicianIntakeReview =>
+        ClinicianRoute.intakeForms,
       SonaRoute.clinicianSettings => ClinicianRoute.settings,
       _ => _clinicianNav,
     };
@@ -983,6 +1103,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
           unawaited(_openClinicianToday());
         } else if (r == ClinicianRoute.clients) {
           unawaited(_openClinicianClients());
+        } else if (r == ClinicianRoute.intakeForms) {
+          unawaited(_openClinicianIntakeForms());
         } else if (r == ClinicianRoute.settings) {
           unawaited(_openClinicianSettings());
         }

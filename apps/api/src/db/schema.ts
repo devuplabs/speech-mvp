@@ -73,6 +73,7 @@ export const caseIntakeLinks = pgTable("case_intake_links", {
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
+  templateId: varchar("template_id", { length: 32 }).notNull().default("full"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -84,7 +85,9 @@ export const intakeSubmissions = pgTable("intake_submissions", {
     .references(() => cases.id, { onDelete: "cascade" }),
   answers: jsonb("answers").notNull().default({}),
   consentVersion: varchar("consent_version", { length: 64 }),
+  locked: boolean("locked").notNull().default(false),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const triageRecords = pgTable("triage_records", {

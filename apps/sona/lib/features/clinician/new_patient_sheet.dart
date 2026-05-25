@@ -4,6 +4,7 @@ import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/sona_date_field.dart';
 import 'package:sona/design_system/widgets/sona_text_field.dart';
 import 'package:sona/features/clinician/consult_slot_picker.dart';
+import 'package:sona/models/intake_template.dart';
 import 'package:sona/utils/intake_validation.dart';
 
 typedef RegisterPatientSubmit = Future<void> Function({
@@ -15,6 +16,7 @@ typedef RegisterPatientSubmit = Future<void> Function({
   required String referralSource,
   String? initialConcerns,
   required bool sendIntakeLink,
+  String? templateId,
   String? bookConsultStart,
 });
 
@@ -105,6 +107,7 @@ class _NewPatientSheetState extends State<NewPatientSheet> {
   String _referralSource = 'school';
   String _initialConcerns = '';
   bool _sendIntakeLink = true;
+  IntakeTemplateId _templateId = IntakeTemplateId.full;
   bool _bookConsult = false;
   String? _selectedSlot;
   List<Map<String, dynamic>> _slots = [];
@@ -135,6 +138,7 @@ class _NewPatientSheetState extends State<NewPatientSheet> {
         referralSource: _referralSource,
         initialConcerns: _initialConcerns.trim().isEmpty ? null : _initialConcerns.trim(),
         sendIntakeLink: _sendIntakeLink,
+        templateId: intakeTemplateIdToApi(_templateId),
         bookConsultStart: _bookConsult ? _selectedSlot : null,
       );
       if (mounted) Navigator.of(context).pop();

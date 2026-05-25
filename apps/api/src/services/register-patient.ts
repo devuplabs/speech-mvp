@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { caseIntakeLinks, cases } from "../db/schema.js";
+import { caseIntakeLinks, cases, intakeSubmissions } from "../db/schema.js";
 import type { RegisterPatientBody } from "../schemas/register-patient.js";
 import { REFERRAL_SOURCE_LABELS } from "../schemas/register-patient.js";
 import { upsertIntakeDraft } from "./intake.js";
@@ -123,6 +123,7 @@ export async function registerPatient(
             caseId: caseRow.id,
             token: newToken(),
             expiresAt,
+            templateId: body.templateId ?? "full",
           })
           .returning();
         break;
@@ -190,9 +191,16 @@ export async function resolveIntakeLinkToken(db: Db, token: string) {
       .where(eq(caseIntakeLinks.id, row.id));
   }
 
+  const [intake] = await db
+    .select({ locked: intakeSubmissions.locked })
+    .from(intakeSubmissions)
+    .where(eq(intakeSubmissions.caseId, row.caseId));
+
   return {
     ok: true as const,
     caseId: row.caseId,
     expiresAt: row.expiresAt.toISOString(),
+    templateId: row.templateId ?? "full",
+    locked: intake?.locked ?? false,
   };
 }

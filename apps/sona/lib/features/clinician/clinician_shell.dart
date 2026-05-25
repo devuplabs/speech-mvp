@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 
-enum ClinicianRoute { today, clients, prep, triage, summary, settings }
+enum ClinicianRoute { today, clients, intakeForms, prep, triage, summary, settings }
 
 class ClinicianShell extends StatelessWidget {
   const ClinicianShell({
@@ -20,8 +20,8 @@ class ClinicianShell extends StatelessWidget {
   // tooltip rather than silently navigating back to Today.
   static const _navItems = [
     (label: 'Today', route: ClinicianRoute.today, implemented: true),
-    (label: 'Clients', route: ClinicianRoute.today, implemented: false),
-    (label: 'Intake forms', route: ClinicianRoute.today, implemented: false),
+    (label: 'Clients', route: ClinicianRoute.clients, implemented: true),
+    (label: 'Intake forms', route: ClinicianRoute.intakeForms, implemented: true),
     (label: 'Resources', route: ClinicianRoute.today, implemented: false),
     (label: 'Reports', route: ClinicianRoute.today, implemented: false),
     (label: 'Billing', route: ClinicianRoute.today, implemented: false),

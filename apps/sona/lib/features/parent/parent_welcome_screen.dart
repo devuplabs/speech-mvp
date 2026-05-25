@@ -10,15 +10,19 @@ import 'package:sona/test_utils/intake_personas.dart';
 class ParentWelcomeScreen extends StatelessWidget {
   const ParentWelcomeScreen({
     super.key,
-    required this.onGetStarted,
+    this.onGetStarted,
     this.onResume,
     this.hasDraft = false,
+    this.linkExpired = false,
+    this.intakeLocked = false,
     this.onFillSample,
   });
 
-  final VoidCallback onGetStarted;
+  final VoidCallback? onGetStarted;
   final VoidCallback? onResume;
   final bool hasDraft;
+  final bool linkExpired;
+  final bool intakeLocked;
 
   /// Set by the shell when the build is dev + non-prod; when null the
   /// "Fill with sample data" affordance is not rendered.
@@ -66,6 +70,39 @@ class ParentWelcomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+
+          if (linkExpired) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: SonaColors.warningBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: SonaColors.border),
+              ),
+              child: const Text(
+                'This intake link has expired. Contact your clinician for a new link.',
+                style: TextStyle(fontSize: 13, color: SonaColors.warningText),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (intakeLocked) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: SonaColors.warningBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: SonaColors.border),
+              ),
+              child: const Text(
+                'Your clinician has locked this intake. You can no longer edit your answers.',
+                style: TextStyle(fontSize: 13, color: SonaColors.warningText),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Container(
             height: 168,
             width: double.infinity,
