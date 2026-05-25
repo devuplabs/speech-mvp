@@ -11,6 +11,7 @@ import 'package:sona/features/clinician/clinician_clients_screen.dart';
 import 'package:sona/features/clinician/clinician_intake_forms_screen.dart';
 import 'package:sona/features/clinician/clinician_intake_review_screen.dart';
 import 'package:sona/features/clinician/clinician_reports_screen.dart';
+import 'package:sona/features/clinician/clinician_coming_soon_screen.dart';
 import 'package:sona/features/clinician/clinician_settings_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
@@ -43,6 +44,8 @@ enum SonaRoute {
   clinicianIntakeForms,
   clinicianIntakeReview,
   clinicianReports,
+  clinicianResources,
+  clinicianBilling,
   clinicianSettings,
   clinicianPrep,
   clinicianTriage,
@@ -615,6 +618,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
     });
   }
 
+  void _openClinicianResources() => _go(SonaRoute.clinicianResources);
+
+  void _openClinicianBilling() => _go(SonaRoute.clinicianBilling);
+
   Future<void> _openClinicianReports() async {
     _go(SonaRoute.clinicianReports);
     await _run(_loadClinicalReports, label: 'Load reports');
@@ -996,6 +1003,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.clinicianIntakeForms ||
         SonaRoute.clinicianIntakeReview ||
         SonaRoute.clinicianReports ||
+        SonaRoute.clinicianResources ||
+        SonaRoute.clinicianBilling ||
         SonaRoute.clinicianSettings ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
@@ -1127,6 +1136,26 @@ class _SonaAppShellState extends State<SonaAppShell> {
           onDownloadPdf: _downloadClinicalReportPdf,
           onViewReport: (id) => unawaited(_viewClinicalReport(id)),
         ),
+      SonaRoute.clinicianResources => const ClinicianComingSoonScreen(
+          title: 'Resources',
+          description:
+              'Clinician resource library for handouts, referral templates, and session materials.',
+          plannedItems: [
+            'Parent-friendly handouts',
+            'Referral letter templates',
+            'Activity sheets by goal area',
+          ],
+        ),
+      SonaRoute.clinicianBilling => const ClinicianComingSoonScreen(
+          title: 'Billing',
+          description:
+              'Practice billing for consult fees, therapy blocks, and invoices — integrated with your workflow.',
+          plannedItems: [
+            'Session invoicing',
+            'Package pricing',
+            'Payment status per family',
+          ],
+        ),
       SonaRoute.clinicianSettings => ClinicianSettingsScreen(
           initialRules: _availabilityRules,
           onSave: (rules) async {
@@ -1169,6 +1198,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
       SonaRoute.clinicianIntakeForms || SonaRoute.clinicianIntakeReview =>
         ClinicianRoute.intakeForms,
       SonaRoute.clinicianReports => ClinicianRoute.reports,
+      SonaRoute.clinicianResources => ClinicianRoute.resources,
+      SonaRoute.clinicianBilling => ClinicianRoute.billing,
       SonaRoute.clinicianSettings => ClinicianRoute.settings,
       _ => _clinicianNav,
     };
@@ -1185,6 +1216,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
           unawaited(_openClinicianIntakeForms());
         } else if (r == ClinicianRoute.reports) {
           unawaited(_openClinicianReports());
+        } else if (r == ClinicianRoute.resources) {
+          _openClinicianResources();
+        } else if (r == ClinicianRoute.billing) {
+          _openClinicianBilling();
         } else if (r == ClinicianRoute.settings) {
           unawaited(_openClinicianSettings());
         }
