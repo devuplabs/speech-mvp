@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:sona/models/intake_form_data.dart';
+import 'package:sona/models/intake_template.dart';
 
 class SonaAppState extends ChangeNotifier {
   String? tenantId;
@@ -24,6 +25,9 @@ class SonaAppState extends ChangeNotifier {
   String triageOutcome = 'short_block';
   String prepStatus = 'Ready';
   List<Map<String, dynamic>> clinicianCases = [];
+  IntakeTemplateId intakeTemplateId = IntakeTemplateId.full;
+  bool intakeLocked = false;
+  bool intakeLinkExpired = false;
 
   /// Field key of the most recent failed validation on the current step.
   /// Set by `_parentContinue` when validation blocks progress; consumed by
@@ -32,6 +36,14 @@ class SonaAppState extends ChangeNotifier {
   String? pendingValidationMessage;
 
   String get childName => intake.childName.trim().isNotEmpty ? intake.childName.trim() : 'Child';
+  int get templateTotalSteps => templateStepCount(intakeTemplateId);
+
+  int templateProgressForStep(int step) => templateProgressIndex(intakeTemplateId, step);
+
+  bool stepAllowed(int step) => isStepInTemplate(intakeTemplateId, step);
+
+  int? advanceTemplateStep(int current) => nextTemplateStep(intakeTemplateId, current);
+
   String get parentEmail => intake.email.trim().isNotEmpty ? intake.email.trim() : 'parent@example.com';
 
   /// Marks draft dirty and schedules local autosave — does not rebuild the widget tree.

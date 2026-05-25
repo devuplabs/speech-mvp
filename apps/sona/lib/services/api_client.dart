@@ -55,6 +55,47 @@ class SonaApiClient {
     return list.cast<Map<String, dynamic>>();
   }
 
+
+  Future<List<Map<String, dynamic>>> listIntakeSubmissions(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/tenants/$tenantId/intake-submissions'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['items'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> resendIntakeLink(
+    String caseId, {
+    String? templateId,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake-links/resend'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({'templateId': templateId}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<void> revokeIntakeLink(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake-links/revoke'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
+  Future<void> lockIntake(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake/lock'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
   Future<Map<String, dynamic>> registerPatient({
     required String tenantId,
     required String childFirstName,
@@ -65,6 +106,7 @@ class SonaApiClient {
     required String referralSource,
     String? initialConcerns,
     bool sendIntakeLink = true,
+    String? templateId,
     String? bookConsultStart,
     int bookConsultDurationMinutes = 20,
   }) async {
@@ -81,6 +123,7 @@ class SonaApiClient {
         'referralSource': referralSource,
         'initialConcerns': initialConcerns,
         'sendIntakeLink': sendIntakeLink,
+        'templateId': templateId,
         if (bookConsultStart != null)
           'bookConsult': {
             'start': bookConsultStart,

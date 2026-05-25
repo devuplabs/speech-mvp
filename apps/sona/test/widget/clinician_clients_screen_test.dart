@@ -12,6 +12,7 @@ Future<void> _noopRegister({
   required String referralSource,
   String? initialConcerns,
   required bool sendIntakeLink,
+  String? templateId,
   String? bookConsultStart,
 }) async {}
 

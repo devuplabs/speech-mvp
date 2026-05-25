@@ -37,6 +37,15 @@ import {
   replaceAvailabilityRules,
 } from "../services/availability.js";
 import { bookConsult, buildConsultIcs } from "../services/consult-booking.js";
+import {
+  listTenantIntakeForms,
+  lockIntake,
+  resendIntakeLink,
+  revokeIntakeLinks,
+  assertIntakeNotLocked,
+} from "../services/intake-forms.js";
+import { intakeTemplateIdEnum } from "../schemas/intake-template.js";
+
 
 
 const createTenantBody = z.object({
@@ -81,6 +90,37 @@ export function createV1Routes(db: Db, env: Env) {
     );
   });
 
+
+  app.get("/tenants/:tenantId/intake-submissions", async (c) => {
+    const tenantId = c.req.param("tenantId");
+    const items = await listTenantIntakeForms(db, tenantId);
+    return c.json({ items });
+  });
+
+  app.post("/cases/:caseId/intake-links/resend", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = (await c.req.json().catch(() => ({}))) as { templateId?: string };
+    const templateId = body.templateId
+      ? intakeTemplateIdEnum.safeParse(body.templateId).data
+      : undefined;
+    const result = await resendIntakeLink(db, caseId, webBaseUrl, templateId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ url: result.url, expiresAt: result.expiresAt, templateId: result.templateId });
+  });
+
+  app.post("/cases/:caseId/intake-links/revoke", async (c) => {
+    const caseId = c.req.param("caseId");
+    await revokeIntakeLinks(db, caseId);
+    return c.body(null, 204);
+  });
+
+  app.post("/cases/:caseId/intake/lock", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await lockIntake(db, caseId);
+    if (!result.ok) return c.json({ error: "not_found" }, 404);
+    return c.body(null, 204);
+  });
+
   app.get("/intake-links/:token", async (c) => {
     const token = c.req.param("token");
     const result = await resolveIntakeLinkToken(db, token);
@@ -88,7 +128,12 @@ export function createV1Routes(db: Db, env: Env) {
       const status = result.error === "expired" ? 410 : 404;
       return c.json({ error: result.error }, status);
     }
-    return c.json({ caseId: result.caseId, expiresAt: result.expiresAt });
+    return c.json({
+      caseId: result.caseId,
+      expiresAt: result.expiresAt,
+      templateId: result.templateId,
+      locked: result.locked,
+    });
   });
 
   app.post("/tenants", async (c) => {
@@ -155,6 +200,9 @@ export function createV1Routes(db: Db, env: Env) {
     if (existing.status !== "intake_pending") {
       return c.json({ error: "intake_already_submitted" }, 409);
     }
+    if (!(await assertIntakeNotLocked(db, caseId))) {
+      return c.json({ error: "intake_locked" }, 409);
+    }
 
     const intake = await upsertIntakeDraft(db, caseId, body.answers, {
       parentEmail: body.parentEmail ?? undefined,
@@ -180,6 +228,9 @@ export function createV1Routes(db: Db, env: Env) {
     if (!existing) return c.json({ error: "not_found" }, 404);
     if (existing.status !== "intake_pending") {
       return c.json({ error: "intake_already_submitted" }, 409);
+    }
+    if (!(await assertIntakeNotLocked(db, caseId))) {
+      return c.json({ error: "intake_locked" }, 409);
     }
 
     const intake = await submitIntakeRecord(

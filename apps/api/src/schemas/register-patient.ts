@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { intakeTemplateIdEnum } from "./intake-template.js";
 import { bookConsultDraftSchema } from "./booking.js";
 
 export const referralSourceEnum = z.enum([
@@ -23,6 +24,7 @@ export const registerPatientBody = z.object({
   referralSource: referralSourceEnum,
   initialConcerns: z.string().trim().max(8000).optional(),
   sendIntakeLink: z.boolean().default(true),
+  templateId: intakeTemplateIdEnum.default("full"),
   bookConsult: bookConsultDraftSchema.optional(),
 });
 
