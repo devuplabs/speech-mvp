@@ -595,6 +595,23 @@ class _SonaAppShellState extends State<SonaAppShell> {
   Future<void> _loadParentSummary() async {
     final id = _state.caseId;
     if (id == null) return;
+
+    // Guard: only fetch if the case status is summary_sent.
+    // Calling the endpoint before publishing returns a 404; surface a friendly
+    // message instead of a raw API error.
+    final activeCase = _state.clinicianCases.where((c) => c['id'] == id).firstOrNull;
+    final status = activeCase?['status'] as String?;
+    if (!isSummarySent(status)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Summary not published yet. Complete triage and publish from the clinician prep flow.'),
+          ),
+        );
+      }
+      return;
+    }
+
     await _run(() async {
       final html = await _api.fetchParentSummaryHtml(id);
       setState(() {
