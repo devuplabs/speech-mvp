@@ -3,6 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sona/features/clinician/clinician_clients_screen.dart';
 import 'package:sona/state/sona_app_state.dart';
 
+Future<void> _noopRegister({
+  required String childFirstName,
+  required String dateOfBirth,
+  required String parentName,
+  required String parentEmail,
+  String? parentPhone,
+  required String referralSource,
+  String? initialConcerns,
+  required bool sendIntakeLink,
+  String? bookConsultStart,
+}) async {}
+
 void main() {
   testWidgets('empty state shows register CTA', (tester) async {
     tester.view.physicalSize = const Size(1400, 1200);
@@ -17,16 +29,7 @@ void main() {
             state: state,
             onRefresh: () async {},
             onOpenCase: (_) {},
-            onRegisterPatient: ({
-              required childFirstName,
-              required dateOfBirth,
-              required parentName,
-              required parentEmail,
-              parentPhone,
-              required referralSource,
-              initialConcerns,
-              required sendIntakeLink,
-            }) async {},
+            onRegisterPatient: _noopRegister,
           ),
         ),
       ),
@@ -56,16 +59,7 @@ void main() {
             state: state,
             onRefresh: () async {},
             onOpenCase: (_) {},
-            onRegisterPatient: ({
-              required childFirstName,
-              required dateOfBirth,
-              required parentName,
-              required parentEmail,
-              parentPhone,
-              required referralSource,
-              initialConcerns,
-              required sendIntakeLink,
-            }) async {},
+            onRegisterPatient: _noopRegister,
           ),
         ),
       ),

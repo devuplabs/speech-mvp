@@ -15,12 +15,14 @@ class ClinicianClientsScreen extends StatefulWidget {
     required this.onRefresh,
     required this.onOpenCase,
     required this.onRegisterPatient,
+    this.fetchSlots,
   });
 
   final SonaAppState state;
   final Future<void> Function() onRefresh;
   final ValueChanged<String> onOpenCase;
   final RegisterPatientSubmit onRegisterPatient;
+  final Future<List<Map<String, dynamic>>> Function()? fetchSlots;
 
   @override
   State<ClinicianClientsScreen> createState() => _ClinicianClientsScreenState();
@@ -53,6 +55,7 @@ class _ClinicianClientsScreenState extends State<ClinicianClientsScreen> {
     await NewPatientSheet.show(
       context,
       onSubmit: widget.onRegisterPatient,
+      fetchSlots: widget.fetchSlots,
     );
     await widget.onRefresh();
   }

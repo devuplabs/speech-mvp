@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 
-enum ClinicianRoute { today, clients, prep, triage, summary }
+enum ClinicianRoute { today, clients, prep, triage, summary, settings }
 
 class ClinicianShell extends StatelessWidget {
   const ClinicianShell({
@@ -25,7 +25,7 @@ class ClinicianShell extends StatelessWidget {
     (label: 'Resources', route: ClinicianRoute.today, implemented: false),
     (label: 'Reports', route: ClinicianRoute.today, implemented: false),
     (label: 'Billing', route: ClinicianRoute.today, implemented: false),
-    (label: 'Settings', route: ClinicianRoute.today, implemented: false),
+    (label: 'Settings', route: ClinicianRoute.settings, implemented: true),
   ];
 
   static const _sidebarBreakpoint = 1024.0;

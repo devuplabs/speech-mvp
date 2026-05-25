@@ -3,6 +3,7 @@ import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/sona_date_field.dart';
 import 'package:sona/design_system/widgets/sona_text_field.dart';
+import 'package:sona/features/clinician/consult_slot_picker.dart';
 import 'package:sona/utils/intake_validation.dart';
 
 typedef RegisterPatientSubmit = Future<void> Function({
@@ -14,6 +15,7 @@ typedef RegisterPatientSubmit = Future<void> Function({
   required String referralSource,
   String? initialConcerns,
   required bool sendIntakeLink,
+  String? bookConsultStart,
 });
 
 const kReferralSources = <(String value, String label)>[
@@ -30,14 +32,17 @@ class NewPatientSheet extends StatefulWidget {
     super.key,
     required this.onSubmit,
     required this.onCancel,
+    this.fetchSlots,
   });
 
   final RegisterPatientSubmit onSubmit;
   final VoidCallback onCancel;
+  final Future<List<Map<String, dynamic>>> Function()? fetchSlots;
 
   static Future<void> show(
     BuildContext context, {
     required RegisterPatientSubmit onSubmit,
+    Future<List<Map<String, dynamic>>> Function()? fetchSlots,
   }) {
     final width = MediaQuery.sizeOf(context).width;
     if (width < 900) {
@@ -49,6 +54,7 @@ class NewPatientSheet extends StatefulWidget {
           padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
           child: NewPatientSheet(
             onSubmit: onSubmit,
+            fetchSlots: fetchSlots,
             onCancel: () => Navigator.pop(ctx),
           ),
         ),
@@ -61,6 +67,7 @@ class NewPatientSheet extends StatefulWidget {
           constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
           child: NewPatientSheet(
             onSubmit: onSubmit,
+            fetchSlots: fetchSlots,
             onCancel: () => Navigator.pop(ctx),
           ),
         ),
@@ -73,6 +80,23 @@ class NewPatientSheet extends StatefulWidget {
 }
 
 class _NewPatientSheetState extends State<NewPatientSheet> {
+  @override
+  void initState() {
+    super.initState();
+    _loadSlots();
+  }
+
+  Future<void> _loadSlots() async {
+    if (widget.fetchSlots == null) return;
+    setState(() => _slotsLoading = true);
+    try {
+      final slots = await widget.fetchSlots!();
+      if (mounted) setState(() => _slots = slots);
+    } finally {
+      if (mounted) setState(() => _slotsLoading = false);
+    }
+  }
+
   String _childFirstName = '';
   String _dateOfBirth = '';
   String _parentName = '';
@@ -81,6 +105,10 @@ class _NewPatientSheetState extends State<NewPatientSheet> {
   String _referralSource = 'school';
   String _initialConcerns = '';
   bool _sendIntakeLink = true;
+  bool _bookConsult = false;
+  String? _selectedSlot;
+  List<Map<String, dynamic>> _slots = [];
+  bool _slotsLoading = false;
   bool _busy = false;
   String? _error;
 
@@ -107,6 +135,7 @@ class _NewPatientSheetState extends State<NewPatientSheet> {
         referralSource: _referralSource,
         initialConcerns: _initialConcerns.trim().isEmpty ? null : _initialConcerns.trim(),
         sendIntakeLink: _sendIntakeLink,
+        bookConsultStart: _bookConsult ? _selectedSlot : null,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -189,6 +218,26 @@ class _NewPatientSheetState extends State<NewPatientSheet> {
               maxLines: 3,
             ),
             const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Book consult now'),
+              subtitle: const Text('Pin the free 20-minute consult to a slot.'),
+              value: _bookConsult,
+              onChanged: widget.fetchSlots == null
+                  ? null
+                  : (v) => setState(() {
+                        _bookConsult = v;
+                        if (!v) _selectedSlot = null;
+                      }),
+            ),
+            if (_bookConsult) ...[
+              ConsultSlotPicker(
+                slots: _slots,
+                selectedStart: _selectedSlot,
+                loading: _slotsLoading,
+                onSelected: (s) => setState(() => _selectedSlot = s),
+              ),
+            ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Send intake link now'),

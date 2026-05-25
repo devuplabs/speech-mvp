@@ -65,6 +65,8 @@ class SonaApiClient {
     required String referralSource,
     String? initialConcerns,
     bool sendIntakeLink = true,
+    String? bookConsultStart,
+    int bookConsultDurationMinutes = 20,
   }) async {
     final res = await _client.post(
       _base.replace(path: '/v1/clinicians/me/patients'),
@@ -79,6 +81,11 @@ class SonaApiClient {
         'referralSource': referralSource,
         'initialConcerns': initialConcerns,
         'sendIntakeLink': sendIntakeLink,
+        if (bookConsultStart != null)
+          'bookConsult': {
+            'start': bookConsultStart,
+            'durationMinutes': bookConsultDurationMinutes,
+          },
       }),
     );
     _ensureOk(res, allowedStatuses: {200, 201});
@@ -91,6 +98,75 @@ class SonaApiClient {
     );
     _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+
+  Future<List<Map<String, dynamic>>> fetchAvailabilitySlots(
+    String tenantId, {
+    String? from,
+    String? to,
+  }) async {
+    final fromQ = from ?? DateTime.now().toUtc().toIso8601String();
+    final toQ = to ?? DateTime.now().add(const Duration(days: 14)).toUtc().toIso8601String();
+    final res = await _client.get(
+      _base.replace(
+        path: '/v1/clinicians/me/availability',
+        queryParameters: {
+          'tenantId': tenantId,
+          'from': fromQ,
+          'to': toQ,
+        },
+      ),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['slots'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAvailabilityRules(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(
+        path: '/v1/clinicians/me/availability/rules',
+        queryParameters: {'tenantId': tenantId},
+      ),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['rules'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> saveAvailabilityRules(
+    String tenantId,
+    List<Map<String, dynamic>> rules,
+  ) async {
+    final res = await _client.put(
+      _base.replace(path: '/v1/clinicians/me/availability/rules'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'tenantId': tenantId, 'rules': rules}),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['rules'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> bookConsult(
+    String caseId, {
+    required String start,
+    int durationMinutes = 20,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/consult'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'start': start, 'durationMinutes': durationMinutes}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<String> fetchConsultIcs(String caseId) async {
+    final res = await _client.get(_base.replace(path: '/v1/cases/$caseId/consult.ics'));
+    _ensureOk(res);
+    return res.body;
   }
 
   Future<Map<String, dynamic>> createCase({

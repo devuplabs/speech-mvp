@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bookConsultDraftSchema } from "./booking.js";
 
 export const referralSourceEnum = z.enum([
   "nhs",
@@ -22,6 +23,7 @@ export const registerPatientBody = z.object({
   referralSource: referralSourceEnum,
   initialConcerns: z.string().trim().max(8000).optional(),
   sendIntakeLink: z.boolean().default(true),
+  bookConsult: bookConsultDraftSchema.optional(),
 });
 
 export type RegisterPatientBody = z.infer<typeof registerPatientBody>;

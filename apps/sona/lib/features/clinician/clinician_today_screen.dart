@@ -10,11 +10,33 @@ class ClinicianTodayScreen extends StatelessWidget {
     required this.state,
     required this.onOpenPrep,
     required this.onRefresh,
+    this.showAvailabilityBanner = false,
   });
 
   final SonaAppState state;
   final ValueChanged<String> onOpenPrep;
   final Future<void> Function() onRefresh;
+  final bool showAvailabilityBanner;
+
+  List<Map<String, dynamic>> get _allCases => state.clinicianCases;
+
+  List<Map<String, dynamic>> get _upNextCases {
+    final now = DateTime.now();
+    final withConsult = _allCases
+        .where((c) {
+          final at = c['consultAt'] as String?;
+          if (at == null) return false;
+          final dt = DateTime.tryParse(at);
+          return dt != null && !dt.isBefore(now);
+        })
+        .toList();
+    withConsult.sort((a, b) {
+      final ad = DateTime.parse(a['consultAt'] as String);
+      final bd = DateTime.parse(b['consultAt'] as String);
+      return ad.compareTo(bd);
+    });
+    return withConsult.take(3).toList();
+  }
 
   List<Map<String, dynamic>> get _dashboardCases =>
       state.clinicianCases.where((c) => showCaseOnTodayDashboard(c['status'] as String?)).toList();
@@ -125,7 +147,7 @@ class ClinicianTodayScreen extends StatelessWidget {
                     _consultList(cases, activeId),
                   ],
                 );
-                final aside = _buildAside(cases, activeId);
+                final aside = _buildAside(cases, activeId, _upNextCases);
                 if (stack) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -201,24 +223,55 @@ class ClinicianTodayScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAside(List<Map<String, dynamic>> cases, String? activeId) {
-    if (cases.isEmpty) {
-      return const SizedBox.shrink();
+  Widget _buildAside(List<Map<String, dynamic>> cases, String? activeId, List<Map<String, dynamic>> upNext) {
+    final children = <Widget>[];
+    if (showAvailabilityBanner) {
+      children.add(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: SonaColors.warningBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: SonaColors.border),
+          ),
+          child: const Text(
+            'Confirm your consult windows in Settings (default: Tue & Thu 9:00–20:00).',
+            style: TextStyle(fontSize: 12, color: SonaColors.textSecondary, height: 1.35),
+          ),
+        ),
+      );
     }
-    final primary = cases.firstWhere(
-      (c) => c['id'] == activeId,
-      orElse: () => cases.first,
-    );
-    final id = primary['id'] as String;
-    final name = (primary['childDisplayName'] as String?) ?? 'Child';
-    final label = prepLabelFromCaseStatus(primary['status'] as String?);
-    return Column(
-      children: [
-        _sideCard('Up next', name, 'Prep brief · $label', () => onOpenPrep(id)),
-        const SizedBox(height: 16),
-        _sideCard('Recent activity', 'Intake submitted · $name', 'Just now', () => onOpenPrep(id)),
-      ],
-    );
+    if (upNext.isNotEmpty) {
+      for (final c in upNext) {
+        final id = c['id'] as String;
+        final name = (c['childDisplayName'] as String?) ?? 'Child';
+        final at = DateTime.tryParse(c['consultAt'] as String? ?? '');
+        final time = at != null ? '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}' : '—';
+        children.add(_sideCard('Up next', name, 'Consult $time', () => onOpenPrep(id)));
+        children.add(const SizedBox(height: 16));
+      }
+    } else if (cases.isNotEmpty) {
+      final primary = cases.firstWhere(
+        (c) => c['id'] == activeId,
+        orElse: () => cases.first,
+      );
+      final id = primary['id'] as String;
+      final name = (primary['childDisplayName'] as String?) ?? 'Child';
+      children.add(_sideCard('Up next', name, 'No consult booked', () => onOpenPrep(id)));
+      children.add(const SizedBox(height: 16));
+    }
+    if (cases.isEmpty && children.isEmpty) return const SizedBox.shrink();
+    if (cases.isNotEmpty) {
+      final primary = cases.firstWhere(
+        (c) => c['id'] == activeId,
+        orElse: () => cases.first,
+      );
+      final name = (primary['childDisplayName'] as String?) ?? 'Child';
+      children.add(_sideCard('Recent activity', 'Intake · $name', 'Latest', () => onOpenPrep(primary['id'] as String)));
+    }
+    return Column(children: children);
   }
 
   Widget _kpi(String value, String label, Color accent, {bool expanded = true}) {
