@@ -19,11 +19,10 @@ class ClinicianTodayScreen extends StatelessWidget {
   List<Map<String, dynamic>> get _dashboardCases =>
       state.clinicianCases.where((c) => showCaseOnTodayDashboard(c['status'] as String?)).toList();
 
-  int get _intakePendingCount =>
-      state.clinicianCases.where((c) => (c['status'] as String?) == 'intake_submitted').length;
-
-  int get _prepReadyCount => state.clinicianCases
-      .where((c) => (c['status'] as String?) == 'prep_ready' || (c['status'] as String?) == 'plan_ready')
+  // KPI counts — guaranteed to sum to _dashboardCases.length so the tiles
+  // are always consistent (see KpiBucket in case_status.dart).
+  int _kpiCount(KpiBucket bucket) => _dashboardCases
+      .where((c) => kpiBucketFor(c['status'] as String?) == bucket)
       .length;
 
   @override
@@ -104,18 +103,22 @@ class ClinicianTodayScreen extends StatelessWidget {
                             children: [
                               _kpi('${cases.length}', 'Cases on dashboard', SonaColors.primary, expanded: false),
                               const SizedBox(height: 12),
-                              _kpi('$_intakePendingCount', 'Intake submitted', SonaColors.accent, expanded: false),
+                              _kpi('${_kpiCount(KpiBucket.newIntake)}', 'New intakes', SonaColors.accent, expanded: false),
                               const SizedBox(height: 12),
-                              _kpi('$_prepReadyCount', 'Prep ready', SonaColors.textSecondary, expanded: false),
+                              _kpi('${_kpiCount(KpiBucket.inProgress)}', 'In progress', SonaColors.textSecondary, expanded: false),
+                              const SizedBox(height: 12),
+                              _kpi('${_kpiCount(KpiBucket.summarySent)}', 'Summary sent', SonaColors.successText, expanded: false),
                             ],
                           )
                         : Row(
                             children: [
                               _kpi('${cases.length}', 'Cases on dashboard', SonaColors.primary),
                               const SizedBox(width: 16),
-                              _kpi('$_intakePendingCount', 'Intake submitted', SonaColors.accent),
+                              _kpi('${_kpiCount(KpiBucket.newIntake)}', 'New intakes', SonaColors.accent),
                               const SizedBox(width: 16),
-                              _kpi('$_prepReadyCount', 'Prep ready', SonaColors.textSecondary),
+                              _kpi('${_kpiCount(KpiBucket.inProgress)}', 'In progress', SonaColors.textSecondary),
+                              const SizedBox(width: 16),
+                              _kpi('${_kpiCount(KpiBucket.summarySent)}', 'Summary sent', SonaColors.successText),
                             ],
                           ),
                     const SizedBox(height: 24),

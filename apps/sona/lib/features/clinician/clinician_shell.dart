@@ -15,14 +15,17 @@ class ClinicianShell extends StatelessWidget {
   final ValueChanged<ClinicianRoute> onNavigate;
   final Widget child;
 
+  // (label, route, implemented)
+  // Unimplemented items are rendered as inactive and show a "coming soon"
+  // tooltip rather than silently navigating back to Today.
   static const _navItems = [
-    ('Today', ClinicianRoute.today),
-    ('Clients', ClinicianRoute.today),
-    ('Intake forms', ClinicianRoute.today),
-    ('Resources', ClinicianRoute.today),
-    ('Reports', ClinicianRoute.today),
-    ('Billing', ClinicianRoute.today),
-    ('Settings', ClinicianRoute.today),
+    (label: 'Today', route: ClinicianRoute.today, implemented: true),
+    (label: 'Clients', route: ClinicianRoute.today, implemented: false),
+    (label: 'Intake forms', route: ClinicianRoute.today, implemented: false),
+    (label: 'Resources', route: ClinicianRoute.today, implemented: false),
+    (label: 'Reports', route: ClinicianRoute.today, implemented: false),
+    (label: 'Billing', route: ClinicianRoute.today, implemented: false),
+    (label: 'Settings', route: ClinicianRoute.today, implemented: false),
   ];
 
   static const _sidebarBreakpoint = 1024.0;
@@ -85,18 +88,19 @@ class ClinicianShell extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Column(
               children: _navItems.map((item) {
-                final active = item.$1 == 'Today' && route == ClinicianRoute.today;
-                return Padding(
+                final active = item.route == route && item.implemented;
+                final disabled = !item.implemented;
+                final navItem = Padding(
                   padding: const EdgeInsets.only(bottom: 2),
                   child: Semantics(
-                    button: true,
+                    button: item.implemented,
                     selected: active,
-                    label: item.$1,
+                    label: item.implemented ? item.label : '${item.label} (coming soon)',
                     child: Material(
                       color: active ? SonaColors.navActiveBg : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       child: InkWell(
-                        onTap: () => onNavigate(item.$2),
+                        onTap: disabled ? null : () => onNavigate(item.route),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -107,19 +111,37 @@ class ClinicianShell extends StatelessWidget {
                                 height: 18,
                                 decoration: BoxDecoration(
                                   color: active ? SonaColors.primary : Colors.transparent,
-                                  border: active ? null : Border.all(color: SonaColors.chipBorder, width: 1.5),
+                                  border: active ? null : Border.all(
+                                    color: disabled ? SonaColors.border : SonaColors.chipBorder,
+                                    width: 1.5,
+                                  ),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                item.$1,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                                  color: active ? SonaColors.primaryDark : SonaColors.textSecondary,
+                              Expanded(
+                                child: Text(
+                                  item.label,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                                    color: disabled
+                                        ? SonaColors.textMuted
+                                        : active
+                                            ? SonaColors.primaryDark
+                                            : SonaColors.textSecondary,
+                                  ),
                                 ),
                               ),
+                              if (disabled)
+                                const Text(
+                                  'Soon',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: SonaColors.textMuted,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -127,6 +149,7 @@ class ClinicianShell extends StatelessWidget {
                     ),
                   ),
                 );
+                return navItem;
               }).toList(),
             ),
           ),
