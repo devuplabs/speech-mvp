@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 
-enum ClinicianRoute { today, prep, triage, summary }
+enum ClinicianRoute { today, clients, prep, triage, summary }
 
 class ClinicianShell extends StatelessWidget {
   const ClinicianShell({

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:api": "playwright test tests/api-bootstrap.spec.ts tests/intake-api-full.spec.ts",
+    "test:api": "playwright test tests/api-bootstrap.spec.ts tests/intake-api-full.spec.ts tests/register-patient-api.spec.ts",
     "test:ui": "playwright test tests/parent-intake-smoke.spec.ts tests/parent-intake-full.spec.ts",
     "test:full": "playwright test",
     "test:headed": "playwright test --headed",

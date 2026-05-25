@@ -20,6 +20,11 @@ import { draftPrepBrief } from "../services/prep-brief.js";
 import { draftSessionPlanStub } from "../services/session-plan.js";
 import { writeAudit } from "../services/audit.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
+import { registerPatientBody } from "../schemas/register-patient.js";
+import {
+  registerPatient,
+  resolveIntakeLinkToken,
+} from "../services/register-patient.js";
 
 const createTenantBody = z.object({
   displayName: z.string().min(1).max(255),
@@ -42,6 +47,35 @@ const publishParentSummaryBody = z.object({
 
 export function createV1Routes(db: Db, env: Env) {
   const app = new Hono();
+
+  const webBaseUrl =
+    env.SONA_WEB_BASE_URL ??
+    (env.NODE_ENV === "development"
+      ? "http://localhost:8080"
+      : "https://sona-web-dev-3rhenudy6a-nw.a.run.app");
+
+  app.post("/clinicians/me/patients", async (c) => {
+    const body = registerPatientBody.parse(await c.req.json());
+    const result = await registerPatient(db, body, webBaseUrl);
+    return c.json(
+      {
+        case: result.case,
+        intakeLink: result.intakeLink,
+        idempotent: result.idempotent,
+      },
+      result.idempotent ? 200 : 201,
+    );
+  });
+
+  app.get("/intake-links/:token", async (c) => {
+    const token = c.req.param("token");
+    const result = await resolveIntakeLinkToken(db, token);
+    if (!result.ok) {
+      const status = result.error === "expired" ? 410 : 404;
+      return c.json({ error: result.error }, status);
+    }
+    return c.json({ caseId: result.caseId, expiresAt: result.expiresAt });
+  });
 
   app.post("/tenants", async (c) => {
     const body = createTenantBody.parse(await c.req.json());

@@ -55,6 +55,44 @@ class SonaApiClient {
     return list.cast<Map<String, dynamic>>();
   }
 
+  Future<Map<String, dynamic>> registerPatient({
+    required String tenantId,
+    required String childFirstName,
+    required String dateOfBirth,
+    required String parentName,
+    required String parentEmail,
+    String? parentPhone,
+    required String referralSource,
+    String? initialConcerns,
+    bool sendIntakeLink = true,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/clinicians/me/patients'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'tenantId': tenantId,
+        'childFirstName': childFirstName,
+        'dateOfBirth': dateOfBirth,
+        'parentName': parentName,
+        'parentEmail': parentEmail,
+        'parentPhone': parentPhone,
+        'referralSource': referralSource,
+        'initialConcerns': initialConcerns,
+        'sendIntakeLink': sendIntakeLink,
+      }),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> resolveIntakeLink(String token) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/intake-links/$token'),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> createCase({
     required String tenantId,
     String? parentEmail,
