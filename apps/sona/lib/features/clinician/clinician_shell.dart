@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 
-enum ClinicianRoute { today, clients, intakeForms, prep, triage, summary, settings }
+enum ClinicianRoute { today, clients, intakeForms, reports, prep, triage, summary, settings }
 
 class ClinicianShell extends StatelessWidget {
   const ClinicianShell({
@@ -23,7 +23,7 @@ class ClinicianShell extends StatelessWidget {
     (label: 'Clients', route: ClinicianRoute.clients, implemented: true),
     (label: 'Intake forms', route: ClinicianRoute.intakeForms, implemented: true),
     (label: 'Resources', route: ClinicianRoute.today, implemented: false),
-    (label: 'Reports', route: ClinicianRoute.today, implemented: false),
+    (label: 'Reports', route: ClinicianRoute.reports, implemented: true),
     (label: 'Billing', route: ClinicianRoute.today, implemented: false),
     (label: 'Settings', route: ClinicianRoute.settings, implemented: true),
   ];

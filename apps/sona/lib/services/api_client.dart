@@ -135,6 +135,36 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+
+  Future<List<Map<String, dynamic>>> listClinicalReports(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/tenants/$tenantId/clinical-reports'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['items'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> fetchClinicalReport(String caseId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/cases/$caseId/clinical-report'),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<void> generateClinicalReport(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/clinical-report/generate'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res);
+  }
+
+  String clinicalReportPdfUrl(String caseId) =>
+      _base.replace(path: '/v1/cases/$caseId/clinical-report.pdf').toString();
+
   Future<Map<String, dynamic>> resolveIntakeLink(String token) async {
     final res = await _client.get(
       _base.replace(path: '/v1/intake-links/$token'),

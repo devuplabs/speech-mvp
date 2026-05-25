@@ -27,6 +27,7 @@ export const aiDraftKindEnum = pgEnum("ai_draft_kind", [
   "prep_brief",
   "session_plan",
   "parent_summary",
+  "clinical_report",
 ]);
 
 export const tenants = pgTable("tenants", {

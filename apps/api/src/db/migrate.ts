@@ -8,7 +8,9 @@ const migrationsDir = path.join(
   "../../drizzle",
 );
 
-const MIGRATION_IDS = ["0000_init", "0001_register_patient", "0002_booking", "0003_questionnaire"] as const;
+const MIGRATION_IDS = ["0000_init", "0001_register_patient", "0002_booking", "0003_questionnaire",
+  "0004_clinical_report",
+] as const;
 
 export async function runMigrations(connectionString: string): Promise<void> {
   const pool = new pg.Pool({ connectionString });
