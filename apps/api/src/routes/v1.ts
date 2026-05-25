@@ -25,6 +25,19 @@ import {
   registerPatient,
   resolveIntakeLinkToken,
 } from "../services/register-patient.js";
+import {
+  availabilityRuleSchema,
+  bookConsultBody,
+  putAvailabilityRulesBody,
+} from "../schemas/booking.js";
+import {
+  ensureDefaultAvailability,
+  getAvailabilitySlots,
+  listAvailabilityRules,
+  replaceAvailabilityRules,
+} from "../services/availability.js";
+import { bookConsult, buildConsultIcs } from "../services/consult-booking.js";
+
 
 const createTenantBody = z.object({
   displayName: z.string().min(1).max(255),
@@ -61,6 +74,7 @@ export function createV1Routes(db: Db, env: Env) {
       {
         case: result.case,
         intakeLink: result.intakeLink,
+        consultBooking: result.consultBooking ?? null,
         idempotent: result.idempotent,
       },
       result.idempotent ? 200 : 201,
@@ -275,6 +289,56 @@ export function createV1Routes(db: Db, env: Env) {
     return c.html(result.html);
   });
 
+
+  app.get("/clinicians/me/availability", async (c) => {
+    const tenantId = c.req.query("tenantId");
+    if (!tenantId) return c.json({ error: "tenant_id_required" }, 400);
+    const from = c.req.query("from") ?? new Date().toISOString();
+    const to =
+      c.req.query("to") ??
+      new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    await ensureDefaultAvailability(db, tenantId);
+    const slots = await getAvailabilitySlots(db, tenantId, from, to);
+    return c.json({ slots });
+  });
+
+  app.get("/clinicians/me/availability/rules", async (c) => {
+    const tenantId = c.req.query("tenantId");
+    if (!tenantId) return c.json({ error: "tenant_id_required" }, 400);
+    await ensureDefaultAvailability(db, tenantId);
+    const rules = await listAvailabilityRules(db, tenantId);
+    return c.json({ rules });
+  });
+
+  app.put("/clinicians/me/availability/rules", async (c) => {
+    const body = putAvailabilityRulesBody.parse(await c.req.json());
+    const rules = await replaceAvailabilityRules(db, body.tenantId, body.rules);
+    return c.json({ rules });
+  });
+
+  app.post("/cases/:caseId/consult", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = bookConsultBody.parse(await c.req.json());
+    const result = await bookConsult(db, caseId, body.start, body.durationMinutes);
+    if (!result.ok) {
+      const status = result.error === "not_found" ? 404 : result.error === "slot_taken" ? 409 : 422;
+      return c.json({ error: result.error }, status);
+    }
+    return c.json({ case: result.case, consultAt: result.consultAt });
+  });
+
+  app.get("/cases/:caseId/consult.ics", async (c) => {
+    const caseId = c.req.param("caseId");
+    const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!row || !row.consultAt) return c.json({ error: "not_found" }, 404);
+    const ics = buildConsultIcs({
+      childDisplayName: row.childDisplayName ?? "Client",
+      consultAt: row.consultAt,
+      durationMinutes: 20,
+    });
+    return c.body(ics, 200, { "Content-Type": "text/calendar; charset=utf-8" });
+  });
+
   /** Demo bootstrap: reuse one demo tenant per jurisdiction (stable tenantId across sessions). */
   app.post("/demo/bootstrap", async (c) => {
     const displayName = "Demo practice";
@@ -286,6 +350,7 @@ export function createV1Routes(db: Db, env: Env) {
       )
       .limit(1);
     if (existing) {
+      await ensureDefaultAvailability(db, existing.id);
       return c.json({ tenantId: existing.id, jurisdiction: existing.jurisdiction }, 200);
     }
     const [row] = await db

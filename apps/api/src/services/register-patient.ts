@@ -6,6 +6,7 @@ import type { RegisterPatientBody } from "../schemas/register-patient.js";
 import { REFERRAL_SOURCE_LABELS } from "../schemas/register-patient.js";
 import { upsertIntakeDraft } from "./intake.js";
 import { writeAudit } from "./audit.js";
+import { bookConsult } from "./consult-booking.js";
 
 const LINK_TTL_DAYS = 14;
 
@@ -63,6 +64,12 @@ export async function registerPatient(
     childDisplayName,
   );
   if (existing) {
+    let consultBooking = null as { consultAt: string } | null;
+    if (body.bookConsult) {
+      const duration = body.bookConsult.durationMinutes ?? 20;
+      const booked = await bookConsult(db, existing.case.id, body.bookConsult.start, duration);
+      if (booked.ok) consultBooking = { consultAt: booked.consultAt };
+    }
     return {
       case: existing.case,
       intakeLink: {
@@ -70,6 +77,7 @@ export async function registerPatient(
         expiresAt: existing.link.expiresAt.toISOString(),
         token: existing.link.token,
       },
+      consultBooking,
       idempotent: true as const,
     };
   }
@@ -136,8 +144,19 @@ export async function registerPatient(
     },
   });
 
+  let consultBooking: { consultAt: string } | null = null;
+  if (body.bookConsult) {
+    const duration = body.bookConsult.durationMinutes ?? 20;
+    const booked = await bookConsult(db, caseRow.id, body.bookConsult.start, duration);
+    if (booked.ok) {
+      consultBooking = { consultAt: booked.consultAt };
+    }
+  }
+
   return {
-    case: caseRow,
+    case: (consultBooking
+      ? (await db.select().from(cases).where(eq(cases.id, caseRow.id)))[0]
+      : caseRow),
     intakeLink: linkRow
       ? {
           url: buildIntakeLinkUrl(webBaseUrl, linkRow.token),
@@ -145,6 +164,7 @@ export async function registerPatient(
           token: linkRow.token,
         }
       : null,
+    consultBooking,
     idempotent: false as const,
   };
 }

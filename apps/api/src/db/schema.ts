@@ -6,6 +6,8 @@ import {
   timestamp,
   uuid,
   varchar,
+  boolean,
+  smallint,
 } from "drizzle-orm/pg-core";
 
 export const jurisdictionEnum = pgEnum("jurisdiction", ["uk", "us"]);
@@ -47,6 +49,20 @@ export const cases = pgTable("cases", {
   consultAt: timestamp("consult_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+
+export const clinicianAvailability = pgTable("clinician_availability", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  weekday: smallint("weekday").notNull(),
+  startMinuteLocal: smallint("start_minute_local").notNull(),
+  endMinuteLocal: smallint("end_minute_local").notNull(),
+  timezone: text("timezone").notNull().default("Europe/London"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const caseIntakeLinks = pgTable("case_intake_links", {

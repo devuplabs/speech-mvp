@@ -8,6 +8,7 @@ import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
 import 'package:sona/features/clinician/clinician_clients_screen.dart';
+import 'package:sona/features/clinician/clinician_settings_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
 import 'package:sona/features/clinician/clinician_today_screen.dart';
@@ -34,6 +35,7 @@ enum SonaRoute {
   parentSummary,
   clinicianToday,
   clinicianClients,
+  clinicianSettings,
   clinicianPrep,
   clinicianTriage,
   clinicianSummaryPreview,
@@ -65,6 +67,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
   String? _status;
   String? _parentSummaryHtml;
   bool _hasResumableDraft = false;
+  List<Map<String, dynamic>> _availabilityRules = [];
+  bool _needsAvailabilityConfirm = true;
 
   @override
   void initState() {
@@ -714,6 +718,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     required String referralSource,
     String? initialConcerns,
     required bool sendIntakeLink,
+    String? bookConsultStart,
   }) async {
     await _ensureTenant();
     final result = await _api.registerPatient(
@@ -726,6 +731,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       referralSource: referralSource,
       initialConcerns: initialConcerns,
       sendIntakeLink: sendIntakeLink,
+      bookConsultStart: bookConsultStart,
     );
     final caseMap = result['case'] as Map<String, dynamic>;
     _state.caseId = caseMap['id'] as String;
@@ -740,11 +746,26 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }
   }
 
+  Future<void> _loadAvailabilityRules() async {
+    await _ensureTenant();
+    _availabilityRules = await _api.fetchAvailabilityRules(_state.tenantId!);
+    if (mounted) setState(() => _needsAvailabilityConfirm = _availabilityRules.isEmpty);
+  }
+
+  Future<void> _openClinicianSettings() async {
+    _go(SonaRoute.clinicianSettings);
+    await _run(() async {
+      await _ensureTenant();
+      await _loadAvailabilityRules();
+    }, label: 'Load settings');
+  }
+
   Future<void> _openClinicianClients() async {
     _go(SonaRoute.clinicianClients);
     await _run(() async {
       await _ensureTenant();
       await _loadClinicianDashboard();
+      await _loadAvailabilityRules();
     }, label: 'Load clients');
   }
 
@@ -755,6 +776,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         await _ensureTenant();
       }
       await _loadClinicianDashboard();
+      await _loadAvailabilityRules();
       if (_state.caseId != null) await _refreshCase();
     }, label: 'Load dashboard');
   }
@@ -797,6 +819,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
           ),
         SonaRoute.clinicianToday ||
         SonaRoute.clinicianClients ||
+        SonaRoute.clinicianSettings ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
         SonaRoute.clinicianSummaryPreview =>
@@ -905,6 +928,17 @@ class _SonaAppShellState extends State<SonaAppShell> {
             _go(SonaRoute.clinicianPrep);
           },
           onRegisterPatient: _registerPatient,
+          fetchSlots: _state.tenantId == null
+              ? null
+              : () => _api.fetchAvailabilitySlots(_state.tenantId!),
+        ),
+      SonaRoute.clinicianSettings => ClinicianSettingsScreen(
+          initialRules: _availabilityRules,
+          onSave: (rules) async {
+            await _ensureTenant();
+            _availabilityRules = await _api.saveAvailabilityRules(_state.tenantId!, rules);
+            setState(() => _needsAvailabilityConfirm = false);
+          },
         ),
       SonaRoute.clinicianPrep => ClinicianPrepScreen(
           onBackToday: () => _go(SonaRoute.clinicianToday),
@@ -921,6 +955,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         ),
       _ => ClinicianTodayScreen(
           state: _state,
+          showAvailabilityBanner: _needsAvailabilityConfirm,
           onOpenPrep: (caseId) {
             setState(() => _state.caseId = caseId);
             _refreshCase();
@@ -934,8 +969,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
       return child;
     }
 
-    final navRoute =
-        _route == SonaRoute.clinicianClients ? ClinicianRoute.clients : _clinicianNav;
+    final navRoute = switch (_route) {
+      SonaRoute.clinicianClients => ClinicianRoute.clients,
+      SonaRoute.clinicianSettings => ClinicianRoute.settings,
+      _ => _clinicianNav,
+    };
 
     return ClinicianShell(
       route: navRoute,
@@ -945,6 +983,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
           unawaited(_openClinicianToday());
         } else if (r == ClinicianRoute.clients) {
           unawaited(_openClinicianClients());
+        } else if (r == ClinicianRoute.settings) {
+          unawaited(_openClinicianSettings());
         }
       },
       child: child,
