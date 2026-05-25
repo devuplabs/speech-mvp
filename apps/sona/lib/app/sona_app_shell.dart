@@ -10,6 +10,7 @@ import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
 import 'package:sona/features/clinician/clinician_clients_screen.dart';
 import 'package:sona/features/clinician/clinician_intake_forms_screen.dart';
 import 'package:sona/features/clinician/clinician_intake_review_screen.dart';
+import 'package:sona/features/clinician/clinician_reports_screen.dart';
 import 'package:sona/features/clinician/clinician_settings_screen.dart';
 import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
@@ -29,6 +30,7 @@ import 'package:sona/test_utils/intake_personas.dart';
 import 'package:sona/utils/api_errors.dart';
 import 'package:sona/utils/intake_validation.dart';
 import 'package:sona/utils/case_status.dart';
+import 'package:sona/utils/open_url.dart';
 
 enum SonaRoute {
   launcher,
@@ -40,6 +42,7 @@ enum SonaRoute {
   clinicianClients,
   clinicianIntakeForms,
   clinicianIntakeReview,
+  clinicianReports,
   clinicianSettings,
   clinicianPrep,
   clinicianTriage,
@@ -75,6 +78,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
   List<Map<String, dynamic>> _availabilityRules = [];
   bool _needsAvailabilityConfirm = true;
   List<Map<String, dynamic>> _intakeFormItems = [];
+  List<Map<String, dynamic>> _clinicalReportItems = [];
 
   @override
   void initState() {
@@ -601,6 +605,72 @@ class _SonaAppShellState extends State<SonaAppShell> {
     });
   }
 
+
+  Future<void> _loadClinicalReports() async {
+    await _ensureTenant();
+    final items = await _api.listClinicalReports(_state.tenantId!);
+    setState(() {
+      _clinicalReportItems = items;
+      _status = '${items.length} report(s)';
+    });
+  }
+
+  Future<void> _openClinicianReports() async {
+    _go(SonaRoute.clinicianReports);
+    await _run(_loadClinicalReports, label: 'Load reports');
+  }
+
+  void _downloadClinicalReportPdf(String caseId) {
+    final url = _api.clinicalReportPdfUrl(caseId);
+    openUrlInNewTab(url);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Opening PDF download…')),
+    );
+  }
+
+  Future<void> _viewClinicalReport(String caseId) async {
+    await _run(() async {
+      final detail = await _api.fetchClinicalReport(caseId);
+      final content = detail['content'] as Map<String, dynamic>? ?? {};
+      final sections = (content['sections'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(content['title'] as String? ?? 'Clinical report'),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    content['disclaimer'] as String? ?? '',
+                    style: const TextStyle(fontSize: 12, color: SonaColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final s in sections) ...[
+                    Text(
+                      s['heading'] as String? ?? '',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(s['body'] as String? ?? ''),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ],
+        ),
+      );
+    }, label: 'Load report');
+  }
+
   Future<void> _openClinicianIntakeForms() async {
     _go(SonaRoute.clinicianIntakeForms);
     await _run(_loadIntakeForms, label: 'Load intake forms');
@@ -925,6 +995,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.clinicianClients ||
         SonaRoute.clinicianIntakeForms ||
         SonaRoute.clinicianIntakeReview ||
+        SonaRoute.clinicianReports ||
         SonaRoute.clinicianSettings ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
@@ -1050,6 +1121,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
           state: _state,
           onBack: () => _go(SonaRoute.clinicianIntakeForms),
         ),
+      SonaRoute.clinicianReports => ClinicianReportsScreen(
+          items: _clinicalReportItems,
+          onRefresh: _loadClinicalReports,
+          onDownloadPdf: _downloadClinicalReportPdf,
+          onViewReport: (id) => unawaited(_viewClinicalReport(id)),
+        ),
       SonaRoute.clinicianSettings => ClinicianSettingsScreen(
           initialRules: _availabilityRules,
           onSave: (rules) async {
@@ -1091,6 +1168,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       SonaRoute.clinicianClients => ClinicianRoute.clients,
       SonaRoute.clinicianIntakeForms || SonaRoute.clinicianIntakeReview =>
         ClinicianRoute.intakeForms,
+      SonaRoute.clinicianReports => ClinicianRoute.reports,
       SonaRoute.clinicianSettings => ClinicianRoute.settings,
       _ => _clinicianNav,
     };
@@ -1105,6 +1183,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
           unawaited(_openClinicianClients());
         } else if (r == ClinicianRoute.intakeForms) {
           unawaited(_openClinicianIntakeForms());
+        } else if (r == ClinicianRoute.reports) {
+          unawaited(_openClinicianReports());
         } else if (r == ClinicianRoute.settings) {
           unawaited(_openClinicianSettings());
         }

@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { aiDrafts, cases } from "../db/schema.js";
 import { writeAudit } from "./audit.js";
+import { draftClinicalReportStub } from "./clinical-report.js";
 
 export function defaultParentSummaryHtml(childName?: string | null): string {
   const who = childName ? ` for ${childName}` : "";
@@ -58,6 +59,12 @@ export async function publishParentSummary(
     actor: "clinician",
     action: "parent_summary.published",
   });
+
+  try {
+    await draftClinicalReportStub(db, caseId);
+  } catch (err) {
+    console.warn("clinical report stub failed after publish:", err);
+  }
 
   return {
     ok: true as const,

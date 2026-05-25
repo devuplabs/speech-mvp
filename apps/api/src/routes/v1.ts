@@ -18,6 +18,13 @@ import {
 } from "../services/parent-summary.js";
 import { draftPrepBrief } from "../services/prep-brief.js";
 import { draftSessionPlanStub } from "../services/session-plan.js";
+import {
+  draftClinicalReportStub,
+  getClinicalReportDraft,
+  listTenantClinicalReports,
+  renderClinicalReportPdfForCase,
+} from "../services/clinical-report.js";
+
 import { writeAudit } from "../services/audit.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
 import { registerPatientBody } from "../schemas/register-patient.js";
@@ -338,6 +345,45 @@ export function createV1Routes(db: Db, env: Env) {
       return c.json({ error: result.error, status: result.status }, 404);
     }
     return c.html(result.html);
+  });
+
+  app.get("/tenants/:tenantId/clinical-reports", async (c) => {
+    const tenantId = c.req.param("tenantId");
+    const items = await listTenantClinicalReports(db, tenantId);
+    return c.json({ items });
+  });
+
+  app.post("/cases/:caseId/clinical-report/generate", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await draftClinicalReportStub(db, caseId);
+    if (!result.ok) {
+      const status = result.error === "not_found" ? 404 : 409;
+      return c.json({ error: result.error }, status);
+    }
+    return c.json({ draft: result.draft, alreadyExists: result.alreadyExists ?? false });
+  });
+
+  app.get("/cases/:caseId/clinical-report", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await getClinicalReportDraft(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({
+      caseId,
+      content: result.content,
+      reviewedAt: result.draft.reviewedAt?.toISOString() ?? null,
+      createdAt: result.draft.createdAt.toISOString(),
+    });
+  });
+
+  app.get("/cases/:caseId/clinical-report.pdf", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await renderClinicalReportPdfForCase(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    const name = (result.content.childDisplayName || "child").replace(/[^a-zA-Z0-9_-]+/g, "_");
+    return c.body(Buffer.from(result.pdf), 200, {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="clinical-report-${name}.pdf"`,
+    });
   });
 
 
