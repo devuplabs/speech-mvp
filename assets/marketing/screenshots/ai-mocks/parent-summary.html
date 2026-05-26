@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Parent summary mock — Aria M.</title>
+<link rel="stylesheet" href="../../deck/slides-src/theme.css" />
+<style>
+  body { padding: 64px; background: var(--bg); }
+  .layout { display: grid; grid-template-columns: 720px 420px; gap: 28px; }
+  .doc h3 { margin: 0 0 6px; color: var(--text-primary); font-size: 26px; }
+  .doc .sub { color: var(--text-muted); font-size: 16px; margin-bottom: 14px; }
+  .preview .greeting { font-size: 22px; color: var(--text-primary); margin: 10px 0 14px; }
+  .preview p { font-size: 17px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 14px; }
+  .preview h4 { font-size: 16px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin: 18px 0 8px; }
+  .preview ul { margin: 0; padding-left: 22px; }
+  .preview li { font-size: 17px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 6px; }
+  .footer-disclosure { margin-top: 20px; padding: 14px; background: var(--ai-badge-bg); color: var(--ai-badge-text); border-radius: 10px; font-size: 14px; font-weight: 600; }
+
+  .controls h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.4px; color: var(--text-muted); margin: 0 0 8px; }
+  .controls .group { margin-bottom: 22px; }
+  .slider { display: flex; align-items: center; gap: 12px; }
+  .slider .track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; position: relative; }
+  .slider .fill { position: absolute; top: 0; left: 0; height: 100%; width: 70%; background: var(--primary); border-radius: 3px; }
+  .slider .handle { position: absolute; top: -6px; left: calc(70% - 9px); width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 3px solid var(--primary); }
+  .slider .end { font-size: 13px; color: var(--text-muted); }
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; background: var(--surface); }
+  .toggle .name { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+  .toggle .switch { width: 36px; height: 20px; background: var(--primary); border-radius: 999px; position: relative; }
+  .toggle .switch::after { content: ''; position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; }
+  .toggle.off .switch { background: var(--border); }
+  .toggle.off .switch::after { left: 2px; right: auto; }
+  .meta { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Email preview -->
+  <div class="card doc preview">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h3>To: Anna M. · Subject: A quick note after our call about Aria</h3>
+        <div class="sub">Preview — ready to send via parent portal</div>
+      </div>
+      <span class="draft-badge">DRAFT — clinician must review</span>
+    </div>
+
+    <div class="greeting">Hi Anna,</div>
+    <p>Thanks for taking the call this afternoon — it was lovely to hear more
+       about Aria. From what you described and the picture sample we tried
+       together, we have a clear starting point.</p>
+
+    <h4>What we agreed</h4>
+    <p>A short focused block of four sessions, every two weeks, working on
+       Aria's final sounds (the /t, d, k, g/ at the ends of words) and one
+       substitution pattern. I'm not concerned about her language — she's
+       expressive and engaged. The goal is intelligibility at nursery within
+       this term.</p>
+
+    <h4>Things to try at home (5 minutes a day)</h4>
+    <ul>
+      <li><strong>Sound-of-the-week cards.</strong> 3 repetitions at breakfast.</li>
+      <li><strong>Bath-time minimal pairs.</strong> I'll send a printable list.</li>
+      <li><strong>One short video.</strong> A 60-second clip of free play mid-week — upload via the portal.</li>
+    </ul>
+
+    <h4>What to notice</h4>
+    <ul>
+      <li>Any clear final sounds Aria produces on her own — celebrate them out loud.</li>
+      <li>Moments where she repeats herself when not understood — write down a couple of examples.</li>
+      <li>Ear-related concerns (poking, asking for the TV louder) — useful background context.</li>
+    </ul>
+
+    <p>I'll see you on Tuesday 2 June at 15:00. Reply to this note or call the
+       practice if anything comes up before then.</p>
+
+    <p style="margin-bottom:6px;">Warm wishes,<br/>Monal</p>
+
+    <div class="footer-disclosure">
+      This summary was drafted with AI assistance and reviewed by your clinician before sending.
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card controls">
+    <div class="group">
+      <h4>Tone</h4>
+      <div class="slider">
+        <span class="end">Clinical</span>
+        <div class="track"><div class="fill"></div><div class="handle"></div></div>
+        <span class="end">Warm</span>
+      </div>
+      <div style="text-align:center; font-size:12px; color:var(--text-muted); margin-top:6px;">4 / 5 · warm</div>
+    </div>
+
+    <div class="group">
+      <h4>Reading level</h4>
+      <div style="display:flex; gap:8px;">
+        <div class="chip" style="opacity:0.5;">Primary</div>
+        <div class="chip chip--accent">Secondary</div>
+        <div class="chip" style="opacity:0.5;">Adult</div>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">Flesch–Kincaid: grade 7.8 ✓</div>
+    </div>
+
+    <div class="group">
+      <h4>Include sections</h4>
+      <div class="toggle"><span class="name">Greeting</span><span class="switch"></span></div>
+      <div class="toggle"><span class="name">What we agreed</span><span class="switch"></span></div>
+      <div class="toggle"><span class="name">Home practice</span><span class="switch"></span></div>
+      <div class="toggle"><span class="name">What to notice</span><span class="switch"></span></div>
+      <div class="toggle off"><span class="name">Clinical history recap</span><span class="switch"></span></div>
+    </div>
+
+    <button style="width:100%; padding:14px; background:var(--primary); color:white; border:0; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer;">Publish to parent portal</button>
+
+    <div class="meta">ai_drafts.kind = parent_summary · aiDisclosureFooter enforced via Zod literal · home-practice retention 100 %</div>
+  </div>
+</div>
+</body>
+</html>
