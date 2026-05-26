@@ -20,6 +20,8 @@ import { draftPrepBrief } from "../services/prep-brief.js";
 import { draftSessionPlanStub } from "../services/session-plan.js";
 import { seedCanonicalDemoPractice } from "../services/demo-seed.js";
 import { practiceDisplayName, type PracticeVariant } from "../demo/practice.js";
+import { isDevMaintenanceAllowed } from "../demo/dev-maintenance.js";
+import { cleanupE2eTestCases } from "../services/cleanup-e2e-test-cases.js";
 import {
   draftClinicalReportStub,
   getClinicalReportDraft,
@@ -472,13 +474,24 @@ export function createV1Routes(db: Db, env: Env) {
 
   /** Seed realistic canonical demo caseload (dev/stage only). */
   app.post("/demo/seed-canonical", async (c) => {
-    if (env.NODE_ENV === "production") {
-      return c.json({ error: "forbidden_in_production" }, 403);
+    if (!isDevMaintenanceAllowed(env)) {
+      return c.json({ error: "forbidden" }, 403);
     }
     const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
     const variant = (body?.practice ?? "demo") as PracticeVariant;
     const result = await seedCanonicalDemoPractice(db, env, variant);
     await ensureDefaultAvailability(db, result.tenantId);
+    return c.json(result);
+  });
+
+
+  /** Remove legacy E2E / ephemeral test cases (hosted dev only). */
+  app.post("/demo/cleanup-e2e-test-cases", async (c) => {
+    if (!isDevMaintenanceAllowed(env)) {
+      return c.json({ error: "forbidden" }, 403);
+    }
+    const dryRun = c.req.query("dryRun") === "true";
+    const result = await cleanupE2eTestCases(db, { dryRun });
     return c.json(result);
   });
 
