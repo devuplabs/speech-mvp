@@ -50,6 +50,18 @@ PERSONAS=aria_speech_sounds_4yo,theo_feeding_3yo \
 `production`. Run it before manually exercising the clinician dashboard so
 there's data to render.
 
+### One-off: remove legacy E2E test cases from Postgres
+
+After renaming test children to `Child`, clear old `E2E Child …` rows (and related ephemeral seed suffixes) from dev/stage:
+
+```bash
+cd apps/api
+DATABASE_URL=postgresql://... npx tsx scripts/cleanup-e2e-test-cases.ts --dry-run
+DATABASE_URL=postgresql://... npx tsx scripts/cleanup-e2e-test-cases.ts
+```
+
+Uses Cloud SQL Auth Proxy against hosted dev when needed. Refuses prod-looking URLs. Does not delete canonical demo personas (Aria M., etc.).
+
 ## Intake API test payloads
 
 Use these with `curl` or any HTTP client against `apps/api` (locally or the
@@ -59,7 +71,7 @@ small, plain JSON files so anyone can `cat` them into a request body.
 
 | File | Endpoint | Notes |
 |---|---|---|
-| `boot.json` | `POST /v1/demo/bootstrap` | Demo practice tenant (`practice: "demo"`). Use `{"practice":"e2e"}` for automated tests. |
+| `boot.json` | `POST /v1/demo/bootstrap` | Re-issues the dev tenant + jurisdiction context. |
 | `test-case-min.json` | `POST /v1/cases` | Minimum-viable case payload. Replace `tenantId` before use. |
 | `test-case-null-email.json` | `POST /v1/cases` | Reproduces the original `parentEmail: null` 400 we fixed in PR #16. |
 | `test-create-case.json` | `POST /v1/cases` | Realistic case with a test parent and child. |
