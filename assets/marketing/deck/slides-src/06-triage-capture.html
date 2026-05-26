@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Sona — 06 Triage in three clicks</title>
+<link rel="stylesheet" href="theme.css"/>
+<style>
+  .slide { padding-top: 140px; }
+  h1 { font-size: 64px; margin: 0 0 16px; letter-spacing: -1px; }
+  .sub { font-size: 24px; color: var(--text-secondary); max-width: 1500px; }
+  .grid { display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 56px; margin-top: 36px; }
+  .frame { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 32px 80px -32px rgba(20,36,51,0.18); overflow: hidden; }
+  .frame .head { background: var(--hero-tint); padding: 18px 24px; display: flex; gap: 16px; align-items: center; border-bottom: 1px solid var(--border); }
+  .frame .head .crumb { color: var(--text-muted); font-size: 14px; }
+  .frame .head .case { font-weight: 700; color: var(--text-primary); }
+  .frame .body { padding: 28px 32px; }
+  .h-sec { font-size: 13px; text-transform: uppercase; letter-spacing: 1.4px; color: var(--text-muted); margin: 0 0 12px; font-weight: 700; }
+  .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+  .outcome { padding: 16px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); position: relative; }
+  .outcome.selected { border-color: var(--primary); background: var(--nav-active-bg); }
+  .outcome.suggested::after { content: 'AI suggested'; position: absolute; top: 10px; right: 10px; background: var(--ai-badge-bg); color: var(--ai-badge-text); font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 700; }
+  .outcome .key { font-weight: 800; color: var(--text-primary); font-size: 18px; margin-bottom: 4px; }
+  .outcome .desc { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+  .reason { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; font-size: 15px; color: var(--text-secondary); line-height: 1.5; min-height: 80px; }
+  .actions { display: flex; gap: 12px; margin-top: 20px; align-items: center; }
+  .btn { padding: 14px 22px; background: var(--primary); color: white; border-radius: 10px; font-weight: 700; font-size: 16px; border: 0; }
+  .btn.ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+  .step-list { display: flex; flex-direction: column; gap: 18px; margin-top: 8px; }
+  .step-list .step { display: flex; gap: 18px; align-items: flex-start; }
+  .step-list .num { width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step-list .step.done .num { background: var(--success-text); }
+  .step-list .ttl { font-weight: 700; color: var(--text-primary); font-size: 18px; }
+  .step-list .body { font-size: 15px; color: var(--text-secondary); line-height: 1.5; }
+  .timer { display: inline-flex; align-items: center; gap: 8px; background: var(--trust-card); color: var(--primary-dark); font-weight: 700; padding: 6px 14px; border-radius: 999px; font-size: 14px; }
+</style></head>
+<body>
+<div class="slide">
+  <div class="brand-bar"><span class="dot"></span><span class="word">Sona</span></div>
+  <span class="eyebrow">The 20-minute consult, captured</span>
+  <h1>Triage outcome in <span style="color:var(--primary);">three clicks.</span></h1>
+  <p class="sub">After the call, the clinician confirms which pathway Aria is on, drops a one-line reason in their own words, and saves. Sona starts drafting the session plan the moment they hit save.</p>
+
+  <div class="grid">
+    <div class="frame">
+      <div class="head"><span class="case">Aria M.</span><span class="crumb">/ clinician / case / triage</span><span class="timer" style="margin-left:auto;">⏱ 19 May · 14:58</span></div>
+      <div class="body">
+        <p class="h-sec">Select triage outcome</p>
+        <div class="outcome-grid">
+          <div class="outcome selected suggested"><div class="key">Short block</div><div class="desc">4–6 sessions, focused, time-limited.</div></div>
+          <div class="outcome"><div class="key">Strategy only</div><div class="desc">Advice session, no block needed yet.</div></div>
+          <div class="outcome"><div class="key">Full assessment</div><div class="desc">Diagnostic assessment before plan.</div></div>
+          <div class="outcome"><div class="key">Refer out</div><div class="desc">Out of scope — ENT / OT / paeds.</div></div>
+        </div>
+
+        <p class="h-sec">Your reason (1 line in your own words)</p>
+        <div class="reason">"Final-consonant deletion confirmed at sentence level; stimulable for /t,k/. Sociable, no language concerns."</div>
+
+        <div class="actions">
+          <button class="btn">Save outcome &amp; draft plan</button>
+          <button class="btn ghost">Override AI suggestion</button>
+          <span style="margin-left:auto; font-size:13px; color:var(--text-muted);">Logged as <em>triage.recorded</em> · clinician = Monal · 14:58</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p class="h-sec">Three clicks, in order</p>
+      <div class="step-list">
+        <div class="step done">
+          <div class="num">1</div>
+          <div><div class="ttl">Confirm outcome</div><div class="body">AI suggested "short block". Clinician agrees — one tap.</div></div>
+        </div>
+        <div class="step done">
+          <div class="num">2</div>
+          <div><div class="ttl">Drop a 1-line reason</div><div class="body">Their own words — feeds the session-plan draft.</div></div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div><div class="ttl">Save &amp; close</div><div class="body">Audit ledger updates. Plan draft starts.</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:32px; padding: 18px 22px;">
+        <div class="h-sec" style="margin-bottom: 6px;">Why it matters</div>
+        <div style="font-size: 16px; color: var(--text-secondary); line-height: 1.5;">Override is healthy. Sona tracks overrides as a feedback signal, never as an error. The clinician's recorded outcome is the only authoritative one.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer-meta">apps/sona clinician triage screen · seeded with Aria persona</div>
+<div class="page-num">06 / 12</div>
+</body></html>

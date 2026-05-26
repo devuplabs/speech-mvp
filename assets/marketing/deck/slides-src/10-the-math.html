@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Sona — 10 The math</title>
+<link rel="stylesheet" href="theme.css"/>
+<style>
+  .slide { padding-top: 120px; padding-bottom: 80px; }
+  h1 { font-size: 56px; margin: 0 0 12px; letter-spacing: -1px; }
+  .sub { font-size: 22px; color: var(--text-secondary); margin: 0 0 24px; max-width: 1500px; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 26px 30px; }
+  table.math { width: 100%; border-collapse: collapse; font-size: 22px; }
+  table.math th { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1.4px; text-align: left; padding: 10px 14px; }
+  table.math td { padding: 14px 14px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 19px; vertical-align: middle; }
+  table.math td.label { font-weight: 700; color: var(--text-primary); font-size: 20px; }
+  table.math td.now { color: var(--danger-text); font-variant-numeric: tabular-nums; font-weight: 700; }
+  table.math td.sona { color: var(--primary); font-variant-numeric: tabular-nums; font-weight: 800; font-size: 22px; }
+  table.math td.src { font-size: 13px; color: var(--text-muted); }
+  table.math tr.total td { border-top: 2px solid var(--text-primary); padding-top: 22px; font-size: 22px; }
+  table.math tr.total td.label { font-size: 22px; }
+  table.math tr.total td.sona { font-size: 30px; }
+  .highlight { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 22px; }
+  .h-card { background: var(--hero-tint); border-radius: 16px; padding: 22px 26px; }
+  .h-card .num { font-size: 48px; font-weight: 800; color: var(--primary); line-height: 1; letter-spacing: -2px; }
+  .h-card .lbl { font-size: 16px; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; }
+  .h-card .src { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+</style></head>
+<body>
+<div class="slide">
+  <div class="brand-bar"><span class="dot"></span><span class="word">Sona</span></div>
+  <span class="eyebrow">The math · documented, not invented</span>
+  <h1>About <span style="color:var(--primary);">30–60 minutes</span> per case. Roughly one admin afternoon a week back.</h1>
+  <p class="sub">Every number traces to a documented metric in this repo's ML design notes.
+   We show ranges, not single numbers — and we never claim "Sona saves 60 minutes."</p>
+
+  <div class="table-wrap">
+    <table class="math">
+      <thead>
+        <tr><th>Stage</th><th>Today (manual)</th><th>With Sona target</th><th>Source</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="label">Intake reading + triage prep</td><td class="now">5–10 min / case</td><td class="sona">–20% prep time</td><td class="src">docs/ml/triage-capture.md · "Prep time reduction"</td></tr>
+        <tr><td class="label">Session plan drafting</td><td class="now">20–45 min / case</td><td class="sona">≤ 15 min (T2P)</td><td class="src">docs/ml/session-plan.md · "Time to plan"</td></tr>
+        <tr><td class="label">Parent summary drafting</td><td class="now">15–30 min / case</td><td class="sona">≤ 8 min</td><td class="src">docs/ml/summary-generator.md · "Clinician edit time"</td></tr>
+        <tr class="total"><td class="label">Per-case total</td><td class="now">40–85 min</td><td class="sona">15–25 min</td><td class="src">Derived</td></tr>
+        <tr><td class="label">At 3–8 cases / week (Monal's stated volume)</td><td class="now">2–11 hr / week</td><td class="sona">0.75–3 hr / week</td><td class="src">docs/ml/triage-capture.md "Override rate" + caseload note</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="highlight">
+    <div class="h-card"><div class="num">30–60 min</div><div class="lbl">saved per prepared case (range, not a single number)</div><div class="src">Derived from docs/ml/* per-stage targets</div></div>
+    <div class="h-card"><div class="num">~1 afternoon</div><div class="lbl">of admin time back per week at typical caseloads</div><div class="src">3–8 cases/week × 30–60 min saved</div></div>
+    <div class="h-card"><div class="num">0 PHI</div><div class="lbl">leaves the tenant region. Self-hosted inference, no third-party LLM calls.</div><div class="src">ADR-003 · self-hosted air-gapped inference</div></div>
+  </div>
+</div>
+<div class="footer-meta">Always paired: "AI-assisted, clinician-reviewed" · never "AI magic"</div>
+<div class="page-num">10 / 12</div>
+</body></html>

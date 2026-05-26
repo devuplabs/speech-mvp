@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Sona — 02 Meet Aria</title>
+<link rel="stylesheet" href="theme.css"/>
+<style>
+  .slide { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 80px; padding-top: 140px; }
+  .left .eyebrow { display: block; margin-bottom: 18px; }
+  h1 { font-size: 88px; margin: 0 0 28px; line-height: 1.05; letter-spacing: -1px; }
+  .quote { font-size: 32px; line-height: 1.45; color: var(--text-secondary); border-left: 6px solid var(--accent); padding-left: 24px; margin: 0 0 36px; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px; font-size: 20px; color: var(--text-secondary); }
+  .meta .label { font-size: 14px; text-transform: uppercase; letter-spacing: 1.4px; color: var(--text-muted); margin-bottom: 4px; }
+  .right { display: flex; align-items: center; justify-content: center; }
+  .avatar-card { width: 540px; height: 660px; background: var(--surface); border-radius: 28px; border: 1px solid var(--border); padding: 36px; display: flex; flex-direction: column; box-shadow: 0 32px 80px -32px rgba(20,36,51,0.18); }
+  .avatar-shape { flex: 1; background: linear-gradient(135deg, var(--hero-tint), var(--trust-card)); border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .avatar-letter { font-size: 220px; font-weight: 800; color: var(--primary); letter-spacing: -6px; opacity: 0.85; }
+  .avatar-orbits { position: absolute; inset: 30px; border: 2px dashed var(--primary); border-radius: 50%; opacity: 0.25; }
+  .avatar-orbits.b { inset: 80px; border-color: var(--accent); opacity: 0.4; }
+  .avatar-foot { margin-top: 22px; display: flex; justify-content: space-between; align-items: baseline; }
+  .avatar-foot .name { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+  .avatar-foot .age { font-size: 18px; color: var(--text-muted); }
+  .no-photo { position: absolute; bottom: 18px; right: 24px; font-size: 12px; color: var(--text-muted); }
+</style></head>
+<body>
+<div class="slide">
+  <div class="brand-bar"><span class="dot"></span><span class="word">Sona</span></div>
+  <div class="left">
+    <span class="eyebrow">Meet the hero of this demo</span>
+    <h1>Meet <span style="color:var(--primary);">Aria</span>.</h1>
+    <p class="quote">"Hard to understand at nursery — drops final consonants and some sounds replaced. Some attention drift in 1:1 play."</p>
+    <div class="meta">
+      <div><div class="label">Age</div>4 years 2 months</div>
+      <div><div class="label">Setting</div>Linden Nursery, London NW3</div>
+      <div><div class="label">Referred by</div>Nursery SENCO</div>
+      <div><div class="label">Difficulties flagged</div>Speech sounds · Staying on task</div>
+      <div><div class="label">Hearing</div>Two ear infections, resolved</div>
+      <div><div class="label">Existing therapy</div>None — first referral</div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="avatar-card">
+      <div class="avatar-shape">
+        <div class="avatar-orbits"></div>
+        <div class="avatar-orbits b"></div>
+        <div class="avatar-letter">A</div>
+        <div class="no-photo">Iconography — no photo, no PHI</div>
+      </div>
+      <div class="avatar-foot">
+        <span class="name">Aria M.</span>
+        <span class="age">DOB 15 / 03 / 2022</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer-meta">Synthetic persona · scripts/personas/aria_speech_sounds_4yo.json</div>
+<div class="page-num">02 / 12</div>
+</body></html>
