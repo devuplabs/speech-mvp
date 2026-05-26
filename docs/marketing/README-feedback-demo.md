@@ -46,7 +46,7 @@ Recorded for the reviewer to confirm or amend in the PR:
 | 6 | Brand colours | Sourced from `apps/sona/lib/design_system/sona_colors.dart` | In-repo truth (primary `#2D6A6E`, accent `#F2A878`, AI badge `#FFF0E6 / #C45A1A`). |
 | 7 | Logo | `assets/marketing/brand/wordmark.svg` — built from brand tokens (no logo asset in repo) | `apps/sona/web/` only has the default Flutter icons; flag for replacement when a real wordmark exists. |
 | 8 | Clinician character | "Monal Gajjar SLT" (already in `apps/sona/lib/features/clinician/clinician_shell.dart`) | Consistent with the in-app clinician identity. |
-| 9 | Music | Generated ambient pad via ffmpeg sine synthesis (CC0). See `assets/marketing/music/README.md` for swap path. | Pixabay CDN blocked from this VM (HTTP 403); generated pad is license-clean and deterministic. |
+| 9 | Music | **"Hidden Past" by Kevin MacLeod** — CC BY 4.0, downloaded from incompetech.com. Soft piano + warm strings, contemplative-professional. See `assets/marketing/music/README.md`. | Pixabay CDN blocked from this VM (HTTP 403) but incompetech reachable. CC0 generated pad kept as offline fallback. Attribution reproduced on slide 13. |
 | 10 | Distribution | Internal review only | Cautious "vision" framing. Flip later if the deck goes public. |
 
 ## Tooling swaps from the brief's recommendations (§8)
@@ -122,15 +122,12 @@ embedded in the slide that uses it.
    (Postgres + tsx watch, migrations applied, seed-dev succeeded for
    all four personas). Recommendation: a reviewer with `pwsh` should
    run the script before sharing the deck externally.
-4. **No real royalty-free music track.** Pixabay CDN is geo-blocked
-   from this VM (HTTP 403). The video ships with a CC0 synthesized
-   ambient pad. See `assets/marketing/music/README.md` for the trivial
-   swap-in path.
-5. **The video review subagent reported "no audio track"** during
-   verification; `ffprobe` confirms an AAC stereo track is present —
-   the pad is mixed at ~10 % volume, which the subagent's
-   loudness-detection may simply miss. Verify locally before
-   distribution.
+4. ~~No real royalty-free music track~~ — **fixed.** The video now
+   uses Kevin MacLeod's "Hidden Past" (CC BY 4.0) at -21 LUFS with
+   2 s fade in/out. Earlier the agent shipped a synthesized two-sine
+   pad that read as a drone rather than music — that pad is retained
+   only as an offline fallback inside `build-video.sh`. Attribution is
+   on credits slide 13 and in `assets/marketing/music/README.md`.
 
 ## Decisions / change log
 
@@ -141,13 +138,15 @@ embedded in the slide that uses it.
 | 2026-05-26 | Cursor cloud agent | Rendered 13-slide deck (1920 × 1080) and 92.2-s demo video. |
 | 2026-05-26 | Cursor cloud agent | Swapped Slidev → Playwright/img2pdf and Remotion → ffmpeg per brief §8 ("you may swap any of these"). |
 | 2026-05-26 | Cursor cloud agent | Bumped video caption strip from top to bottom and crossfades from 0.5 s to 0.8 s after first video-review feedback. |
+| 2026-05-26 | Cursor cloud agent | Replaced synthesized ambient pad with Kevin MacLeod's "Hidden Past" (CC BY 4.0) after user feedback that the original sounded like white noise. Added "Heartwarming" as a warmer alternate. Updated build script to support `MUSIC=…` override and a CC0 fallback for offline builds. |
 
 ## Pre-share checklist (for the reviewer)
 
 - [ ] Confirm the 10 defaults in the table above.
-- [ ] Replace the generated ambient pad with a chosen Pixabay / FMA
-      track if a non-CC0 vibe is preferred. Update
-      `assets/marketing/music/README.md`.
+- [ ] Confirm "Hidden Past" (Kevin MacLeod, CC BY 4.0) is the desired
+      track, or swap to "Heartwarming" / a Pixabay CC0 piece via
+      `MUSIC=… assets/marketing/video/build-video.sh`. Keep the
+      attribution line on slide 13 if the new track is CC-BY.
 - [ ] Run `pwsh scripts/pre-deploy-verify.ps1` from a machine with
       PowerShell installed.
 - [ ] Optional: extend Playwright to drive `apps/sona` past the
