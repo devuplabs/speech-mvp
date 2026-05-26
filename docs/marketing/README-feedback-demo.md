@@ -10,7 +10,7 @@
 | 13-slide marketing deck | `assets/marketing/deck/slides.pdf` (and per-slide PNGs in `slides/`) | 12 storyline slides + 1 credits/licence slide. 1920 × 1080 each. |
 | Slide HTML source | `assets/marketing/deck/slides-src/` | Hand-authored; uses `theme.css` mirroring Sona design tokens. |
 | Design-fidelity AI mocks | `assets/marketing/screenshots/ai-mocks/` | Prep brief · session plan · parent summary · audit ledger. HTML + rendered PNG. |
-| Demo video | `assets/marketing/video/out/sona-demo.mp4` | 1920 × 1080 · 30 fps · 92.2 s · stereo AAC audio · 12 slides with caption strip + crossfades. |
+| Demo video | `assets/marketing/video/out/sona-demo.mp4` | 1920 × 1080 · 30 fps · 92.2 s · stereo AAC audio · 12 slides with caption strip + crossfades · "Lasting Hope" score at −22 LUFS / LRA 4.1 LU, ducked −3 dB at each caption transition, 2 s fade-in / 3 s fade-out. |
 | Build scripts | `assets/marketing/deck/render.mjs`, `deck/build-pdf.sh`, `video/build-video.sh` | Idempotent; re-run any step independently. |
 
 ## Rebuild
@@ -46,7 +46,7 @@ Recorded for the reviewer to confirm or amend in the PR:
 | 6 | Brand colours | Sourced from `apps/sona/lib/design_system/sona_colors.dart` | In-repo truth (primary `#2D6A6E`, accent `#F2A878`, AI badge `#FFF0E6 / #C45A1A`). |
 | 7 | Logo | `assets/marketing/brand/wordmark.svg` — built from brand tokens (no logo asset in repo) | `apps/sona/web/` only has the default Flutter icons; flag for replacement when a real wordmark exists. |
 | 8 | Clinician character | "Monal Gajjar SLT" (already in `apps/sona/lib/features/clinician/clinician_shell.dart`) | Consistent with the in-app clinician identity. |
-| 9 | Music | **"Hidden Past" by Kevin MacLeod** — CC BY 4.0, downloaded from incompetech.com. Soft piano + warm strings, contemplative-professional. See `assets/marketing/music/README.md`. | Pixabay CDN blocked from this VM (HTTP 403) but incompetech reachable. CC0 generated pad kept as offline fallback. Attribution reproduced on slide 13. |
+| 9 | Music | **"Lasting Hope" by Kevin MacLeod** — CC BY 4.0, ~70 BPM major, piano + soft strings. Picked by the reviewer on PR #48 from a 3-candidate shortlist after PR #47's "Hidden Past" was rejected as too contemplative. Normalised to −22 LUFS · LRA 4.1 LU, ducked −3 dB at each caption transition, 2 s fade-in / 3 s fade-out. See `assets/marketing/music/README.md`. | Pixabay CDN blocked from this VM (HTTP 403); incompetech.com reachable. Attribution reproduced on slide 13. |
 | 10 | Distribution | Internal review only | Cautious "vision" framing. Flip later if the deck goes public. |
 
 ## Tooling swaps from the brief's recommendations (§8)
@@ -139,14 +139,17 @@ embedded in the slide that uses it.
 | 2026-05-26 | Cursor cloud agent | Swapped Slidev → Playwright/img2pdf and Remotion → ffmpeg per brief §8 ("you may swap any of these"). |
 | 2026-05-26 | Cursor cloud agent | Bumped video caption strip from top to bottom and crossfades from 0.5 s to 0.8 s after first video-review feedback. |
 | 2026-05-26 | Cursor cloud agent | Replaced synthesized ambient pad with Kevin MacLeod's "Hidden Past" (CC BY 4.0) after user feedback that the original sounded like white noise. Added "Heartwarming" as a warmer alternate. Updated build script to support `MUSIC=…` override and a CC0 fallback for offline builds. |
+| 2026-05-26 | Cursor cloud agent | Auditioned 17 CC BY 4.0 candidates against a 6-point gate from the music-revision brief; shortlisted three; reviewer picked **"Lasting Hope" by Kevin MacLeod**. Rebuilt `sona-demo.mp4` with the new track, added timed-volume ducking (−3 dB at each of 11 caption transitions, σ=0.4 s) as a side-chain analog, switched fade-out from 2 s to 3 s per the brief. Final loudness −22.2 LUFS, LRA 4.1 LU. |
 
 ## Pre-share checklist (for the reviewer)
 
 - [ ] Confirm the 10 defaults in the table above.
-- [ ] Confirm "Hidden Past" (Kevin MacLeod, CC BY 4.0) is the desired
-      track, or swap to "Heartwarming" / a Pixabay CC0 piece via
-      `MUSIC=… assets/marketing/video/build-video.sh`. Keep the
-      attribution line on slide 13 if the new track is CC-BY.
+- [x] Confirm the music track. Current choice: **"Lasting Hope" by
+      Kevin MacLeod** (CC BY 4.0) — picked by the reviewer on PR #48.
+      To swap to another CC-BY-clean track, drop the file at
+      `assets/marketing/music/final-<track>.mp3` (or set
+      `MUSIC=/path …`) and re-run `assets/marketing/video/build-video.sh`.
+      Update the attribution line on slide 13 if the new track is CC-BY.
 - [ ] Run `pwsh scripts/pre-deploy-verify.ps1` from a machine with
       PowerShell installed.
 - [ ] Optional: extend Playwright to drive `apps/sona` past the
