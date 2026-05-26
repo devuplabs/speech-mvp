@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>Sona — Credits &amp; licences</title>
+<link rel="stylesheet" href="theme.css"/>
+<style>
+  .slide { padding-top: 140px; }
+  h1 { font-size: 56px; margin: 0 0 18px; letter-spacing: -1px; }
+  .sub { font-size: 22px; color: var(--text-secondary); max-width: 1300px; margin: 0 0 32px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .card h3 { margin: 0 0 6px; font-size: 22px; color: var(--text-primary); }
+  .card .meta { color: var(--text-muted); font-size: 14px; margin-bottom: 14px; }
+  .card ul { margin: 0; padding-left: 22px; }
+  .card li { font-size: 16px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 6px; }
+  .card li code { background: var(--hero-tint); color: var(--primary-dark); font-family: 'Fira Code', ui-monospace, monospace; font-size: 13px; padding: 1px 6px; border-radius: 4px; }
+</style></head>
+<body>
+<div class="slide">
+  <div class="brand-bar"><span class="dot"></span><span class="word">Sona</span></div>
+  <span class="eyebrow">Credits &amp; licences</span>
+  <h1>What's in this deck.</h1>
+  <p class="sub">Nothing in this deck uses real client data. Everything is either synthesised by the team or licensed for reuse.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Data &amp; personas</h3>
+      <div class="meta">Synthetic, UK-flavoured</div>
+      <ul>
+        <li>Aria M. — <code>scripts/personas/aria_speech_sounds_4yo.json</code></li>
+        <li>Jaden O. — <code>scripts/personas/jaden_stutter_7yo.json</code> (EHCP)</li>
+        <li>Mia R. — <code>scripts/personas/mia_social_comm_11yo.json</code></li>
+        <li>Theo K. — <code>scripts/personas/theo_feeding_3yo.json</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>AI artefacts in this deck</h3>
+      <div class="meta">All design-fidelity mocks — labelled on every slide</div>
+      <ul>
+        <li>Prep brief — shape from <code>docs/ml/triage-capture.md</code></li>
+        <li>Session plan — Zod from <code>docs/ml/session-plan.md</code></li>
+        <li>Parent summary — Zod from <code>docs/ml/summary-generator.md</code></li>
+        <li>Audit ledger — shape from <code>services/audit.ts</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Brand &amp; visuals</h3>
+      <div class="meta">Sona design tokens — same as the app</div>
+      <ul>
+        <li>Colours from <code>apps/sona/lib/design_system/sona_colors.dart</code></li>
+        <li>Typography from <code>apps/sona/lib/design_system/sona_typography.dart</code></li>
+        <li>Wordmark — assembled from brand tokens (no logo asset in repo)</li>
+        <li>No photography · no stock illustration · iconography only</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Music &amp; video</h3>
+      <div class="meta">CC0 / royalty-free</div>
+      <ul>
+        <li>Background pad — generated with <code>ffmpeg</code> sine synthesis (CC0).</li>
+        <li>Video composition — <code>ffmpeg</code> slideshow with caption overlays.</li>
+        <li>Replace with any royalty-free track by dropping a file into <code>assets/marketing/music/</code> and updating <code>build-video.sh</code>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="footer-meta">Full attribution: assets/marketing/README.md</div>
+<div class="page-num">13 / 13</div>
+</body></html>
