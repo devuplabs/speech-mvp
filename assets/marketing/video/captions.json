@@ -1,0 +1,19 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "slides": [
+    { "png": "deck/slides/01-cold-open.png",      "seconds": 6,  "caption": "What if the Tuesday-afternoon admin block came back as therapy time?" },
+    { "png": "deck/slides/02-meet-aria.png",      "seconds": 8,  "caption": "Meet Aria — 4 years old. Nursery SENCO referral, North London." },
+    { "png": "deck/slides/03-todays-inbox.png",   "seconds": 8,  "caption": "Today the case starts as six scattered fragments. 5 to 10 minutes just to assemble." },
+    { "png": "deck/slides/04-parent-journey.png", "seconds": 9,  "caption": "Sona's parent intake — 8 steps, one phone, about 15 minutes. Already built." },
+    { "png": "deck/slides/05-sona-read-it.png",   "seconds": 10, "caption": "Clinician opens the case to a draft prep brief — pathway, probes, red flags. AI-drafted, clinician reviewed." },
+    { "png": "deck/slides/06-triage-capture.png", "seconds": 8,  "caption": "After the 20-minute consult — triage outcome in three clicks. Plan drafting starts automatically." },
+    { "png": "deck/slides/07-session-plan.png",   "seconds": 10, "caption": "First-session plan drafted in under 15 minutes. EHCP-aware for the cases that need it." },
+    { "png": "deck/slides/08-parent-summary.png", "seconds": 9,  "caption": "Parent summary — tone-tuned, AI-disclosed, ready in under 8 minutes." },
+    { "png": "deck/slides/09-audit.png",          "seconds": 8,  "caption": "Every AI suggestion has a paper trail. Append-only ledger, 7-year retention." },
+    { "png": "deck/slides/10-the-math.png",       "seconds": 9,  "caption": "30 to 60 minutes back per case. Roughly one admin afternoon a week." },
+    { "png": "deck/slides/11-real-vs-vision.png", "seconds": 8,  "caption": "Honest line: what is shipped today vs the 90-day vision." },
+    { "png": "deck/slides/12-ask.png",            "seconds": 8,  "caption": "What would make Sona switchable for you? Booking 30-minute feedback sessions this week." }
+  ]
+}
