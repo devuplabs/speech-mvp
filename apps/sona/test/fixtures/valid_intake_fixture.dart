@@ -1,7 +1,7 @@
 import 'package:sona/models/intake_form_data.dart';
 
 /// Canonical valid intake used by unit tests and mirrored in e2e/fixtures.
-IntakeFormData buildValidIntakeFixture({String childName = 'E2E Test Child'}) {
+IntakeFormData buildValidIntakeFixture({String childName = 'Child'}) {
   final d = IntakeFormData()
     ..email = 'e2e.parent@example.com'
     ..childName = childName
