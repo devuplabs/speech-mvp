@@ -84,18 +84,39 @@ for ((j=0; j<N; j++)); do
   TOTAL=$(awk -v t="$TOTAL" -v d="$DUR" -v x="$XFADE" 'BEGIN{printf "%.3f", t + d - x}')
 done
 
-# Generate gentle ambient pad of length = TOTAL seconds.
-# Two stacked low sines (220 Hz and 277 Hz ~ A3 + C#4), heavy low-pass, soft fade in/out.
-AUDIO="$TMPDIR/pad.wav"
-ffmpeg -hide_banner -loglevel error -y \
-  -f lavfi -t "$TOTAL" -i "sine=frequency=220:sample_rate=48000" \
-  -f lavfi -t "$TOTAL" -i "sine=frequency=277.18:sample_rate=48000" \
-  -filter_complex "[0:a][1:a]amix=inputs=2:weights='0.6 0.4',
-                   lowpass=f=900,
-                   volume=0.10,
-                   afade=t=in:st=0:d=1.5,
-                   afade=t=out:st=$(awk -v t="$TOTAL" 'BEGIN{printf "%.3f", t-1.5}'):d=1.5" \
-  -ar 48000 -ac 2 -c:a pcm_s16le "$AUDIO"
+# Pick the music track to use.
+#   Default: assets/marketing/music/kevin-macleod-hidden-past.mp3
+#            (CC-BY 4.0; see assets/marketing/music/README.md).
+#   Override: export MUSIC=/abs/path/to/your-track.mp3
+#   Fallback: if MUSIC is unset and the default file is missing, generate
+#            a CC0 ambient pad with ffmpeg.
+MUSIC="${MUSIC:-$ROOT/music/kevin-macleod-hidden-past.mp3}"
+AUDIO="$TMPDIR/track.wav"
+FADE_OUT_AT=$(awk -v t="$TOTAL" 'BEGIN{printf "%.3f", t-2.0}')
+
+if [[ -f "$MUSIC" ]]; then
+  echo "  music: $MUSIC"
+  # Trim/loop to TOTAL, light low-pass for warmth, normalised to -16 LUFS,
+  # 2 s fade in + 2 s fade out so the pad never starts or ends abruptly.
+  ffmpeg -hide_banner -loglevel error -y \
+    -stream_loop -1 -i "$MUSIC" \
+    -filter_complex "[0:a]atrim=duration=$TOTAL,
+                     loudnorm=I=-22:TP=-2:LRA=9,
+                     afade=t=in:st=0:d=2.0,
+                     afade=t=out:st=$FADE_OUT_AT:d=2.0" \
+    -ar 48000 -ac 2 -c:a pcm_s16le "$AUDIO"
+else
+  echo "  music: $MUSIC missing — using generated CC0 ambient pad"
+  ffmpeg -hide_banner -loglevel error -y \
+    -f lavfi -t "$TOTAL" -i "sine=frequency=220:sample_rate=48000" \
+    -f lavfi -t "$TOTAL" -i "sine=frequency=277.18:sample_rate=48000" \
+    -filter_complex "[0:a][1:a]amix=inputs=2:weights='0.6 0.4',
+                     lowpass=f=900,
+                     volume=0.10,
+                     afade=t=in:st=0:d=1.5,
+                     afade=t=out:st=$FADE_OUT_AT:d=1.5" \
+    -ar 48000 -ac 2 -c:a pcm_s16le "$AUDIO"
+fi
 
 # Final mux.
 ffmpeg -hide_banner -loglevel error -y \
