@@ -55,6 +55,193 @@ class SonaApiClient {
     return list.cast<Map<String, dynamic>>();
   }
 
+
+  Future<List<Map<String, dynamic>>> listIntakeSubmissions(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/tenants/$tenantId/intake-submissions'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['items'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> resendIntakeLink(
+    String caseId, {
+    String? templateId,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake-links/resend'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({'templateId': templateId}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<void> revokeIntakeLink(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake-links/revoke'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
+  Future<void> lockIntake(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/intake/lock'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
+  Future<Map<String, dynamic>> registerPatient({
+    required String tenantId,
+    required String childFirstName,
+    required String dateOfBirth,
+    required String parentName,
+    required String parentEmail,
+    String? parentPhone,
+    required String referralSource,
+    String? initialConcerns,
+    bool sendIntakeLink = true,
+    String? templateId,
+    String? bookConsultStart,
+    int bookConsultDurationMinutes = 20,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/clinicians/me/patients'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'tenantId': tenantId,
+        'childFirstName': childFirstName,
+        'dateOfBirth': dateOfBirth,
+        'parentName': parentName,
+        'parentEmail': parentEmail,
+        'parentPhone': parentPhone,
+        'referralSource': referralSource,
+        'initialConcerns': initialConcerns,
+        'sendIntakeLink': sendIntakeLink,
+        'templateId': templateId,
+        if (bookConsultStart != null)
+          'bookConsult': {
+            'start': bookConsultStart,
+            'durationMinutes': bookConsultDurationMinutes,
+          },
+      }),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+
+  Future<List<Map<String, dynamic>>> listClinicalReports(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/tenants/$tenantId/clinical-reports'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['items'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> fetchClinicalReport(String caseId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/cases/$caseId/clinical-report'),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<void> generateClinicalReport(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/clinical-report/generate'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res);
+  }
+
+  String clinicalReportPdfUrl(String caseId) =>
+      _base.replace(path: '/v1/cases/$caseId/clinical-report.pdf').toString();
+
+  Future<Map<String, dynamic>> resolveIntakeLink(String token) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/intake-links/$token'),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+
+  Future<List<Map<String, dynamic>>> fetchAvailabilitySlots(
+    String tenantId, {
+    String? from,
+    String? to,
+  }) async {
+    final fromQ = from ?? DateTime.now().toUtc().toIso8601String();
+    final toQ = to ?? DateTime.now().add(const Duration(days: 14)).toUtc().toIso8601String();
+    final res = await _client.get(
+      _base.replace(
+        path: '/v1/clinicians/me/availability',
+        queryParameters: {
+          'tenantId': tenantId,
+          'from': fromQ,
+          'to': toQ,
+        },
+      ),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['slots'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAvailabilityRules(String tenantId) async {
+    final res = await _client.get(
+      _base.replace(
+        path: '/v1/clinicians/me/availability/rules',
+        queryParameters: {'tenantId': tenantId},
+      ),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['rules'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> saveAvailabilityRules(
+    String tenantId,
+    List<Map<String, dynamic>> rules,
+  ) async {
+    final res = await _client.put(
+      _base.replace(path: '/v1/clinicians/me/availability/rules'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'tenantId': tenantId, 'rules': rules}),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['rules'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> bookConsult(
+    String caseId, {
+    required String start,
+    int durationMinutes = 20,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/consult'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'start': start, 'durationMinutes': durationMinutes}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<String> fetchConsultIcs(String caseId) async {
+    final res = await _client.get(_base.replace(path: '/v1/cases/$caseId/consult.ics'));
+    _ensureOk(res);
+    return res.body;
+  }
+
   Future<Map<String, dynamic>> createCase({
     required String tenantId,
     String? parentEmail,
