@@ -93,7 +93,7 @@ if (databaseUrl) {
   }
 
   if (env.SONA_MODE === "worker") {
-    app.route("/internal/tasks", createTaskRoutes(db));
+    app.route("/internal/tasks", createTaskRoutes(db, env));
   }
 } else {
   console.warn("DATABASE_URL / DB_* not set — API data routes disabled");

@@ -11,7 +11,9 @@ test.describe("API full intake flow", () => {
     const childName = e2eChildName();
     const answers = validIntakeAnswers(childName);
 
-    const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, { data: {} });
+    const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, {
+      data: { practice: "e2e" },
+    });
     expect([200, 201]).toContain(boot.status());
     const { tenantId } = await boot.json();
 
@@ -58,7 +60,9 @@ test.describe("API full intake flow", () => {
   test("create case accepts nullish parentEmail (Flutter may send null)", async ({
     request,
   }) => {
-    const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, { data: {} });
+    const boot = await request.post(`${apiUrl}/v1/demo/bootstrap`, {
+      data: { practice: "e2e" },
+    });
     const { tenantId } = await boot.json();
     const res = await request.post(`${apiUrl}/v1/cases`, {
       data: { tenantId, parentEmail: null },

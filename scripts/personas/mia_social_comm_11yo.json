@@ -77,5 +77,14 @@
     "anythingElse": "Family preparing for secondary transition in September",
     "photoConsent": "no",
     "completedBy": "Jordan R. (parent)"
+  },
+  "demo": {
+    "targetStage": "plan_ready",
+    "triageOutcome": "full_assessment",
+    "referralSource": "gp",
+    "parentName": "Jordan R.",
+    "parentPhone": "07700900301",
+    "initialConcerns": "Secondary transition; social communication and peer groups.",
+    "consultInHours": 72
   }
 }

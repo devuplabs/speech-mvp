@@ -22,6 +22,9 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().url().optional(),
   ),
+  LLM_MODEL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  LLM_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  SONA_WEB_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   LLM_CLOUD_TASKS_QUEUE: z.string().default("sona-llm-dev"),
   RUNTIME_SERVICE_ACCOUNT: z.string().optional(),
   WORKER_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
@@ -41,11 +44,6 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
-  /** Parent web app base URL for magic intake links (no trailing slash required). */
-  SONA_WEB_BASE_URL: z.preprocess(
-    emptyToUndefined,
-    z.string().url().optional(),
-  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

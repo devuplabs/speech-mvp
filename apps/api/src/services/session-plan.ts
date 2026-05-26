@@ -1,9 +1,12 @@
 import { eq } from "drizzle-orm";
+import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
-import { aiDrafts, cases } from "../db/schema.js";
+import { aiDrafts, cases, triageRecords } from "../db/schema.js";
+import { buildIntakeContextForLlm, generateSessionPlanLlm } from "../llm/generate-drafts.js";
 import { writeAudit } from "./audit.js";
+import { loadIntakeAnswers } from "./intake-context.js";
 
-export async function draftSessionPlanStub(db: Db, caseId: string) {
+export async function draftSessionPlanStub(db: Db, caseId: string, env?: Env) {
   const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!row) return { ok: false as const, error: "not_found" };
 
@@ -12,7 +15,17 @@ export async function draftSessionPlanStub(db: Db, caseId: string) {
     return { ok: true as const, alreadyExists: true };
   }
 
-  const content = {
+  const answers = await loadIntakeAnswers(db, caseId);
+  const intakeContext = buildIntakeContextForLlm(answers);
+  const childName = row.childDisplayName ?? (answers.childName as string) ?? "Child";
+
+  const [triage] = await db
+    .select()
+    .from(triageRecords)
+    .where(eq(triageRecords.caseId, caseId))
+    .limit(1);
+
+  let content: Record<string, unknown> = {
     label: "DRAFT — clinician must review",
     sections: {
       goals: ["Establish baseline for first session"],
@@ -22,6 +35,19 @@ export async function draftSessionPlanStub(db: Db, caseId: string) {
     },
     source: "mvp_stub",
   };
+  let modelId = "mvp-stub";
+
+  if (env) {
+    const llm = await generateSessionPlanLlm(env, {
+      childDisplayName: childName,
+      intakeContext,
+      triageOutcome: triage?.outcome ?? "short_block",
+    });
+    if (llm) {
+      content = llm.content;
+      modelId = llm.modelId;
+    }
+  }
 
   const [draft] = await db
     .insert(aiDrafts)
@@ -29,7 +55,7 @@ export async function draftSessionPlanStub(db: Db, caseId: string) {
       caseId,
       kind: "session_plan",
       content,
-      modelId: "mvp-stub",
+      modelId,
     })
     .returning();
 
@@ -43,6 +69,7 @@ export async function draftSessionPlanStub(db: Db, caseId: string) {
     caseId,
     actor: "system",
     action: "session_plan.drafted",
+    metadata: { modelId },
   });
 
   return { ok: true as const, draft };

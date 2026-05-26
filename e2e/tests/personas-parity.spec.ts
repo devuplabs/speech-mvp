@@ -42,6 +42,8 @@ test.describe("Synthetic intake personas — parity (TS ↔ JSON)", () => {
       const rawCopy = { ...raw } as Record<string, unknown>;
       delete tsCopy.answers;
       delete rawCopy.answers;
+      delete tsCopy.demo;
+      delete rawCopy.demo;
       expect(rawCopy, `Top-level mismatch for ${id}`).toEqual(tsCopy);
 
       const tsKeys = Object.keys(ts!.answers).sort();
