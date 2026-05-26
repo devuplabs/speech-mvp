@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
+import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
 import { aiDrafts, cases } from "../db/schema.js";
+import { buildIntakeContextForLlm, generatePrepBriefLlm } from "../llm/generate-drafts.js";
 import { writeAudit } from "./audit.js";
+import { loadIntakeAnswers } from "./intake-context.js";
 
-/** MVP stub prep brief (phase-2 replaces with real LLM). */
-export async function draftPrepBrief(db: Db, caseId: string) {
+/** Prep brief after intake submit — LLM when configured, else MVP stub. */
+export async function draftPrepBrief(db: Db, caseId: string, env?: Env) {
   const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!row) return { ok: false as const, error: "not_found" };
 
@@ -17,7 +20,11 @@ export async function draftPrepBrief(db: Db, caseId: string) {
     return { ok: true as const, alreadyExists: true };
   }
 
-  const stubContent = {
+  const answers = await loadIntakeAnswers(db, caseId);
+  const intakeContext = buildIntakeContextForLlm(answers);
+  const childName = row.childDisplayName ?? (answers.childName as string) ?? "Child";
+
+  let stubContent: Record<string, unknown> = {
     label: "DRAFT — clinician must review",
     probeAreas: [
       "Confirm primary concern and onset from intake answers",
@@ -26,6 +33,18 @@ export async function draftPrepBrief(db: Db, caseId: string) {
     ],
     source: "mvp_stub",
   };
+  let modelId = "mvp-stub";
+
+  if (env) {
+    const llm = await generatePrepBriefLlm(env, {
+      childDisplayName: childName,
+      intakeContext,
+    });
+    if (llm) {
+      stubContent = llm.content;
+      modelId = llm.modelId;
+    }
+  }
 
   const [draft] = await db
     .insert(aiDrafts)
@@ -33,7 +52,7 @@ export async function draftPrepBrief(db: Db, caseId: string) {
       caseId,
       kind: "prep_brief",
       content: stubContent,
-      modelId: "mvp-stub",
+      modelId,
     })
     .returning();
 
@@ -47,6 +66,7 @@ export async function draftPrepBrief(db: Db, caseId: string) {
     caseId,
     actor: "worker",
     action: "prep_brief.drafted",
+    metadata: { modelId },
   });
 
   return { ok: true as const, draft, alreadyExists: false };

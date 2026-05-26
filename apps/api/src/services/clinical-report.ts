@@ -1,7 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
+import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
-import { aiDrafts, cases } from "../db/schema.js";
+import { aiDrafts, cases, triageRecords } from "../db/schema.js";
+import { buildIntakeContextForLlm, generateClinicalReportLlm } from "../llm/generate-drafts.js";
 import { writeAudit } from "./audit.js";
+import { loadIntakeAnswers } from "./intake-context.js";
 import {
   renderClinicalReportPdf,
   type ClinicalReportPdfInput,
@@ -69,7 +72,7 @@ export function clinicalReportContentFromDraft(
   };
 }
 
-export async function draftClinicalReportStub(db: Db, caseId: string) {
+export async function draftClinicalReportStub(db: Db, caseId: string, env?: Env) {
   const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!row) return { ok: false as const, error: "not_found" as const };
 
@@ -86,7 +89,15 @@ export async function draftClinicalReportStub(db: Db, caseId: string) {
   }
 
   const childName = row.childDisplayName?.trim() || "Child";
-  const content: ClinicalReportContent = {
+  const answers = await loadIntakeAnswers(db, caseId);
+  const intakeContext = buildIntakeContextForLlm(answers);
+  const [triage] = await db
+    .select()
+    .from(triageRecords)
+    .where(eq(triageRecords.caseId, caseId))
+    .limit(1);
+
+  let content: ClinicalReportContent = {
     label: "DRAFT — clinician must review",
     title: "Clinical report",
     childDisplayName: childName,
@@ -95,6 +106,19 @@ export async function draftClinicalReportStub(db: Db, caseId: string) {
     source: "mvp_stub",
     generatedAt: new Date().toISOString(),
   };
+  let modelId = "mvp-stub";
+
+  if (env) {
+    const llm = await generateClinicalReportLlm(env, {
+      childDisplayName: childName,
+      intakeContext,
+      triageOutcome: triage?.outcome,
+    });
+    if (llm) {
+      content = llm.content as ClinicalReportContent;
+      modelId = llm.modelId;
+    }
+  }
 
   const [draft] = await db
     .insert(aiDrafts)
@@ -102,7 +126,7 @@ export async function draftClinicalReportStub(db: Db, caseId: string) {
       caseId,
       kind: "clinical_report",
       content,
-      modelId: "mvp-stub",
+      modelId,
     })
     .returning();
 

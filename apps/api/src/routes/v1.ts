@@ -18,6 +18,8 @@ import {
 } from "../services/parent-summary.js";
 import { draftPrepBrief } from "../services/prep-brief.js";
 import { draftSessionPlanStub } from "../services/session-plan.js";
+import { seedCanonicalDemoPractice } from "../services/demo-seed.js";
+import { practiceDisplayName, type PracticeVariant } from "../demo/practice.js";
 import {
   draftClinicalReportStub,
   getClinicalReportDraft,
@@ -279,7 +281,7 @@ export function createV1Routes(db: Db, env: Env) {
     } catch (err) {
       console.warn("enqueueLlmPrep failed (stub prep still runs):", err);
     }
-    await draftPrepBrief(db, caseId);
+    await draftPrepBrief(db, caseId, env);
 
     const [afterPrep] = await db.select().from(cases).where(eq(cases.id, caseId));
 
@@ -312,7 +314,7 @@ export function createV1Routes(db: Db, env: Env) {
       metadata: { outcome: body.outcome },
     });
 
-    await draftSessionPlanStub(db, caseId);
+    await draftSessionPlanStub(db, caseId, env);
     const [afterPlan] = await db.select().from(cases).where(eq(cases.id, caseId));
 
     return c.json({ case: afterPlan ?? updated, triage });
@@ -324,7 +326,7 @@ export function createV1Routes(db: Db, env: Env) {
       (await c.req.json().catch(() => ({}))) as unknown,
     );
 
-    const result = await publishParentSummary(db, caseId, body.htmlBody);
+    const result = await publishParentSummary(db, caseId, body.htmlBody, env);
     if (!result.ok) {
       const status = result.error === "not_found" ? 404 : 400;
       return c.json({ error: result.error }, status);
@@ -436,9 +438,17 @@ export function createV1Routes(db: Db, env: Env) {
     return c.body(ics, 200, { "Content-Type": "text/calendar; charset=utf-8" });
   });
 
-  /** Demo bootstrap: reuse one demo tenant per jurisdiction (stable tenantId across sessions). */
+  const demoBootstrapBody = z
+    .object({
+      practice: z.enum(["demo", "e2e"]).default("demo"),
+    })
+    .optional();
+
+  /** Demo bootstrap: stable tenant per practice variant (demo vs automated E2E). */
   app.post("/demo/bootstrap", async (c) => {
-    const displayName = "Demo practice";
+    const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
+    const variant = (body?.practice ?? "demo") as PracticeVariant;
+    const displayName = practiceDisplayName(variant);
     const [existing] = await db
       .select()
       .from(tenants)
@@ -448,13 +458,28 @@ export function createV1Routes(db: Db, env: Env) {
       .limit(1);
     if (existing) {
       await ensureDefaultAvailability(db, existing.id);
-      return c.json({ tenantId: existing.id, jurisdiction: existing.jurisdiction }, 200);
+      return c.json(
+        { tenantId: existing.id, jurisdiction: existing.jurisdiction, practice: variant },
+        200,
+      );
     }
     const [row] = await db
       .insert(tenants)
       .values({ displayName, jurisdiction: env.JURISDICTION })
       .returning();
-    return c.json({ tenantId: row.id, jurisdiction: env.JURISDICTION }, 201);
+    return c.json({ tenantId: row.id, jurisdiction: row.jurisdiction, practice: variant }, 201);
+  });
+
+  /** Seed realistic canonical demo caseload (dev/stage only). */
+  app.post("/demo/seed-canonical", async (c) => {
+    if (env.NODE_ENV === "production") {
+      return c.json({ error: "forbidden_in_production" }, 403);
+    }
+    const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
+    const variant = (body?.practice ?? "demo") as PracticeVariant;
+    const result = await seedCanonicalDemoPractice(db, env, variant);
+    await ensureDefaultAvailability(db, result.tenantId);
+    return c.json(result);
   });
 
   return app;

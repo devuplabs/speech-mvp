@@ -59,7 +59,7 @@ small, plain JSON files so anyone can `cat` them into a request body.
 
 | File | Endpoint | Notes |
 |---|---|---|
-| `boot.json` | `POST /v1/demo/bootstrap` | Re-issues the dev tenant + jurisdiction context. |
+| `boot.json` | `POST /v1/demo/bootstrap` | Demo practice tenant (`practice: "demo"`). Use `{"practice":"e2e"}` for automated tests. |
 | `test-case-min.json` | `POST /v1/cases` | Minimum-viable case payload. Replace `tenantId` before use. |
 | `test-case-null-email.json` | `POST /v1/cases` | Reproduces the original `parentEmail: null` 400 we fixed in PR #16. |
 | `test-create-case.json` | `POST /v1/cases` | Realistic case with a test parent and child. |

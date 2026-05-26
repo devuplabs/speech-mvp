@@ -1,8 +1,11 @@
 import { and, eq } from "drizzle-orm";
+import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
 import { aiDrafts, cases } from "../db/schema.js";
 import { writeAudit } from "./audit.js";
+import { buildIntakeContextForLlm, generateParentSummaryHtmlLlm } from "../llm/generate-drafts.js";
 import { draftClinicalReportStub } from "./clinical-report.js";
+import { loadIntakeAnswers } from "./intake-context.js";
 
 export function defaultParentSummaryHtml(childName?: string | null): string {
   const who = childName ? ` for ${childName}` : "";
@@ -18,11 +21,25 @@ export async function publishParentSummary(
   db: Db,
   caseId: string,
   htmlBody?: string,
+  env?: Env,
 ) {
   const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!existing) return { ok: false as const, error: "not_found" };
 
-  const html = htmlBody ?? defaultParentSummaryHtml(existing.childDisplayName);
+  let html = htmlBody;
+  let summaryModelId = "clinician-published";
+  if (!html && env) {
+    const answers = await loadIntakeAnswers(db, caseId);
+    const llm = await generateParentSummaryHtmlLlm(env, {
+      childDisplayName: existing.childDisplayName ?? "Child",
+      intakeContext: buildIntakeContextForLlm(answers),
+    });
+    if (llm) {
+      html = llm.html;
+      summaryModelId = llm.modelId;
+    }
+  }
+  html ??= defaultParentSummaryHtml(existing.childDisplayName);
 
   const prior = await db
     .select()
@@ -42,7 +59,7 @@ export async function publishParentSummary(
       caseId,
       kind: "parent_summary",
       content: { html, publishedAt: new Date().toISOString() },
-      modelId: "clinician-published",
+      modelId: summaryModelId,
       reviewedAt: new Date(),
     });
   }
@@ -61,7 +78,7 @@ export async function publishParentSummary(
   });
 
   try {
-    await draftClinicalReportStub(db, caseId);
+    await draftClinicalReportStub(db, caseId, env);
   } catch (err) {
     console.warn("clinical report stub failed after publish:", err);
   }

@@ -62,4 +62,6 @@ export function validIntakeAnswers(childName: string) {
   };
 }
 
-export const e2eChildName = () => `E2E Child ${Date.now()}`;
+/** Unique but realistic child label — isolated on the E2E tenant, not the demo caseload. */
+export const e2eChildName = () =>
+  `Sam T. · e2e ${Date.now().toString(36).slice(-6)}`;

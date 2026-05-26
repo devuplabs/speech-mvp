@@ -31,7 +31,7 @@
       "Following directions/instructions"
     ],
     "assessedByOthers": "yes",
-    "assessedByOthersDetails": "Pediatrician saw March 2026 \u2014 no medical cause for food refusal. OT review pending.",
+    "assessedByOthersDetails": "Pediatrician saw March 2026 — no medical cause for food refusal. OT review pending.",
     "receivingTherapy": "no",
     "therapyDetails": "",
     "languagesExposed": "English",
@@ -75,5 +75,14 @@
     "anythingElse": "Parents would like joined-up plan with OT and feeding strategies for home",
     "photoConsent": "no",
     "completedBy": "Sam K. (parent)"
+  },
+  "demo": {
+    "targetStage": "summary_sent",
+    "triageOutcome": "short_block",
+    "referralSource": "gp",
+    "parentName": "Sam K.",
+    "parentPhone": "07700900401",
+    "initialConcerns": "Limited food range; gagging on mixed textures.",
+    "consultInHours": -48
   }
 }

@@ -72,9 +72,18 @@
     "communicationAwareness": "Highly aware of stutter; sometimes avoids speaking up",
     "schoolNameAddress": "Roundhay Primary, Leeds LS8",
     "nurseryDays": "School Mon-Fri 8:50-3:15",
-    "senPlan": "EHCP under annual review \u2014 fluency added at last review",
+    "senPlan": "EHCP under annual review — fluency added at last review",
     "anythingElse": "Parents want strategies before secondary transition",
     "photoConsent": "no",
     "completedBy": "Lisa O. (mother)"
+  },
+  "demo": {
+    "targetStage": "triaged",
+    "triageOutcome": "full_assessment",
+    "referralSource": "school",
+    "parentName": "Lisa O.",
+    "parentPhone": "07700900201",
+    "initialConcerns": "Stutter worsening in class; EHCP review flagged fluency.",
+    "consultInHours": 26
   }
 }
