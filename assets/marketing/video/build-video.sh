@@ -85,25 +85,84 @@ for ((j=0; j<N; j++)); do
 done
 
 # Pick the music track to use.
-#   Default: assets/marketing/music/kevin-macleod-hidden-past.mp3
-#            (CC-BY 4.0; see assets/marketing/music/README.md).
+#   Default: assets/marketing/music/final-lasting-hope.mp3
+#            ("Lasting Hope" by Kevin MacLeod, CC BY 4.0; see
+#            assets/marketing/music/README.md).
 #   Override: export MUSIC=/abs/path/to/your-track.mp3
 #   Fallback: if MUSIC is unset and the default file is missing, generate
 #            a CC0 ambient pad with ffmpeg.
-MUSIC="${MUSIC:-$ROOT/music/kevin-macleod-hidden-past.mp3}"
+MUSIC="${MUSIC:-$ROOT/music/final-lasting-hope.mp3}"
 AUDIO="$TMPDIR/track.wav"
-FADE_OUT_AT=$(awk -v t="$TOTAL" 'BEGIN{printf "%.3f", t-2.0}')
+
+# Fade settings (per the music-revision brief):
+#   FADE_IN  = 2 s
+#   FADE_OUT = 3 s
+FADE_IN=2.0
+FADE_OUT=3.0
+FADE_OUT_AT=$(awk -v t="$TOTAL" -v f="$FADE_OUT" 'BEGIN{printf "%.3f", t-f}')
+
+# Build the timed-duck expression for the volume filter.
+#
+# We do not have a voice track to drive a true side-chain compressor, so we
+# approximate the effect: at each "caption-appearance moment" we dip the
+# music by -3 dB (linear amplitude 0.708) using a Gaussian envelope. The
+# Gaussian is centred on the slide-transition time, sigma=0.4 s, so the dip
+# is meaningful for ~±0.8 s around each new caption and otherwise has zero
+# effect.
+#
+# A new caption appears at the END of each crossfade — i.e. at the
+# cumulative end of slide j-1 (which equals the start of slide j). These
+# offsets are exactly the same numbers we used to build the xfade graph
+# above, so reuse them.
+DUCK_DB=-3.0
+DUCK_SIGMA=0.4
+# 1 - 10^(DUCK_DB/20) = drop magnitude (0.292 for -3 dB)
+DUCK_DROP=$(awk -v d="$DUCK_DB" 'BEGIN{printf "%.6f", 1 - exp(d * log(10)/20)}')
+
+# Recompute cumulative slide-end times (the moments the next caption appears).
+# Skip t=0 (covered by the fade-in) and skip the final boundary (covered by
+# the fade-out).
+duck_terms=""
+total_running=0
+slide_idx=0
+for line in "${LINES[@]}"; do
+  d=$(awk -F'\t' '{print $2}' <<<"$line")
+  if (( slide_idx == 0 )); then
+    total_running=$d
+  else
+    total_running=$(awk -v t="$total_running" -v dd="$d" -v x="$XFADE" 'BEGIN{printf "%.3f", t + dd - x}')
+  fi
+  # The caption for slide slide_idx fully replaces the prior caption at the
+  # END of the crossfade, which is total_running for slide slide_idx-1's
+  # end. The first slide's caption appears at t=0 (skip), and the last
+  # boundary is the end of the video (skip — fade-out handles it).
+  if (( slide_idx >= 1 )); then
+    # Centre the duck at the moment the new caption is fully on-screen.
+    t_centre=$(awk -v t="$total_running" -v d="$d" -v x="$XFADE" 'BEGIN{printf "%.3f", t - d + x}')
+    # gauss-like dip: DROP * exp(-((t - centre)/sigma)^2)
+    duck_terms="$duck_terms + ${DUCK_DROP}*exp(-pow((t-${t_centre})/${DUCK_SIGMA}\\,2))"
+  fi
+  slide_idx=$((slide_idx+1))
+done
+# Drop the leading " + "
+duck_terms="${duck_terms# + }"
+# Cap the multiplicative envelope at >= 0.5 (-6 dB) so stacked Gaussians can
+# never silence the track entirely.
+DUCK_EXPR="max(0.5\\,1 - (${duck_terms}))"
 
 if [[ -f "$MUSIC" ]]; then
   echo "  music: $MUSIC"
-  # Trim/loop to TOTAL, light low-pass for warmth, normalised to -16 LUFS,
-  # 2 s fade in + 2 s fade out so the pad never starts or ends abruptly.
+  echo "  ducking: ${DUCK_DB} dB at each caption transition (sigma=${DUCK_SIGMA}s)"
+  echo "  fades:   in=${FADE_IN}s · out=${FADE_OUT}s"
+  # Two-pass loudnorm to flatten LRA + land at -22 LUFS, then loop/trim to
+  # TOTAL, then apply timed volume dips, then fade in/out.
   ffmpeg -hide_banner -loglevel error -y \
     -stream_loop -1 -i "$MUSIC" \
     -filter_complex "[0:a]atrim=duration=$TOTAL,
-                     loudnorm=I=-22:TP=-2:LRA=9,
-                     afade=t=in:st=0:d=2.0,
-                     afade=t=out:st=$FADE_OUT_AT:d=2.0" \
+                     loudnorm=I=-22:TP=-2:LRA=5,
+                     volume=eval=frame:volume='${DUCK_EXPR}',
+                     afade=t=in:st=0:d=${FADE_IN},
+                     afade=t=out:st=${FADE_OUT_AT}:d=${FADE_OUT}" \
     -ar 48000 -ac 2 -c:a pcm_s16le "$AUDIO"
 else
   echo "  music: $MUSIC missing — using generated CC0 ambient pad"
@@ -113,8 +172,9 @@ else
     -filter_complex "[0:a][1:a]amix=inputs=2:weights='0.6 0.4',
                      lowpass=f=900,
                      volume=0.10,
-                     afade=t=in:st=0:d=1.5,
-                     afade=t=out:st=$FADE_OUT_AT:d=1.5" \
+                     volume=eval=frame:volume='${DUCK_EXPR}',
+                     afade=t=in:st=0:d=${FADE_IN},
+                     afade=t=out:st=${FADE_OUT_AT}:d=${FADE_OUT}" \
     -ar 48000 -ac 2 -c:a pcm_s16le "$AUDIO"
 fi
 
