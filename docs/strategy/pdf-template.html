@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="$lang$" xml:lang="$lang$" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>$title-meta$</title>
+$for(css)$
+  <link rel="stylesheet" href="$css$" />
+$endfor$
+  <style>
+$styles.html()$
+  </style>
+</head>
+<body>
+<header class="title-block">
+  <div class="title">$title$</div>
+$if(subtitle)$
+  <div class="subtitle">$subtitle$</div>
+$endif$
+$if(date)$
+  <div class="date">$date$</div>
+$endif$
+</header>
+
+$if(toc)$
+<nav id="TOC" role="doc-toc">
+$table-of-contents$
+</nav>
+$endif$
+
+$body$
+</body>
+</html>
