@@ -5,7 +5,7 @@
 **Run:** 2026-05-28, agent model: Claude Opus 4.7 (Cursor cloud agent)
 
 The Notion page produced from this run is the primary deliverable. This log is the
-underlying working file: sources consulted, decisions taken without founder input,
+underlying working file: sources consulted, decisions taken without founders' input,
 and gaps that the analysis could not close.
 
 ---
@@ -101,12 +101,12 @@ All retrieved on **2026-05-28** unless noted.
   source increases confidence in the $150 figure.
 - Crunchbase / Pitchbook free profiles — not consulted in this run because the
   pricing pages and public docs already gave enough granularity for the comparison
-  table. Documented here so the founder knows where to push for funding-stage
+  table. Documented here so the founders know where to push for funding-stage
   detail in a follow-up.
 
 ---
 
-## 4. Decisions taken without founder input (defaults from §11 of the brief)
+## 4. Decisions taken without founders' input (defaults from §11 of the brief)
 
 All ten §11 questions were answered using the documented defaults, because the
 agent runs autonomously and waiting for confirmation would block the deliverable.
@@ -128,7 +128,7 @@ agent runs autonomously and waiting for confirmation would block the deliverable
 
 ## 5. Gaps the analysis could not close
 
-These need founder input or future primary research.
+These need founders' input or future primary research.
 
 1. **Therapist sample of N=1.** All of Q1 is inferred from the intake spec, the
    `mvp-brief.md` interview synthesis, and the four paediatric personas. A second
@@ -149,7 +149,7 @@ These need founder input or future primary research.
 6. **DCB0129 / DCB0160 clinical-safety lift.** GP Connect prereqs mention a
    Clinical Safety Officer compliant with these standards. Time-and-cost of
    appointing a CSO for a 2-person company is not researched here — it is the
-   single biggest hidden cost of the GP Connect path and the founder should price
+   single biggest hidden cost of the GP Connect path and the founders should price
    it before committing.
 7. **Multi-tenant clinic-mode breakage points.** The MVP brief states
    "solo-practitioner first". The analysis flags clinic mode as a future seam but

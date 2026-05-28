@@ -16,7 +16,7 @@ The MVP demo (`assets/marketing/`, brief: `docs/marketing/feedback-demo-brief.md
 4. **External-systems integration.** Sona currently asks the parent for GP details as free text. In reality that data lives in **NHS GP systems** (TPP SystmOne, EMIS Web, INPS Vision) reached via NHS Spine / GP Connect / FHIR UK Core, with NHS DSPT and CIS2 identity. What's the realistic integration roadmap, and the equivalent in other jurisdictions (US: USCDI/FHIR/EHR vendors; AU: My Health Record / FHIR AU Base)?
 5. **Pricing & commercial model.** Per-clinician subscription vs per-case vs tiered AI-usage vs NHS framework procurement (G-Cloud, DPS, Spark DPS, ICB direct award).
 
-The deliverable answers these in one place, with sourced reasoning, and is reviewable in a 30-minute founder reading session.
+The deliverable answers these in one place, with sourced reasoning, and is reviewable in a 30-minute founders' reading session.
 
 ---
 
@@ -154,7 +154,7 @@ Create **one** page (not a database row, not a collection of pages) in the Sona 
 Steps:
 
 1. Call `notion-fetch` on the database URL above to read the schema and discover the `data_source_id` (per `mcps/user-notion/tools/notion-fetch.json` and `notion-create-pages.json`). If the database has multiple data sources, choose the one whose schema matches a strategy / research document (not a tasks board).
-2. If the database has required properties (e.g., Type, Status, Owner), fill them sensibly: Type ≈ "Strategy" or "Research", Status ≈ "Draft" or "In review", Owner ≈ a founder.
+2. If the database has required properties (e.g., Type, Status, Owner), fill them sensibly: Type ≈ "Strategy" or "Research", Status ≈ "Draft" or "In review", Owner ≈ one of the founders.
 3. **Page title:** `Sona — Product Strategy & Differentiation Review (May 2026)`.
 4. **Icon:** `🧭`. **Cover:** none.
 
@@ -180,7 +180,7 @@ Steps:
   - Comparison table + recommended starting model.
 # Recommendations — top 5 things to do in the next 30 / 60 / 90 days
   - Ordered, concrete, each with a one-line rationale.
-# Open questions for the founder
+# Open questions for the founders
   - Things this analysis couldn't resolve without input.
 # Sources
   - Repo paths cited above.
@@ -204,7 +204,7 @@ This brief is already staged on branch `docs/product-strategy-review-brief`. You
 3. **Add a research log** at `docs/strategy/product-strategy-review-research-log.md` covering:
    - The exact Notion page URL you created.
    - Web sources you consulted (URL, title, access date, one-line takeaway).
-   - Decisions you had to make without founder input (and what you chose).
+   - Decisions you had to make without founders' input (and what you chose).
    - Gaps you couldn't fill (and why).
 4. **Append a "Run summary" section to this brief** at the bottom, under a heading `## 16. Run summary (filled in by the agent)`, listing: date, agent model, Notion page URL, research log path, and any deltas vs the original brief.
 5. **Commit & push** to the `docs/product-strategy-review-brief` branch, following `.cursor/skills/mvp-git-workflow/SKILL.md` (PR-only, never push to `main`).
@@ -227,12 +227,12 @@ This brief is already staged on branch `docs/product-strategy-review-brief`. You
 
 ## 7. Honesty & quality constraints (non-negotiable)
 
-A founder will spot a generic, ChatGPT-flavoured strategy memo in 30 seconds. The credibility of this deliverable rests on:
+Founders will spot a generic, ChatGPT-flavoured strategy memo in 30 seconds. The credibility of this deliverable rests on:
 
 - **Cite or strike.** Every competitor name, price, regulation, or framework claim has either a repo citation or a URL. No "industry experts say" hand-waving.
 - **Specificity over completeness.** Better to deeply analyse five competitors than skim fifteen. Better to propose three sharp seams than ten vague ones.
 - **Distinguish "is" from "should".** Q1 documents the MVP as-is. Q3 and recommendations are proposals. Don't blur them.
-- **Disagree with the founder when warranted.** If the air-gapped Gemma is a weak moat, say so. If per-case pricing is wrong for this market, say so. Useful is more important than agreeable.
+- **Disagree with the founders when warranted.** If the air-gapped Gemma is a weak moat, say so. If per-case pricing is wrong for this market, say so. Useful is more important than agreeable.
 - **No vapourware in the moat.** Do not list features that are not built or designed as moats. Cross-check against `docs/marketing/feedback-demo-brief.md` §6 "What's real today vs the 90-day vision."
 
 ---
@@ -266,7 +266,7 @@ A founder will spot a generic, ChatGPT-flavoured strategy memo in 30 seconds. Th
 - **Notion MCP fails or the database schema is unfamiliar.** Try `notion-fetch` on the database URL and inspect the data-source list and required properties. If the database is the wrong shape (e.g., a tasks board), search the user's workspace for a "Strategy", "Research", or "Docs" parent page and create the page underneath it instead — note this in the run summary.
 - **Competitor data behind paywall or login.** Use Pitchbook-free signals: their pricing page, G2 reviews, Crunchbase free profile, press releases, podcast appearances. Always cite the URL and access date. If a number is uncertain, say "~£X (Crunchbase, May 2026)" rather than asserting it.
 - **NHS / GP Connect specifics in flux.** Cite NHS Digital's own pages (digital.nhs.uk) over third-party blogs. If a programme has been renamed or merged (common in NHS), say so and link both names.
-- **Founder hasn't answered §11 questions in a timely way.** Proceed with the documented defaults; flag every default-taken in the run summary so the founder can correct in review.
+- **Founders haven't answered §11 questions in a timely way.** Proceed with the documented defaults; flag every default-taken in the run summary so the founders can correct in review.
 - **The analysis would exceed one Notion page comfortably.** Keep the published page tight (≤ 4000 words). Park supporting material — full competitor profiles, full integration spec sheets — as expandable toggles inside the page, not as separate pages.
 
 ---
