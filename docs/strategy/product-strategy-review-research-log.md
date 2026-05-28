@@ -114,7 +114,7 @@ agent runs autonomously and waiting for confirmation would block the deliverable
 | # | Question | Default chosen | Rationale |
 |---|---|---|---|
 | 1 | Notion parent | Document Hub data source `345c6894-396e-8037-92e6-000b2988579e`; Category = `Strategy doc` + `Market Research` | Only data source on the database; existing tag taxonomy includes "Strategy doc". |
-| 2 | Audience weight | Founder primary, clinician secondary, investor tertiary | As §2 of the brief specifies. |
+| 2 | Audience weight | Founders primary, investor secondary | As §2 of the brief specifies (revised post-publish to drop named individuals; the original §2 wording was *Senthil primary, Monal secondary, investor tertiary*). |
 | 3 | Geography | UK-first; US/AU/CA in future-proofing and integration sections only | Matches design partner and personas. |
 | 4 | Competitor list | The brief's list **plus** Octopus EPR, Smilenotes UK, Clindoc, PatientNotes | Added because they are direct UK or directly-Cliniko-integrated SLT-aware tools surfaced in the web search. |
 | 5 | Moat stress-test | All candidates ranked honestly; air-gapped Gemma scored as **medium-low defensibility, short half-life** | The brief explicitly invites this. |

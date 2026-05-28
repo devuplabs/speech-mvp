@@ -22,11 +22,10 @@ The deliverable answers these in one place, with sourced reasoning, and is revie
 
 ## 2. Audience for the Notion page
 
-- **Primary:** Senthil (founder; technical; reads strategy docs end-to-end).
-- **Secondary:** Monal (design partner; clinical; will skim the customisation and integration sections).
-- **Tertiary:** future investor / NHS commissioner — sections must be quotable in a pitch deck without rewriting.
+- **Primary:** the founders (technical; read strategy docs end-to-end).
+- **Secondary:** a future investor / NHS commissioner — sections must be quotable in a pitch deck without rewriting.
 
-The page must work for **all three** in one read. Use clear section headers, short paragraphs, tables where comparing options, and a TL;DR at the top.
+The page must work for **both** audiences in one read. Use clear section headers, short paragraphs, tables where comparing options, and a TL;DR at the top.
 
 ---
 
@@ -275,7 +274,7 @@ A founder will spot a generic, ChatGPT-flavoured strategy memo in 30 seconds. Th
 ## 11. Questions to batch to the user before starting (one message, with defaults)
 
 1. **Notion parent.** Confirm the database at `345c6894396e8074926bffca1ae0e7e3` is the right place. (Default: yes, create the page as a row in that database; pick the data source whose schema fits a strategy doc.)
-2. **Audience emphasis.** Founder + clinician + investor — equal weight, or weighted? (Default: founder primary, clinician secondary, investor tertiary — as written in §2.)
+2. **Audience emphasis.** Founders + investor — equal weight, or weighted? (Default: founders primary, investor secondary — as written in §2.)
 3. **Geography scope.** UK only, UK+US, or global? (Default: UK-first headline, US/AU/CA in future-proofing only.)
 4. **Competitor list.** Anyone specific you already know is a real comparator? (Default: the list in Q2 — open to add/remove based on your input.)
 5. **Moat candidates.** Any you specifically want stress-tested, or any you suspect are weaker than you've been telling people? (Default: rank all candidates honestly, including the air-gapped LLM posture.)
