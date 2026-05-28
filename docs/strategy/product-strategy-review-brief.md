@@ -191,10 +191,12 @@ Steps:
 
 Anti-patterns to avoid in the published page (these are the brief leaking into the doc):
 
-- Self-labelling the register ("sober consultancy memo", "punchy founder voice", "ranked, honest", etc.). The prose should *be* the register, not announce it.
-- Cross-referencing the brief's Q-numbering ("Run the Q1 audit", "see Q4", "(Q3 seam 4)"). Refer to sections by name or by §number, not by question number.
-- Meta-paragraphs that explain the format of a section instead of just being the section ("The table is the headline. Narrative follows.", "Each seam below is a single named change…", "Ordered by leverage. Each has an owner placeholder, an effort estimate…"). Trim or drop.
-- Preambles that reference the brief's banned-words list or instruct the reader on how to read the doc.
+- **Self-labelling the register.** ("sober consultancy memo", "punchy founder voice", "ranked, honest", etc.) The prose should *be* the register, not announce it.
+- **Self-labelling the methodology.** ("Grounded in the repo and the open web; nothing is asserted without a source.", "Cited or struck.", "Every claim sourced.") The reader judges grounding by reading the citations, not by being told. Methodology rules live in this brief (§7), not in the published page.
+- **Cross-referencing the brief's Q-numbering.** ("Run the Q1 audit", "see Q4", "(Q3 seam 4)") Refer to sections by name or by §number, not by question number.
+- **Meta-paragraphs that explain the format of a section instead of just being the section.** ("The table is the headline. Narrative follows.", "Each seam below is a single named change…", "Ordered by leverage. Each has an owner placeholder, an effort estimate…") Trim or drop.
+- **Preambles that reference the brief's banned-words list or instruct the reader on how to read the doc.**
+- **Intro callouts that describe the doc to itself.** The page title and the section structure are sufficient orientation. If a callout is needed at all, keep it to one short line of audience framing — no register, no methodology, no reading instructions.
 
 Constraints on the Notion page:
 
@@ -437,6 +439,11 @@ doc on the first pass:
    for Q3" — meaning calendar Q3 (autumn). Once the section-Q-prefixes were
    stripped this became ambiguous, so it was reworded to "book the work for the
    autumn".
+7. **No self-labelling of methodology either.** The intro callout originally
+   ended with *"Grounded in the repo and the open web; nothing is asserted
+   without a source."* — a methodology claim, not strategy content. A reader
+   judges grounding by reading the citations, not by being told. The sentence
+   was removed; §5.1 anti-patterns now forbids the pattern.
 
 §5.1 of this brief has been updated to encode these rules so the next run does
 not need a copy-edit pass.
