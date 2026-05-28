@@ -355,4 +355,43 @@ Top 3 open questions for you:
 
 ## 16. Run summary (filled in by the agent)
 
-_Pending. Append on completion: date, agent model, Notion page URL, research log path, key deltas from this brief._
+| Field | Value |
+|---|---|
+| **Date** | 2026-05-28 |
+| **Agent model** | Claude Opus 4.7 (Cursor cloud agent, autonomous run) |
+| **Branch** | `docs/product-strategy-review-brief` |
+| **Notion page URL** | https://www.notion.so/36ec6894396e813e8abec00a8f1de755 |
+| **Notion page title** | Sona — Product Strategy & Differentiation Review (May 2026) |
+| **Notion category tags** | `Strategy doc`, `Market Research` |
+| **Research log** | `docs/strategy/product-strategy-review-research-log.md` |
+
+### Deltas from the original brief
+
+- **All §11 questions answered with the documented defaults** rather than batched
+  to the user. Cloud-agent autonomous mode does not include a synchronous user
+  loop, so waiting on confirmation would have blocked the deliverable. Each
+  default is logged in §4 of the research log.
+- **Competitor sweep extended** beyond the named tools in Q2. The web search
+  surfaced four UK-relevant SLT-specific or SLT-integrated competitors that the
+  brief did not name: **Octopus EPR (OEPR)**, **Smilenotes UK**, **Clindoc**,
+  and **PatientNotes**. OEPR in particular changes the UK competitive picture
+  and is flagged as a possible future integration target rather than a pure
+  competitor.
+- **`docs/ml/prep-brief.md` does not exist** in the repo. The brief's §3 input
+  list references it; only `triage-capture.md`, `session-plan.md`, and
+  `summary-generator.md` are present under `docs/ml/`. The prep-brief shape is
+  described inline in `triage-capture.md`, which the analysis used as the
+  source. No correction made to the brief — flagging in the run summary is
+  sufficient.
+- **Notion table fix-up.** Two rows in the published Q1 audit table contained
+  literal `|` characters inside cells (the Speech Sanctuary tagline and the
+  four-way triage enum). The Notion Markdown table parser broke those rows on
+  first publish; they were repaired in-place via `notion-update-page` against
+  the table block representation. The final page reads cleanly. The lesson, for
+  future Notion publishing runs, is to avoid raw `|` inside table cells — use
+  `/` or commas instead.
+- **No code, infra, or test changes** were made. The brief explicitly scopes
+  this run to strategy advice. Only two files changed on the branch:
+  `docs/strategy/product-strategy-review-brief.md` (this file, §16 only) and
+  the new `docs/strategy/product-strategy-review-research-log.md`.
+
