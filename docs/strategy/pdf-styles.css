@@ -133,15 +133,12 @@ h1 {
   font-size: 20pt;
   font-weight: 700;
   color: var(--accent);
-  margin: 24pt 0 10pt 0;
+  margin: 28pt 0 10pt 0;
   padding-bottom: 4pt;
   border-bottom: 1px solid var(--rule);
-  page-break-before: always;
   page-break-after: avoid;
+  break-inside: avoid;
 }
-
-/* First H1 (TL;DR) sits on its own page after the TOC */
-h1:first-of-type { page-break-before: auto; }
 
 h2 {
   font-size: 14pt;

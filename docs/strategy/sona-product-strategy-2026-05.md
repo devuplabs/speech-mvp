@@ -600,6 +600,70 @@ In priority order; each blocks something downstream.
 6. **Multi-tenant clinic mode — explicit non-goal for 2026, or a Q4 2026 build?** The design-partner relationship will demand it once a second clinician joins the design-partner practice.
 7. **Persona expansion — agreed scope of three new personas (adult voice, AAC, feeding) before the next external pitch?** Without this, every non-paediatric meeting is uphill.
 
+# Glossary
+
+For readers new to UK private speech-and-language therapy. Skip if these are familiar.
+
+**Speech and language therapy**
+
+- **SLT** — speech-and-language therapist (UK / Ireland / Australia).
+- **SLP** — speech-language pathologist (US / Canada equivalent of SLT).
+- **AAC** — augmentative and alternative communication; tools and techniques for clients who can't rely on speech (symbol boards, eye-gaze devices, speech-generating apps).
+- **SENCO** — Special Educational Needs Co-ordinator; the teacher in a UK school responsible for SEN provision.
+- **TOMs** — Therapy Outcome Measures; a standardised UK clinical outcome-tracking framework used in SLT.
+
+**Statutory plans for children with additional needs**
+
+- **EHCP** — Education, Health and Care Plan (England). Legally binding document setting out a child's SEN provision.
+- **IDP** — Individual Development Plan (Wales). Welsh equivalent of EHCP.
+- **CSP** — Co-ordinated Support Plan (Scotland). Scottish equivalent.
+- **IEP / IDEA** — Individualized Education Program, issued under the US Individuals with Disabilities Education Act.
+- **NDIS** — National Disability Insurance Scheme (Australia). Funds disability supports including SLT.
+
+**Regulators and professional bodies**
+
+- **ASLTIP** — Association of Speech and Language Therapists in Independent Practice (UK). ~1,800 members; the directory most UK private SLT clients find their therapist through.
+- **HCPC** — Health and Care Professions Council. UK statutory regulator; all UK SLTs must be HCPC-registered.
+- **RCSLT** — Royal College of Speech and Language Therapists. UK professional body that sets clinical standards.
+- **ASHA** — American Speech-Language-Hearing Association. US equivalent of HCPC + RCSLT combined.
+- **SPA** — Speech Pathology Australia.
+- **SAC** — Speech-Language and Audiology Canada.
+- **CORU** — the Health and Social Care Professionals Council of Ireland.
+
+**NHS and UK integration standards**
+
+- **GP** — General Practitioner; UK family doctor. Equivalent to a US PCP (primary care provider).
+- **NHS** — National Health Service. UK state healthcare system.
+- **DSPT** — NHS Data Security and Protection Toolkit. Mandatory annual self-assessment for any organisation accessing NHS data.
+- **ICB** — Integrated Care Board. NHS bodies that commission local services; the procurement counterparty for NHS contracts.
+- **GP Connect** — NHS England's API suite (FHIR UK Core) for reading structured data from GP record systems.
+- **HSCN** — Health and Social Care Network. The private NHS network; GP Connect callers must be on HSCN.
+- **PDS** — Personal Demographics Service. NHS patient-identity register.
+- **CSO** — Clinical Safety Officer. The accountable individual for clinical risk under NHS standards.
+- **DCB0129 / DCB0160** — NHS clinical risk-management standards for manufacturers (DCB0129) and deploying organisations (DCB0160).
+- **SCAL** — Supplier Conformance Assessment List. The evidence document NHS Digital uses to assure suppliers connecting to NHS APIs.
+- **e-RS** — NHS e-Referral Service. The booking platform for NHS-funded referrals.
+- **G-Cloud** — UK government framework for buying cloud services from approved suppliers. G-Cloud 14 is the current edition.
+- **DPS** — Dynamic Purchasing System. Another UK public-sector procurement framework.
+
+**Healthcare data and privacy standards (international)**
+
+- **FHIR** — Fast Healthcare Interoperability Resources. The global standard data format for exchanging healthcare records. UK Core and AU Base are national variants.
+- **USCDI** — United States Core Data for Interoperability. The US equivalent.
+- **HIPAA** — US Health Insurance Portability and Accountability Act. Governs US patient-data handling.
+- **BAA** — Business Associate Agreement. The contract a US healthcare provider must have with any vendor that touches patient data, under HIPAA.
+- **PHI** — Protected Health Information. The HIPAA-defined category of patient data.
+- **GDPR** — General Data Protection Regulation. The UK / EU equivalent. "UK GDPR" is the post-Brexit UK version.
+- **PHIPA** — Personal Health Information Protection Act (Ontario, Canada).
+- **PIPEDA** — Personal Information Protection and Electronic Documents Act (Canada-wide).
+
+**Practice tooling**
+
+- **PMS** — Practice Management System. The category of tool that holds the diary, the patient list, and the invoices (Cliniko, Jane App, Power Diary, Smilenotes, etc.).
+- **EPR / EHR** — Electronic Patient Record / Electronic Health Record. The category that holds clinical notes and records.
+- **OEPR** — Octopus EPR. A UK SLT-specific electronic patient record, marketed via ASLTIP.
+- **MyChart** — Epic Systems' patient portal. The reference design for delivering clinical content to patients via authenticated portal rather than email.
+
 # Sources
 
 ## Internal source artefacts (non-public, team repository)
