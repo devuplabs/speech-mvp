@@ -158,25 +158,25 @@ Steps:
 3. **Page title:** `Sona — Product Strategy & Differentiation Review (May 2026)`.
 4. **Icon:** `🧭`. **Cover:** none.
 
-**Page structure** (use these as H1/H2 — adapt sub-structure as the analysis demands):
+**Page structure** (use these as H1/H2 — adapt sub-structure as the analysis demands). The five numbered sections each map to one of the §4 questions, but the published page does **not** label them "Q1–Q5" — that's brief-process leakage. Use clean section names; the published doc shouldn't announce its own structure or register.
 
 ```
 # TL;DR — answers in 60 seconds
-  - 5–7 bullets, one per question (Q1–Q5) + one "what to do next week".
+  - 5–7 bullets, one per section + one "what to do next week".
 # Context
   - What the demo showed, who saw it, what questions came back. Link to the deck + video paths.
-# Q1 — Where the one-therapist tailoring shows
-  - Table (Surface / Assumption / Fits / Breaks / Fix class). Narrative around it.
-# Q2 — Unique selling point and moat
+# 1. Where the one-therapist tailoring leaks through
+  - Table (Surface / Assumption / Fits / Breaks / Fix class). Three named leaks underneath.
+# 2. Unique selling point and moat
   - One-sentence USP + one-paragraph positioning.
   - Competitive landscape table.
   - Moat ranking with time-to-erosion.
-# Q3 — Generic & future-proof: the seams to add
+# 3. The seams to add so Sona generalises without forking
   - For each seam: what it is, files involved, S/M/L, why now or why later.
-# Q4 — External-systems integration roadmap
+# 4. External-systems integration roadmap
   - UK (priority) → US → AU/CA → adjacent (calendar/video/e-sign/payments/PMS).
   - Phased table (MVP / Year 1 / Year 2+).
-# Q5 — Pricing options
+# 5. Pricing options
   - Comparison table + recommended starting model.
 # Recommendations — top 5 things to do in the next 30 / 60 / 90 days
   - Ordered, concrete, each with a one-line rationale.
@@ -185,7 +185,16 @@ Steps:
 # Sources
   - Repo paths cited above.
   - Web sources (URL + access date) for any competitor, regulator, or integration claim.
+# Engineering footnotes
+  - Implementation detail for seams / integration / cost — sits at the back so strategy readers can skip.
 ```
+
+Anti-patterns to avoid in the published page (these are the brief leaking into the doc):
+
+- Self-labelling the register ("sober consultancy memo", "punchy founder voice", "ranked, honest", etc.). The prose should *be* the register, not announce it.
+- Cross-referencing the brief's Q-numbering ("Run the Q1 audit", "see Q4", "(Q3 seam 4)"). Refer to sections by name or by §number, not by question number.
+- Meta-paragraphs that explain the format of a section instead of just being the section ("The table is the headline. Narrative follows.", "Each seam below is a single named change…", "Ordered by leverage. Each has an owner placeholder, an effort estimate…"). Trim or drop.
+- Preambles that reference the brief's banned-words list or instruct the reader on how to read the doc.
 
 Constraints on the Notion page:
 
@@ -280,7 +289,7 @@ Founders will spot a generic, ChatGPT-flavoured strategy memo in 30 seconds. The
 5. **Moat candidates.** Any you specifically want stress-tested, or any you suspect are weaker than you've been telling people? (Default: rank all candidates honestly, including the air-gapped LLM posture.)
 6. **Pricing — anchor.** Do you have a starting price hypothesis (e.g., £99/clinician/month)? (Default: no anchor; analyse from cost + comparable-tool benchmarks.)
 7. **Integration appetite.** Is NHS DSPT / GP Connect on the table for the next 12 months, or strictly Year-2+? (Default: phased — Year 1 = adjacent integrations (calendar, video, payments); Year 2 = NHS DSPT + GP Connect.)
-8. **Tone.** "Sober consultancy memo" vs "punchy founder voice" — pick one. (Default: sober consultancy memo with one-line punchy summaries.)
+8. **Tone.** Sober analytical memo with one-line punchy summaries. **Do not** announce the register in the doc itself (no "sober consultancy register" callouts, no "ranked, honest" sub-headings, no "the table is the headline" meta-paragraphs). The prose should be the register.
 9. **Confidentiality.** Is this Notion page internal-only or shareable with prospective customers? (Default: internal-only; do not write anything that couldn't survive a screenshot leak, but do not self-censor strategy critique.)
 10. **Deadline.** Anything time-sensitive driving when this needs to be merged + published? (Default: no hard deadline; aim for one working session.)
 
@@ -393,4 +402,42 @@ Top 3 open questions for you:
   this run to strategy advice. Only two files changed on the branch:
   `docs/strategy/product-strategy-review-brief.md` (this file, §16 only) and
   the new `docs/strategy/product-strategy-review-research-log.md`.
+
+### Post-publish revisions (2026-05-28, in chat)
+
+The founders reviewed the published Notion page and asked for several rounds of
+copy-edits. Captured here so future runs of this brief produce a publish-ready
+doc on the first pass:
+
+1. **No named individuals in the published memo.** Senthil and Monal were
+   stripped out of the Notion page, the brief, and the research log; replaced
+   with "founders", "the design partner", "the design-partner practice", etc.
+2. **Pluralise founder references.** There are three founders, not one. "The
+   founder" → "the founders" everywhere in the doc. Compound adjectives like
+   *founder-grade* stay.
+3. **No self-labelling of register.** The published page shouldn't announce its
+   own tone. The "Sober consultancy register" intro sentence was removed;
+   §11.8 of this brief now forbids that pattern. Sub-headings like
+   *"Moat analysis — ranked, honest"* were trimmed to *"Moat analysis"*;
+   *"### The narrative that goes with the table"* was dropped; the meta-paragraphs
+   under §3 ("Each seam below is a **single named change**…") and under
+   Recommendations ("Ordered by leverage. Each has an owner placeholder…") were
+   compressed.
+4. **No Q1/Q2/Q3/Q4/Q5 prefixes in the published page.** The §4 question
+   numbering is a property of this brief, not the published memo. The Notion
+   page now uses clean numbered sections ("1. Where the one-therapist tailoring
+   leaks through", "2. Unique selling point and moat", …). Cross-references in
+   the body ("(Q3, seam 1)", "see Q4 adjacent integrations", "Q3 seam 4") were
+   rewritten as "(seam 1 below)", "(see the integration roadmap)", etc.
+5. **No leak of the brief's banned-words list.** The Engineering-footnotes
+   preamble that said *"Banned-words list applies to Q1, Q2, and
+   recommendations; these footnotes are explicitly engineering-only and can use
+   the full vocabulary"* was removed.
+6. **Calendar Q3 collision.** Recommendation 4 originally said "book the work
+   for Q3" — meaning calendar Q3 (autumn). Once the section-Q-prefixes were
+   stripped this became ambiguous, so it was reworded to "book the work for the
+   autumn".
+
+§5.1 of this brief has been updated to encode these rules so the next run does
+not need a copy-edit pass.
 

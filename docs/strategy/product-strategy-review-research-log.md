@@ -120,7 +120,7 @@ agent runs autonomously and waiting for confirmation would block the deliverable
 | 5 | Moat stress-test | All candidates ranked honestly; air-gapped Gemma scored as **medium-low defensibility, short half-life** | The brief explicitly invites this. |
 | 6 | Pricing anchor | No anchor; analysed from cost + comparable benchmarks (£5–£150/clinician/mo range) | Honest baseline given the UK private SLT economics. |
 | 7 | Integration appetite | Year 1 = adjacent (calendar/video/payments/PMS); Year 2 = NHS DSPT + GP Connect | Default phasing in the brief. |
-| 8 | Tone | Sober consultancy memo with one-line punchy summaries | Default. |
+| 8 | Tone | Sober analytical memo with one-line punchy summaries | Default chosen at publish time was "sober consultancy memo"; the founders overruled the self-labelling pattern post-publish — see brief §16 post-publish revisions. The published page no longer announces its register. |
 | 9 | Confidentiality | Internal-only assumed; no self-censoring of strategy critique | Default. |
 | 10 | Deadline | None; treated as a one-working-session deliverable | Default. |
 
