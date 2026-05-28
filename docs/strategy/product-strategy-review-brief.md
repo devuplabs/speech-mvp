@@ -197,6 +197,7 @@ Anti-patterns to avoid in the published page (these are the brief leaking into t
 - **Meta-paragraphs that explain the format of a section instead of just being the section.** ("The table is the headline. Narrative follows.", "Each seam below is a single named change…", "Ordered by leverage. Each has an owner placeholder, an effort estimate…") Trim or drop.
 - **Preambles that reference the brief's banned-words list or instruct the reader on how to read the doc.**
 - **Intro callouts that describe the doc to itself.** The page title and the section structure are sufficient orientation. If a callout is needed at all, keep it to one short line of audience framing — no register, no methodology, no reading instructions.
+- **Internal file paths, class names, and identifier-style references in the prose.** A non-technical co-founder and an external investor cannot open `apps/sona/lib/features/parent/intake/parent_intake_step_screen.dart`, `docs/marketing/feedback-demo-brief.md §6`, `ADR-003`, `tenants.branding`, `services/session-plan.ts`, or `europe-west2`. Rewrite as plain English: "the Flutter parent-intake screen", "the team's feedback-demo brief", "an architecture decision", "a per-tenant branding store on the data side", "the session-plan service", "the London Google Cloud region". Keep concept names (audit log, output schemas, EHCP, ASLTIP, FHIR, GP Connect) — those are domain or industry language any reader can google. The test: read the memo as someone who has never opened the GitHub repo. Anything that requires repo access to make sense gets rewritten.
 
 Constraints on the Notion page:
 
@@ -444,6 +445,18 @@ doc on the first pass:
    without a source."* — a methodology claim, not strategy content. A reader
    judges grounding by reading the citations, not by being told. The sentence
    was removed; §5.1 anti-patterns now forbids the pattern.
+8. **Investor-grade copy pass: no internal file paths, class names, or
+   identifier-style references in the prose.** The first publish was littered
+   with `docs/marketing/feedback-demo-brief.md §6`, `apps/sona/lib/features/.../parent_intake_step_screen.dart`,
+   `ADR-001`, `tenants.branding`, `services/session-plan.ts`, `europe-west2`,
+   `audit_log / reviewedAt / aiDisclosureFooter as a z.literal`, and so on.
+   A non-technical co-founder and an external investor cannot open any of
+   those, and the identifier register reads as noise. All such references in
+   the body, the audit table, the moat table, the seams, the integration
+   roadmap rows, the pricing intro, and the Sources block were rewritten in
+   plain English. The "Repo paths" sub-heading in Sources became "Internal
+   source artefacts (non-public, team repository)". §5.1 anti-patterns now
+   forbids the pattern explicitly with examples.
 
 §5.1 of this brief has been updated to encode these rules so the next run does
 not need a copy-edit pass.

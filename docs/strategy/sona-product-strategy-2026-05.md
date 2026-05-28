@@ -7,6 +7,8 @@ lang: en-GB
 
 > Internal strategy memo. Written for the founders first and a future investor second.
 
+
+
 # TL;DR — answers in 60 seconds
 
 - **Single-customer fit risk is real and concentrated.** The 8-step parent form, the four triage outcomes, and every persona are paediatric, UK, English-speaking, EHCP-aware, and Speech-Sanctuary-branded. A second private SLT — especially adult voice, AAC, dysphagia, or stutter — will spot the tailoring inside one screen. **Fixable by configuration, not by re-engineering**, but the configuration layer does not yet exist.
@@ -18,11 +20,11 @@ lang: en-GB
 
 # Context
 
-The MVP brief and the demo deck pitch Sona as a co-pilot for the first 30 days of a private SLT-to-family relationship: smart parent intake → consult prep → triage → first-session plan → parent summary. The demo video and slides — the artifacts a reviewer will have seen — quote a **30–60 minute saving per case at 3–8 cases per week**, which lines up with the documented per-stage targets in the ML design docs (`docs/ml/triage-capture.md`, `docs/ml/session-plan.md`, `docs/ml/summary-generator.md`).
+The MVP brief and the demo deck pitch Sona as a co-pilot for the first 30 days of a private SLT-to-family relationship: smart parent intake → consult prep → triage → first-session plan → parent summary. The demo video and slides — the artifacts a reviewer will have seen — quote a **30–60 minute saving per case at 3–8 cases per week**, which lines up with the per-stage time-saving targets the team has set internally for the triage step, the session-plan step, and the parent-summary step.
 
 The MVP was scoped from a 1.5-hour interview with **one** private SLT (the design partner). That is enough to ship a demo; it is not enough to know whether the next ten therapists who watch the same demo see themselves on the screen. That is the question this memo exists to answer.
 
-What is **real today** (per `docs/marketing/feedback-demo-brief.md` §6): the 8-step parent intake form, case management, audit trail, the design system, and slot-based booking. What is **vision**: AI prep brief, AI plan, AI parent summary, telehealth, calendar sync. Anything below that relies on the vision side is flagged as such.
+What is **real today**: the 8-step parent intake form, case management, audit trail, the design system, and slot-based booking. What is **vision**: AI prep brief, AI plan, AI parent summary, telehealth, calendar sync. Anything below that relies on the vision side is flagged as such.
 
 # 1. Where the one-therapist tailoring leaks through
 
@@ -34,7 +36,7 @@ The audit walks the intake spec, the AI output shapes, the triage outcomes, and 
 </thead>
 <tbody>
 <tr>
-<td>Intake form: 8 hard-coded steps (<code>parent_intake_step_screen.dart</code>)</td>
+<td>Intake form: 8 hard-coded steps in the Flutter app</td>
 <td>One global question tree</td>
 <td>Paediatric speech-sounds and language clients</td>
 <td>Adult voice, adult stutter, AAC, dysphagia, transgender voice — each needs its own tree</td>
@@ -83,14 +85,14 @@ The audit walks the intake spec, the AI output shapes, the triage outcomes, and 
 <td><strong>template</strong> per specialty</td>
 </tr>
 <tr>
-<td>Triage outcomes: 4 enum values (<code>strategy_only</code>, <code>short_block</code>, <code>full_assessment</code>, <code>refer_out</code>)</td>
+<td>Triage outcomes: a 4-way enum (strategy only, short block, full assessment, refer out)</td>
 <td>The design partner's private-practice funnel</td>
 <td>Solo UK private practice</td>
 <td>NHS-funded routes; US insurance-coded plans; AU NDIS pathway — different funnels entirely</td>
 <td>config (per-tenant outcome enum)</td>
 </tr>
 <tr>
-<td>Session-plan domain enum: <code>speech_sound, language, social_comm, fluency, voice, feeding, other</code></td>
+<td>Session-plan output schema's specialty enum: speech sounds, language, social communication, fluency, voice, feeding, other</td>
 <td>Broad paediatric SLT</td>
 <td>Most paediatric and some adult</td>
 <td>Dysphagia/swallow as a first-class domain; AAC; tracheostomy / laryngectomy voice; transgender voice goals</td>
@@ -111,14 +113,14 @@ The audit walks the intake spec, the AI output shapes, the triage outcomes, and 
 <td>config (vocabulary pack)</td>
 </tr>
 <tr>
-<td>Magic-link parent identity (ADR-002), no NHS Login</td>
+<td>Magic-link parent identity (no NHS Login)</td>
 <td>Self-pay private</td>
 <td>Self-pay private UK</td>
 <td>Anyone using NHS-funded routes; ICB-commissioned services; school SLA workflows</td>
 <td>integration (see roadmap)</td>
 </tr>
 <tr>
-<td>Solo-practitioner default</td>
+<td>Solo-practitioner default (from the MVP brief)</td>
 <td>One therapist owns a tenant</td>
 <td>Sole practitioners ≈ majority of ASLTIP's 1,800 members</td>
 <td>Small group practices (the natural growth path for design partners); schools-based teams; charity providers</td>
@@ -132,7 +134,7 @@ The audit walks the intake spec, the AI output shapes, the triage outcomes, and 
 <td>config (regulator pack tied to jurisdiction)</td>
 </tr>
 <tr>
-<td>Personas: 3y feeding → 11y social-comm, all UK English</td>
+<td>Demo personas: 3y feeding → 11y social-comm, all UK English</td>
 <td>Paediatric demo coverage</td>
 <td>Paediatric general SLT</td>
 <td>Anything outside paediatric general SLT — the design partner has not been tested on adult, AAC, or English-as-additional-language cases</td>
@@ -143,11 +145,11 @@ The audit walks the intake spec, the AI output shapes, the triage outcomes, and 
 
 Three leaks matter more than the others, and each maps to a single concrete fix.
 
-**Leak 1: the form is the product, and the form is one practice's form.** The 8-step intake is hard-coded in Flutter (`apps/sona/lib/features/parent/intake/parent_intake_step_screen.dart`), and the API just persists whatever JSONB blob arrives (`apps/api/src/services/intake-context.ts` is a 15-line read-from-Postgres function). A second SLT cannot author her own form without an engineer. **Fix: an intake template engine** (seam 1 below). Until then, the strongest demo recommendation is to white-label the existing form for the *next* SLT — change the practice name, drop the Speech Sanctuary tagline — but **do not change the questions**, so the underlying assumption is visibly stress-tested.
+**Leak 1: the form is the product, and the form is one practice's form.** The 8-step intake is hard-coded in the Flutter app, and the API just persists whatever the form sends as an opaque blob — there is no form-template subsystem on either side. A second SLT cannot author her own form without an engineer. **Fix: an intake template engine** (seam 1 below). Until then, the strongest demo recommendation is to white-label the existing form for the *next* SLT — change the practice name, drop the Speech Sanctuary tagline — but **do not change the questions**, so the underlying assumption is visibly stress-tested.
 
 **Leak 2: paediatric is doing all the heavy lifting.** The four personas, the EHCP wiring, the "parent" vocabulary, and the triage outcomes are all paediatric-shaped. Sona will demo well to a paediatric private SLT. It will demo badly to an adult voice SLT, an AAC specialist, or anyone running a feeding clinic. There is no shame in narrowing the pitch — **paediatric private SLT** is a credible wedge — but the pitch deck and the website have to say that out loud, not pretend Sona is for "speech and language therapy, less admin" in general.
 
-**Leak 3: the AI output schemas are tight, which is good for safety and bad for portability.** `session-plan.md`'s Zod schema enumerates seven domains. Extending to dysphagia or AAC means schema + prompt + few-shot examples + UI badge. That is doable, but the *cost* per new specialty is non-trivial, and Sona should not invite an AAC clinician to a feedback session until that work is scoped.
+**Leak 3: the AI output schemas are tight, which is good for safety and bad for portability.** The session-plan output schema enumerates seven specialty domains. Extending to dysphagia or AAC means schema + prompt + few-shot examples + UI badge. That is doable, but the *cost* per new specialty is non-trivial, and Sona should not invite an AAC clinician to a feedback session until that work is scoped.
 
 # 2. Unique selling point and moat
 
@@ -237,7 +239,7 @@ The alternatives below are what a paediatric private SLT in 2026 is already weig
 <td>A grab-bag of client-facing apps, IEP drafters, and US PT/SLP rehab platforms</td>
 <td>Variable</td>
 <td>Some are UK-friendly; some are clinically rich</td>
-<td>Mostly client-facing (kid-facing apps — banned by Sona principle #3) or US-only EMR</td>
+<td>Mostly client-facing kid-facing apps (Sona has an explicit principle against adding to children's screen time) or US-only EMR</td>
 <td>Sona is adult-facing tooling that helps the SLT help the family, not another kid-app</td>
 </tr>
 <tr>
@@ -253,7 +255,7 @@ The alternatives below are what a paediatric private SLT in 2026 is already weig
 <td>—</td>
 <td>£0</td>
 <td>No change-management cost</td>
-<td>Admin burnout is a documented driver of attrition out of private practice</td>
+<td>Admin burnout is a documented driver of attrition out of private practice (per the design-partner interview)</td>
 <td>Sona aims to be a measurable hour-a-week back</td>
 </tr>
 </tbody>
@@ -273,25 +275,25 @@ No single item below is a 5-year moat on its own. The strength is in the **stack
 <td><strong>Design-partner-shaped intake → triage → plan → summary <em>loop</em></strong></td>
 <td>Medium-high</td>
 <td>18–24 months</td>
-<td>The end-to-end loop, structured by Zod schemas and review gates, is the actual product. Replicating it requires a design-partner relationship <em>and</em> the discipline not to ship a generic scribe. Most competitors will ship the scribe.</td>
+<td>The end-to-end loop, structured by schema-validated output formats and clinician-review gates at each step, is the actual product. Replicating it requires a design-partner relationship <em>and</em> the discipline not to ship a generic scribe. Most competitors will ship the scribe.</td>
 </tr>
 <tr>
 <td>2</td>
 <td><strong>Audit trail and review-gated AI as a posture, not a feature</strong></td>
 <td>Medium-high</td>
 <td>18 months</td>
-<td><code>audit_log</code>, <code>reviewedAt</code> gates, <code>aiDisclosureFooter</code> as a <code>z.literal</code> — every artifact is constructed so it cannot leave the system without a clinician act. That posture sells trust in a profession trained to fear AI. Heidi can match the controls; the <em>posture</em> — small clinician-first product, not enterprise scribe — is harder to copy.</td>
+<td>An append-only audit log, clinician-review gates on every artifact, and a hard-coded AI-disclosure footer mean nothing can leave the system without a clinician act. That posture sells trust in a profession trained to fear AI. Heidi can match the controls; the <em>posture</em> — small clinician-first product, not enterprise scribe — is harder to copy.</td>
 </tr>
 <tr>
 <td>3</td>
 <td><strong>Specialty-aware structured outputs</strong></td>
 <td>Medium</td>
 <td>12–18 months</td>
-<td>The seven-domain session-plan enum, the EHCP flag, the four triage outcomes — these are specificity that a generic scribe will not invest in until the SLT segment is bigger. Becomes weaker as more competitors target SLT specifically (Jane App is already there for note quality).</td>
+<td>The seven-domain session-plan output, the EHCP flag, the four triage outcomes — these are specificity that a generic scribe will not invest in until the SLT segment is bigger. Becomes weaker as more competitors target SLT specifically (Jane App is already there for note quality).</td>
 </tr>
 <tr>
 <td>4</td>
-<td><strong>UK-region data residency + self-hosted Gemma in <code>europe-west2</code></strong></td>
+<td><strong>UK-region data residency + self-hosted Gemma in a London Google Cloud region</strong></td>
 <td>Medium-low</td>
 <td>12 months</td>
 <td>A genuine differentiator vs ChatGPT and US-only Jane App. But — and this is the honest part — most clinicians cannot tell a self-hosted Gemma from a BAA-covered Vertex Gemini at the demo. Heidi already runs in-region and signs BAAs. <strong>The deployment posture is a feature for procurement, not a moat for the clinician.</strong> It buys NHS-ready <em>language</em> without buying NHS-ready <em>certification</em> (see the integration roadmap).</td>
@@ -301,7 +303,7 @@ No single item below is a 5-year moat on its own. The strength is in the **stack
 <td><strong>Carryover-aware parent-facing artefacts</strong> (tone slider, reading level, mandatory AI disclosure footer)</td>
 <td>Medium</td>
 <td>18 months</td>
-<td>The parent-facing surface is the genuinely under-served space — most competitors stop at the clinician note. Becomes a stronger moat if Sona invests in the parent portal experience (ADR-005).</td>
+<td>The parent-facing surface is the genuinely under-served space — most competitors stop at the clinician note. Becomes a stronger moat if Sona invests in the parent portal experience.</td>
 </tr>
 <tr>
 <td>6</td>
@@ -315,7 +317,7 @@ No single item below is a 5-year moat on its own. The strength is in the **stack
 <td><strong>GenUI / A2UI client architecture</strong></td>
 <td>Low</td>
 <td>12 months</td>
-<td>Important <em>engineering</em> choice (ADR-002), not a customer-visible moat. Do not list this in a pitch deck.</td>
+<td>Important engineering choice, not a customer-visible moat. Do not list this in a pitch deck.</td>
 </tr>
 <tr>
 <td>8</td>
@@ -335,27 +337,27 @@ Each seam is a single named change to a single subsystem. T-shirt sizes are rela
 
 ## Seam 1 — Intake template engine (S → M)
 
-**Today:** the 8 intake steps are hard-coded in Flutter (`apps/sona/lib/features/parent/intake/parent_intake_step_screen.dart`); the API persists the JSONB blob. **Tomorrow:** a versioned, branded, conditionally-branching intake schema authored per practice and per specialty, stored as JSON, rendered by a single Flutter step renderer. **Files:** new `intake_templates` table (API), new `intake-template-engine.ts` service, refactor `parent_intake_step_screen.dart` from a switch over hard-coded steps to a generic step renderer. **Why now:** it is the single biggest single-customer-tailoring risk and the prerequisite for every other generalisation. **Effort:** S to ship the engine with the existing 8-step paediatric template baked in as template `v1-paediatric-uk`; M to author a second template (adult voice) end-to-end. **Decision the founders own:** how schemas are *authored* — JSON in the repo (engineer-touch only), a CMS-style editor (the design partner can edit their own), or a hybrid. Pick a side before the engineer starts.
+**Today:** the 8 intake steps are hard-coded in the Flutter app; the API persists whatever the form sends. **Tomorrow:** a versioned, branded, conditionally-branching intake schema authored per practice and per specialty, stored as data, rendered by a single generic Flutter component. **What changes:** a new intake-template subsystem — a database table to hold the templates, an API service to fetch the right template for a given tenant, and a generic Flutter renderer that replaces today's hard-coded steps. **Why now:** it is the single biggest single-customer-tailoring risk and the prerequisite for every other generalisation. **Effort:** S to ship the engine with the existing 8-step paediatric template baked in as the first row; M to author a second template (adult voice) end-to-end. **Decision the founders own:** how schemas are *authored* — engineer-touch-only in source, a CMS-style editor (the design partner can edit their own), or a hybrid. Pick a side before the engineer starts.
 
 ## Seam 2 — Plan and summary template library (M)
 
-**Today:** one Zod schema family for session plans, one tone-slider for summaries. **Tomorrow:** a `domain × specialty` template family — `paediatric-speech-sounds`, `adult-voice`, `aac-introduction`, `feeding`, `stutter`, `social-comm` — each with its own prompt fragments, few-shot examples (synthetic), and acceptance metrics. The `domain` enum in `session-plan.md` becomes the **key**, not a field. **Files:** `services/session-plan.ts`, `services/parent-summary.ts`, `src/prompts/` directory promoted to a real subsystem. **Why now:** this is what stops the second SLT meeting from being "that's a kid's product".
+**Today:** one output-schema family for session plans, one tone-slider for summaries. **Tomorrow:** a *domain × specialty* template family — paediatric speech-sounds, adult voice, AAC introduction, feeding, stutter, social communication — each with its own prompt fragments, synthetic few-shot examples, and acceptance metrics. Specialty becomes the **key**, not a field. **What changes:** the session-plan and parent-summary services gain a prompt-template subsystem keyed by specialty. **Why now:** this is what stops the second SLT meeting from being "that's a kid's product".
 
 ## Seam 3 — Vocabulary and statutory-framework pack (S)
 
-**Today:** "Parent", "consult", "EHCP", "HCPC/RCSLT" are in strings throughout the code. **Tomorrow:** a per-tenant pack with three axes — recipient noun (parent / carer / client / patient), encounter noun (consult / appointment / session), statutory wrapper (EHCP / IDP / CSP / IEP / NDIS / none), regulator block (HCPC+RCSLT / ASHA / SPA / SAC). One JSON file per pack; **no code** changes when adding a new jurisdiction's regulator pack. **Files:** new `src/vocabulary-packs/`, Flutter `intl` already in place. **Why now:** trivial effort, large adoption-blocker removed. Cleanest "S" item on this list.
+**Today:** "Parent", "consult", "EHCP", "HCPC/RCSLT" are baked into strings throughout the code. **Tomorrow:** a per-tenant pack with three axes — recipient noun (parent / carer / client / patient), encounter noun (consult / appointment / session), statutory wrapper (EHCP for England, IDP for Wales, CSP for Scotland, Statement for NI, IEP for the US, NDIS for Australia, none), and regulator block (the UK pair HCPC+RCSLT vs ASHA in the US, SPA in Australia, SAC in Canada). One data file per pack; **no code** changes when adding a new jurisdiction. The Flutter app already has the localisation framework in place. **Why now:** trivial effort, large adoption-blocker removed. Cleanest "S" item on this list.
 
 ## Seam 4 — Multi-jurisdiction plumbing extensions (M)
 
-**Today:** ADR-001 splits UK and US Postgres. **Tomorrow** for a real US/AU launch: payments (Stripe vs GoCardless per tenant), BAA flow for US (already covered for inference per ADR-003, not for payments / Postmark / etc.), US-specific consent wording version (`consentVersion` field already exists in `intake_submissions`, fine — populate per jurisdiction), USCDI-aligned field names where they collide with GP Connect's UK Core names. **Why later:** Year 2+. The MVP and the design-partner pilot do not need this; build the seams so it is not a rewrite when it lands.
+**Today:** an architecture decision already splits the UK and US data planes. **Tomorrow** for a real US/AU launch: payments (Stripe for cards vs GoCardless for UK direct debit, chosen per tenant), HIPAA business-associate agreements with US subprocessors (already in place for the AI-inference vendor, not yet for payment or email vendors), US-specific consent wording (the data model has a slot for it; needs to be populated per jurisdiction), and a small mapping layer so US fields line up with the US healthcare-data standard (USCDI) rather than the UK one (FHIR UK Core). **Why later:** Year 2+. The MVP and the design-partner pilot do not need this; build the seams so it is not a rewrite when it lands.
 
 ## Seam 5 — Multi-tenant clinic mode (M → L)
 
-**Today:** `mvp-brief.md` working-agreements section states "Solo practitioner first. If a feature needs a 'team' concept to make sense, it's too early." **Tomorrow:** a small-group-practice mode with **shared client list, per-clinician audit identity, shared template library, per-clinician inference budgets**. **When it becomes unavoidable:** the second time the design partner says "my associate is starting next month". Plan for it; do not build it yet. **Effort:** M if the auth and tenant model are set up correctly now (it appears they are — `intake_submissions` is tenant-scoped); L if a multi-clinician concept has to be retrofitted later.
+**Today:** the team's working agreements in the MVP brief explicitly say *"Solo practitioner first. If a feature needs a 'team' concept to make sense, it's too early."* **Tomorrow:** a small-group-practice mode with **shared client list, per-clinician audit identity, shared template library, per-clinician inference budgets**. **When it becomes unavoidable:** the second time the design partner says "my associate is starting next month". Plan for it; do not build it yet. **Effort:** medium if the authentication and tenant model are set up correctly now (they appear to be — intake submissions are already tenant-scoped); large if a multi-clinician concept has to be retrofitted later.
 
 ## Seam 6 — White-label / per-practice branding (S)
 
-**Today:** Sona brand on every parent-facing artefact. **Tomorrow:** per-tenant logo, primary colour token, practice name in the form header, sender display name (the email-from rule per ADR-005's portal-first model is unaffected). **Effort:** S — Flutter theming + a `tenants.branding` JSONB column + an upload route. **Why now:** it removes the "that's Speech Sanctuary's form" objection in one sprint.
+**Today:** Sona brand on every parent-facing artefact. **Tomorrow:** per-tenant logo, primary colour token, practice name in the form header, sender display name. The team's portal-first parent-comms model is unaffected. **Effort:** small — Flutter theming, a per-tenant branding store on the data side, and a logo-upload endpoint. **Why now:** it removes the "that's Speech Sanctuary's form" objection in one sprint.
 
 ## Seam 7 — Specialty-aware persona library (S, ongoing)
 
@@ -374,7 +376,7 @@ Integrations are graded by **what they unlock** vs **what they cost**. "Cost" in
 <tbody>
 <tr>
 <td><strong>Calendar (Google / Outlook / iCloud)</strong> — round-trip booking for the 20-min free consult</td>
-<td>Closes the biggest "two products, two diaries" pain that emerged from the design-partner interview.</td>
+<td>Closes the biggest "two products, two diaries" pain raised in the design-partner interview.</td>
 <td>Low. Standard OAuth flows. Both Google Calendar API and Microsoft Graph have well-documented patterns.</td>
 <td><strong>MVP / Year 1</strong></td>
 </tr>
@@ -457,7 +459,7 @@ Integrations are graded by **what they unlock** vs **what they cost**. "Cost" in
 <tr>
 <td><strong>HIPAA BAA with GCP + subprocessors</strong></td>
 <td>Lawful US PHI processing</td>
-<td>Partly done — the Google BAA is covered; Postmark refusal to sign a BAA already documented (ADR-005). Email-as-channel becomes portal-first by construction.</td>
+<td>Partly done — the Google Cloud BAA is in place. The team has already concluded no transactional-email vendor will sign a BAA at this scale, so parent communications are delivered via an authenticated portal (the Epic MyChart model) rather than email.</td>
 <td><strong>Year 2+</strong></td>
 </tr>
 <tr>
@@ -510,7 +512,7 @@ Integrations are graded by **what they unlock** vs **what they cost**. "Cost" in
 
 ## Cost-side reality check
 
-Sona runs a single L4 24 GB GPU in `uk/dev` for Gemma 3 27B INT4 inference. Each case triggers up to three inference passes: prep brief, session plan, parent summary. Per-case token budgets in the ML docs total roughly **10–15K tokens of input + 3K of output**, twice over (because of the simplification pass in the summary generator). A single L4 supports ~4 concurrent jobs; on-demand GCP L4 reservation rates put per-case inference cost in the **single-digit pence range at scale, mid-double-digit pence at MVP utilisation**. This is a directional figure — the founders should price-validate it against the bill before pricing materially below £49 / clinician / mo.
+Per the team's architecture, Sona runs a single mid-tier GPU in the UK Google Cloud region for the AI inference. Each case triggers up to three inference passes: prep brief, session plan, parent summary. Per-case token budgets total roughly **10–15K tokens of input + 3K of output**, twice over (the parent summary runs a second simplification pass to hit a target reading age). A single L4 supports ~4 concurrent jobs; on-demand GCP L4 reservation rates put per-case inference cost in the **single-digit pence range at scale, mid-double-digit pence at MVP utilisation**. This is a directional figure — the founders should price-validate it against the bill before pricing materially below £49 / clinician / mo.
 
 At the design partner's stated 3–8 cases / week / clinician, inference cost per clinician per month is in the **£10–£25 range, not the £200 range**. That keeps gross margin healthy at any of the per-clinician price points below.
 
@@ -581,7 +583,7 @@ Ordered by leverage. Day windows are windows, not deadlines — the slice that f
 
 1. **(Days 1–14) Run the one-therapist-fit audit with a second SLT.** Specifically: an SLT outside the design-partner practice, ideally adult voice or AAC, ideally an ASLTIP member. Use the audit table above as the agenda; ask them to walk the demo and call out leaks. **Owner:** founders. **Effort:** 1 working day of prep + 90 minutes interview. **Metric:** at least 5 leaks confirmed, at least 2 contradicted (i.e. *not* a problem for that SLT).
 2. **(Days 1–30) Ship seam 6 (white-label branding) and seam 3 (vocabulary pack).** The smallest possible product changes that remove the "that's Speech Sanctuary's form" objection. **Owner:** engineering. **Effort:** S each. **Metric:** the demo runs end-to-end under a fictional second-practice name, with no Speech Sanctuary string visible.
-3. **(Days 15–60) Pick one of: intake template engine (seam 1) OR the AI-loop completion (prep brief, plan, summary — the "vision" side of the feedback-demo brief §6). Not both.** This is the single biggest engineering decision in the next quarter. The template engine generalises the product. The AI loop completes the demo's most fragile claims. The wrong call is to try to do both at half-speed. **Owner:** founders. **Effort:** decision-only this sprint; M–L next quarter.
+3. **(Days 15–60) Pick one of: intake template engine (seam 1) OR the AI-loop completion — i.e. shipping the prep brief, session plan, and parent summary end-to-end with real model output rather than stub content. Not both.** This is the single biggest engineering decision in the next quarter. The template engine generalises the product. The AI loop completes the demo's most fragile claims. The wrong call is to try to do both at half-speed. **Owner:** founders. **Effort:** decision-only this sprint; M–L next quarter.
 4. **(Days 30–60) Stand up a costed DSPT readiness plan with a specialist consultancy.** Three quotes; choose one; book the work for the autumn. DSPT is the gate for everything NHS-adjacent and is achievable as a self-assessment — but real evidence files, an asset register, and a backup-restore drill take preparation. **Owner:** founders. **Effort:** half a day of vendor calls. **Metric:** chosen consultancy, scoped quote.
 5. **(Days 30–90) Approach ASLTIP about a member-benefit slot or directory listing.** ASLTIP markets to 1,800 of the highest-quality UK private SLTs and explicitly hosts events that surface tooling (OEPR, the most clinically aware UK competitor, markets via ASLTIP events). A discounted listing or a co-marketed launch is the single highest-leverage GTM move available. **Owner:** founders. **Effort:** S. **Metric:** a meeting with the ASLTIP board.
 6. **(Days 60–90) Build "Sona for Cliniko" — write the intake brief, plan, and summary into a Cliniko patient record.** Stop competing with Cliniko; complement it. PatientNotes' existence on Cliniko's connected-apps marketplace is proof the distribution model works. This converts every Cliniko-using ASLTIP member into a prospect rather than a defended account. **Owner:** engineering. **Effort:** M. **Metric:** one paying clinician using both products in production.
@@ -600,19 +602,16 @@ In priority order; each blocks something downstream.
 
 # Sources
 
-## Repo paths
+## Internal source artefacts (non-public, team repository)
 
-- `docs/mvp-brief.md` — original positioning, scope, interview synthesis with the design partner.
-- `docs/marketing/feedback-demo-brief.md` — demo deck and video brief; the "real vs vision" 90-day split (§6).
-- `docs/intake-form-spec.md` — the 8-page Speech-Sanctuary form.
-- `docs/ml/triage-capture.md` — triage outcomes, prompt structure, target metrics.
-- `docs/ml/session-plan.md` — Zod schema with the 7-domain enum and EHCP flag.
-- `docs/ml/summary-generator.md` — tone slider, reading level, mandatory AI disclosure.
-- `docs/decisions/001..005-*.md` — ADRs (data residency, Flutter+GenUI, air-gapped Gemma, unified envs, portal-first comms).
-- `docs/architecture-gcp-hipaa.md` — UK/US split, region pinning, BAA chain.
-- `scripts/personas/*.json` — Aria (4y speech sounds), Jaden (7y stutter+EHCP), Mia (11y social comm), Theo (3y feeding).
-- `apps/sona/lib/features/parent/intake/parent_intake_step_screen.dart` — the hard-coded 8-step intake.
-- `apps/api/src/services/intake-context.ts` — JSONB-blob persistence; no template engine.
+- **MVP brief** — original positioning, scope, design-partner interview synthesis.
+- **Feedback-demo brief** — the "real today vs 90-day vision" split that underpins every honesty claim in this memo.
+- **Intake-form specification** — the 8-page Speech Sanctuary parent questionnaire the MVP form is built from.
+- **AI design notes for triage, session-plan, and parent-summary** — output schemas, prompt structures, target metrics.
+- **Five architecture decision records** covering data residency, the Flutter front-end, the self-hosted AI model, environment access controls, and portal-first parent communications.
+- **Architecture overview** — UK/US split, region pinning, business-associate-agreement chain.
+- **Four synthetic demo personas** — 4-year-old speech-sounds, 7-year-old stutter with EHCP, 11-year-old social communication, 3-year-old feeding.
+- **Flutter app and API source for the parent intake form** — the current hard-coded eight-step flow.
 
 ## Web sources (URL + access date, all 2026-05-28)
 
@@ -637,7 +636,7 @@ In priority order; each blocks something downstream.
 
 # Engineering footnotes
 
-- **Intake template engine concrete shape.** Schema: `intake_templates(id, tenant_id, specialty, locale, version, steps_jsonb, branches_jsonb, vocab_pack_id)`. Flutter renderer reads the `steps_jsonb` and dispatches to step widgets keyed by `kind: 'text' | 'date' | 'multi_select' | 'yes_no_detail' | 'composite_gp' | 'consent_block'`. The current 8-step form ships as the first row in this table, version `v1-paediatric-uk`. The Gemma context window for prep brief / session plan / summary already operates on the answers blob, not on hard-coded step IDs — so the template engine is purely a client + per-tenant authoring change, not an LLM-context change.
-- **Self-hosted Gemma economics.** L4 24 GB INT4 AWQ Gemma 3 27B in `europe-west2`. Per ADR-003, 4 concurrent jobs / GPU; per-job P95 ≤ 8 s (prep) + ≤ 15 s (plan) + ≤ 20 s (summary). At an L4 reservation rate and pilot caseload (design partner ≈ 8 cases/wk ≈ 32/mo), per-clinician inference cost is in the **£10–£25/mo** range, dominated by reservation rather than utilisation. At 50 clinicians on the same L4, marginal per-clinician cost compresses below £5.
-- **GP Connect — concrete onboarding shape.** Per NHS Digital, retrieved 2026-05-28: prereqs are DSPT Standards Met + HSCN access + PDS-compliant identity (or third-party PDS proxy) + IG model compliance + RBAC + CSO appointment compliant with DCB0129 + DCB0160. Onboarding = use-case submission → approval → 6-month dev window → SCAL evidence → multi-Gate testing (test environments per Gate) → go-live. The vLLM / Gemma stack is irrelevant to GP Connect onboarding; the API and tenant-routing layers (`apps/api/src/services/`) are where the FHIR R3 client lives.
+- **Intake template engine concrete shape.** A new database table holds versioned, per-tenant, per-specialty intake schemas (id, tenant, specialty, locale, version, steps, branches, vocabulary-pack reference). The Flutter renderer reads the steps and dispatches to widget types keyed by field kind (text, date, multi-select, yes/no-with-detail, composite GP details, consent block). The current 8-step form ships as the first row, version `v1-paediatric-uk`. The AI context window for prep brief / session plan / summary already operates on the form's answers blob rather than on hard-coded step IDs — so the template engine is purely a client + per-tenant authoring change, not an AI-context change.
+- **Self-hosted Gemma economics.** L4 24 GB INT4 AWQ Gemma 3 27B in the London Google Cloud region. Per the AI architecture decision, 4 concurrent jobs / GPU; per-job P95 ≤ 8 s (prep) + ≤ 15 s (plan) + ≤ 20 s (summary). At an L4 reservation rate and pilot caseload (design partner ≈ 8 cases/wk ≈ 32/mo), per-clinician inference cost is in the **£10–£25/mo** range, dominated by reservation rather than utilisation. At 50 clinicians on the same L4, marginal per-clinician cost compresses below £5.
+- **GP Connect — concrete onboarding shape.** Per NHS Digital, retrieved 2026-05-28: prereqs are DSPT Standards Met + HSCN access + PDS-compliant identity (or third-party PDS proxy) + IG model compliance + RBAC + CSO appointment compliant with DCB0129 + DCB0160. Onboarding = use-case submission → approval → 6-month dev window → SCAL evidence → multi-Gate testing (test environments per Gate) → go-live. The self-hosted AI stack is irrelevant to GP Connect onboarding; the API and tenant-routing layers are where the FHIR R3 client lives.
 - **OEPR and Cliniko on the same diagram.** OEPR is a domain-specific record system; Cliniko is a generalist PMS with an AI-scribe marketplace. Sona's natural position is on the **A2UI / read-modify side**, not on the records side — i.e. Sona writes intake/plan/summary objects into whichever record system the practice runs (OEPR via TOMs-aware mapping; Cliniko via patient-form templates + chart notes). Treat OEPR as a future read/write target, not a competitor to be displaced.
