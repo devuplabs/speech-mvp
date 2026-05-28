@@ -34,7 +34,7 @@ using `notion-update-page` with `content_updates` against the underlying
 
 | # | Input | Path | Note |
 |---|---|---|---|
-| 1 | MVP brief v0.1 | `docs/mvp-brief.md` | Source of truth for the 8-step intake scope, Monal interview, "periphery before clinical core", solo-practitioner default. |
+| 1 | MVP brief v0.1 | `docs/mvp-brief.md` | Source of truth for the 8-step intake scope, the design-partner interview, "periphery before clinical core", solo-practitioner default. |
 | 2 | Feedback-demo brief | `docs/marketing/feedback-demo-brief.md` | "Real today vs 90-day vision" split. Banned-words list for clinician-facing copy. |
 | 3 | Intake form spec | `docs/intake-form-spec.md` | The 8-page Speech-Sanctuary-branded parent form. Single biggest one-customer-tailoring surface — every field audited in Q1. |
 | 4 | Triage capture design | `docs/ml/triage-capture.md` | Four triage outcomes: `strategy_only / short_block / full_assessment / refer_out`. Confirms paediatric framing in the prompt. |
@@ -114,7 +114,7 @@ agent runs autonomously and waiting for confirmation would block the deliverable
 | # | Question | Default chosen | Rationale |
 |---|---|---|---|
 | 1 | Notion parent | Document Hub data source `345c6894-396e-8037-92e6-000b2988579e`; Category = `Strategy doc` + `Market Research` | Only data source on the database; existing tag taxonomy includes "Strategy doc". |
-| 2 | Audience weight | Founders primary, investor secondary | As §2 of the brief specifies (revised post-publish to drop named individuals; the original §2 wording was *Senthil primary, Monal secondary, investor tertiary*). |
+| 2 | Audience weight | Founders primary, investor secondary | As §2 of the brief specifies. (Revised post-publish to drop named individuals from both the brief and the published Notion page; the doc now refers to "founders", "investor", and "the design partner" only.) |
 | 3 | Geography | UK-first; US/AU/CA in future-proofing and integration sections only | Matches design partner and personas. |
 | 4 | Competitor list | The brief's list **plus** Octopus EPR, Smilenotes UK, Clindoc, PatientNotes | Added because they are direct UK or directly-Cliniko-integrated SLT-aware tools surfaced in the web search. |
 | 5 | Moat stress-test | All candidates ranked honestly; air-gapped Gemma scored as **medium-low defensibility, short half-life** | The brief explicitly invites this. |

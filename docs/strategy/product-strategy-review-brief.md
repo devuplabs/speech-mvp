@@ -8,7 +8,7 @@
 
 ## 1. Mission
 
-The MVP demo (`assets/marketing/`, brief: `docs/marketing/feedback-demo-brief.md`) is convincing for **one** speech therapist (Monal Gajjar — UK private-practice SLT, the design partner). That has surfaced the next-order questions the founder needs answered before pitching to a second therapist, an NHS commissioner, or an investor:
+The MVP demo (`assets/marketing/`, brief: `docs/marketing/feedback-demo-brief.md`) is convincing for **one** speech therapist (the UK private-practice SLT acting as design partner). That has surfaced the next-order questions the founders need answered before pitching to a second therapist, an NHS commissioner, or an investor:
 
 1. **Single-customer fit risk.** The product was scoped from one interview with one clinician. Will a different SLT walk into the demo, see Speech-Sanctuary-shaped flows, and immediately discount Sona? Where exactly does the "one-therapist tailoring" leak through — intake fields, plan templates, vocabulary, branding, workflow assumptions?
 2. **Unique selling point.** In a sentence and in a paragraph, why would an SLT buy Sona instead of (a) staying with ChatGPT + Cliniko, (b) using a generic AI scribe like Heidi/Nabla/Suki, or (c) waiting for their existing PMS (Cliniko, Jane App, Power Diary, WriteUpp) to ship AI features? What is the **moat** — not the feature list?
@@ -35,7 +35,7 @@ Do not skip. The credibility of the output depends on grounding the analysis in 
 
 | Order | Input | Path | Why it matters |
 |---|---|---|---|
-| 1 | MVP brief | `docs/mvp-brief.md` | Original positioning, scope, principles, roadmap, the Monal interview synthesis. Source of truth for "what we said we'd build." |
+| 1 | MVP brief | `docs/mvp-brief.md` | Original positioning, scope, principles, roadmap, the design-partner interview synthesis. Source of truth for "what we said we'd build." |
 | 2 | Feedback-demo brief | `docs/marketing/feedback-demo-brief.md` | What was actually pitched in the demo (deck + video). Honesty constraints and the "real vs vision" split live here. |
 | 3 | Demo deliverables | `assets/marketing/deck/slides-src/`, `assets/marketing/video/captions.json` | The exact words and visuals the reviewers will have just seen. Quote them sparingly when grounding gaps. |
 | 4 | Intake form spec (original) | `docs/intake-form-spec.md` | The 8-page Speech-Sanctuary-branded parent form. Single biggest one-customer-tailoring surface. Read every field. |
@@ -60,7 +60,7 @@ Address all five. Order in the Notion page is up to you, but the TL;DR must touc
 Audit the MVP for assumptions that came from one clinician and would be wrong for the next. Cover at minimum:
 
 - **Parent intake form.** Compare `docs/intake-form-spec.md` field-by-field against what a generalist paediatric SLT would actually ask. Flag fields that are Speech-Sanctuary-specific copy, UK-specific (GP, EHCP, nursery SENCO), age-band-specific (0–11 child framing — no adult clients), or specialty-specific (no AAC, dysphagia, transgender voice, adult stutter intake variants).
-- **Clinician workflow.** Triage outcomes (`strategy only / short block / full assessment / refer out`) — are these universal or Monal-shaped? Booking flow (20-min free consult) — assumes private practice, not NHS.
+- **Clinician workflow.** Triage outcomes (`strategy only / short block / full assessment / refer out`) — are these universal or design-partner-shaped? Booking flow (20-min free consult) — assumes private practice, not NHS.
 - **AI output shapes.** Session plan structure (goals / activities / home practice / materials / parent goals), parent-summary tone slider — do these generalise to adult voice therapy, AAC sessions, feeding clinics?
 - **Vocabulary & branding.** "Parent" (not "carer" / "client" / "patient" / "family"), "consult" (not "appointment"), EHCP references, UK-only regulators (HCPC, RCSLT). What changes for US (ASHA, IEP, IDEA), AU (SPA), CA (SAC)?
 - **Data model.** Schema and persona files — anything hard-coded for one practice?
@@ -154,7 +154,7 @@ Create **one** page (not a database row, not a collection of pages) in the Sona 
 Steps:
 
 1. Call `notion-fetch` on the database URL above to read the schema and discover the `data_source_id` (per `mcps/user-notion/tools/notion-fetch.json` and `notion-create-pages.json`). If the database has multiple data sources, choose the one whose schema matches a strategy / research document (not a tasks board).
-2. If the database has required properties (e.g., Type, Status, Owner), fill them sensibly: Type ≈ "Strategy" or "Research", Status ≈ "Draft" or "In review", Owner ≈ Senthil.
+2. If the database has required properties (e.g., Type, Status, Owner), fill them sensibly: Type ≈ "Strategy" or "Research", Status ≈ "Draft" or "In review", Owner ≈ a founder.
 3. **Page title:** `Sona — Product Strategy & Differentiation Review (May 2026)`.
 4. **Icon:** `🧭`. **Cover:** none.
 
@@ -192,7 +192,7 @@ Constraints on the Notion page:
 - **No invented facts.** Every numeric or competitor claim needs a source — either a repo path or a URL with access date. Use web search for competitors, regulators, framework specs. The `user-google-developer-knowledge` MCP is good for GCP/FHIR specifics; the web is best for competitor pricing and NHS framework status.
 - **UK-first frame** (matches design partner and current personas). US/AU/CA appear in the future-proofing and integration sections, not the headline.
 - **Honesty about MVP gaps.** If something the strategy depends on isn't built yet, say so plainly. Reuse the "Real today vs 90-day vision" split from `docs/marketing/feedback-demo-brief.md` §6.
-- **No tech jargon in the Q1, Q2, and recommendations sections** (those will be skimmed by Monal). Tech detail is fine in Q3–Q4 and the architecture footnotes.
+- **No tech jargon in the Q1, Q2, and recommendations sections** (those will be skimmed by clinical readers). Tech detail is fine in Q3–Q4 and the architecture footnotes.
 - **No PHI, ever.** Personas only when illustrating.
 
 ### 5.2 The PR (this brief + a short research log)
