@@ -577,6 +577,20 @@ At the design partner's stated 3–8 cases / week / clinician, inference cost pe
 
 **Why £79 and not £49 (Clindoc) or £99 (Heidi Pro era):** Sona is not a scribe-only product, so it should not be priced like one. £79 sits exactly between Smilenotes (£5, no AI) and Heidi Clinician (~£120 GBP, scribe-only) and quantifies the bundle: PMS-light + AI loop + UK residency + audit. The price-anchor effect of being deliberately "between" two known reference points helps the discovery call.
 
+# 6. Market size and growth path
+
+Sona has three concentric markets, each with a different shape. All figures below are directional sketches from public membership data and the team's pricing recommendation, not primary survey data — they should be tightened with a willingness-to-pay study before being put in a deck.
+
+**Wedge: UK private SLT (Years 1–2).** ASLTIP lists ~1,800 members; another ~500–1,000 independents work outside it. At the recommended £79 / clinician / month, the UK private-SLT vertical is **~£2.4M ARR at 100% capture**. A realistic 5-year ceiling of 15–25% capture is **£350–600k ARR** — a profitable 2–5 person business, but below the bar for a venture return on its own.
+
+**Expansion: NHS and clinic mode (Years 2–4).** Clinic mode (£149 base + £49 / seat) lifts average revenue per practice 2–3x. DSPT + a G-Cloud listing opens ICB-level deals at typical small-tool framework sizes of **£15–25k per ICB per year** (England has 42 ICBs). 8–12 ICB wins over Years 3–4 add **£120–300k of NHS ARR** on top of the private base. UK ceiling at this stage: **~£1.5–2.5M ARR**.
+
+**Prize: US, AU, CA (Year 3+).** US private-practice SLPs number around 25,000 — roughly 10x the UK (ASHA workforce data, ~14% of certified SLPs in private settings). At equivalent pricing that is a **~£20–25M ARR ceiling**. Distribution is the bottleneck; the realistic entry is the Jane App and Cliniko marketplaces (the "Sona for Cliniko" wedge from section 4), not direct sales. AU + CA add another **~£3–4M ARR ceiling**.
+
+**What this implies for investment.** Year-1 milestones (20–50 paying clinicians, £20–50k ARR) are reachable on **seed funding of £400–800k** for an 18-month runway for a 2–3 person team. The clinic-mode + DSPT bet is the **Series A test**: 10–15% UK base capture plus 3–5 NHS framework wins inside two years puts the company on a credible **£5–10M ARR trajectory** by Years 4–5.
+
+**Honest read.** The UK private-SLT market alone sustains a profitable small business, not a venture return. The investable thesis hinges on the **Cliniko marketplace wedge proving the model in the UK, then porting to Jane App for US distribution (10x the market)**. Without that distribution mechanic, Sona is bootstrappable but not venturable.
+
 # Recommendations — what to do in the next 30 / 60 / 90 days
 
 Ordered by leverage. Day windows are windows, not deadlines — the slice that fits the team's actual capacity is the right one.
