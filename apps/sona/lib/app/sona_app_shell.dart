@@ -570,12 +570,22 @@ class _SonaAppShellState extends State<SonaAppShell> {
     _syncTenantFromCaseDetail(detail);
     final caseMap = detail['case'] as Map<String, dynamic>?;
     final status = caseMap?['status'] as String? ?? '';
+    final intakeMap = detail['intake'] as Map<String, dynamic>?;
+    final answers = intakeMap?['answers'] as Map<String, dynamic>?;
     setState(() {
+      _state.caseDetail = detail;
       _status = 'Case: $status';
       _state.prepStatus = prepLabelFromCaseStatus(status);
       final name = caseMap?['childDisplayName'] as String?;
       if (name != null && name.isNotEmpty) {
         _state.intake.childName = name;
+      }
+      // Hydrate the intake form data from the submitted answers so screens
+      // that read `state.intake` (review summary, parent summary preview)
+      // surface this case's content rather than whatever the clinician
+      // happened to be looking at last.
+      if (answers != null && intakeMap?['submittedAt'] != null) {
+        _state.applyDraftAnswers(answers);
       }
     });
   }
@@ -1165,15 +1175,19 @@ class _SonaAppShellState extends State<SonaAppShell> {
           },
         ),
       SonaRoute.clinicianPrep => ClinicianPrepScreen(
+          caseDetail: _state.caseDetail,
           onBackToday: () => _go(SonaRoute.clinicianToday),
           onContinueTriage: () => _go(SonaRoute.clinicianTriage),
+          onRefresh: _state.caseId == null ? null : _refreshCase,
         ),
       SonaRoute.clinicianTriage => ClinicianTriageScreen(
+          caseDetail: _state.caseDetail,
           busy: _busy,
           onBackPrep: () => _go(SonaRoute.clinicianPrep),
           onPublishSummary: _publishSummary,
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(
+          caseDetail: _state.caseDetail,
           summaryHtml: _parentSummaryHtml,
           onBackClinician: () => _go(SonaRoute.clinicianTriage),
         ),

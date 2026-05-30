@@ -8,10 +8,55 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
     super.key,
     required this.summaryHtml,
     required this.onBackClinician,
+    this.caseDetail,
   });
 
   final String? summaryHtml;
   final VoidCallback onBackClinician;
+
+  /// `{case: {...}, intake: {...}, drafts: [...]}` — the case the clinician
+  /// clicked through to publish. Phone preview shows THAT child's name +
+  /// intake-derived content rather than a hardcoded persona.
+  final Map<String, dynamic>? caseDetail;
+
+  String get _childName {
+    final caseMap = caseDetail?['case'] as Map<String, dynamic>?;
+    final fromCase = (caseMap?['childDisplayName'] as String?)?.trim();
+    if (fromCase != null && fromCase.isNotEmpty) return fromCase;
+    final answers = caseDetail?['intake']?['answers'] as Map<String, dynamic>?;
+    final fromIntake = (answers?['childName'] as String?)?.trim();
+    if (fromIntake != null && fromIntake.isNotEmpty) return fromIntake;
+    return 'your child';
+  }
+
+  Map<String, dynamic>? get _answers =>
+      caseDetail?['intake']?['answers'] as Map<String, dynamic>?;
+
+  String? get _mainConcern => (_answers?['mainConcern'] as String?)?.trim();
+  List<String> get _difficulties {
+    final raw = _answers?['difficulties'];
+    if (raw is List) return raw.whereType<String>().toList(growable: false);
+    return const [];
+  }
+
+  /// Top items the clinician (or LLM) added to the session plan — surfaced
+  /// to the parent verbatim. Falls back to a small fixed set when no plan
+  /// draft is present yet.
+  List<String> _planBullets(String key, List<String> fallback) {
+    final drafts =
+        (caseDetail?['drafts'] as List?)?.cast<Map<String, dynamic>>() ??
+            const <Map<String, dynamic>>[];
+    for (final d in drafts) {
+      if (d['kind'] == 'session_plan') {
+        final sections =
+            (d['content'] as Map<String, dynamic>?)?['sections']
+                as Map<String, dynamic>?;
+        final list = (sections?[key] as List?)?.cast<String>();
+        if (list != null && list.isNotEmpty) return list.take(4).toList();
+      }
+    }
+    return fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,31 +84,36 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Aria\'s consultation summary',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      Text(
+                        "$_childName's consultation summary",
+                        style: const TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       const Text(
                         'From Monal Gajjar SLT · Published today',
-                        style: TextStyle(fontSize: 13, color: SonaColors.textMuted),
+                        style: TextStyle(
+                            fontSize: 13, color: SonaColors.textMuted),
                       ),
                       const SizedBox(height: 20),
-                      _section('What we discussed', [
-                        'Aria\'s speech sounds and how they affect everyday communication',
-                        'Eating patterns and when to involve other professionals',
-                      ]),
+                      _section('What we discussed', _whatWeDiscussedBullets()),
                       const SizedBox(height: 12),
-                      _section('What happens next', [
-                        'A formal speech assessment is recommended',
-                        'We\'ll share home practice ideas after the assessment',
-                        'Your next appointment will be booked by the clinic',
-                      ]),
+                      _section(
+                        'What happens next',
+                        _planBullets('goals', const [
+                          'A formal speech assessment is recommended',
+                          "We'll share home practice ideas after the assessment",
+                          'Your next appointment will be booked by the clinic',
+                        ]),
+                      ),
                       const SizedBox(height: 12),
-                      _section('For you at home', [
-                        'Repeat back what Aria says — don\'t correct every sound',
-                        'Offer one new food alongside a safe favourite',
-                      ]),
+                      _section(
+                        'For you at home',
+                        _planBullets('homePractice', const [
+                          "Repeat back what your child says — don't correct every sound",
+                          'Try one short play session per day',
+                        ]),
+                      ),
                       if (summaryHtml != null && summaryHtml!.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -113,6 +163,22 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  List<String> _whatWeDiscussedBullets() {
+    final bullets = <String>[];
+    final concern = _mainConcern;
+    if (concern != null && concern.isNotEmpty) {
+      bullets.add('Your main worry: $concern');
+    }
+    final diffs = _difficulties;
+    if (diffs.isNotEmpty) {
+      bullets.add('Areas we focused on: ${diffs.take(4).join(", ")}');
+    }
+    if (bullets.isEmpty) {
+      bullets.add('We reviewed the intake answers together and agreed where to start.');
+    }
+    return bullets;
   }
 
   Widget _section(String title, List<String> bullets) {

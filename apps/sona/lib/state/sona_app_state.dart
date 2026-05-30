@@ -25,6 +25,12 @@ class SonaAppState extends ChangeNotifier {
   String triageOutcome = 'short_block';
   String prepStatus = 'Ready';
   List<Map<String, dynamic>> clinicianCases = [];
+
+  /// Last full case detail (case + intake + drafts) loaded for [caseId] by
+  /// `_refreshCase()`. The clinician prep / triage / summary screens render
+  /// from this so each row click on the dashboard surfaces THAT row's data
+  /// rather than a hardcoded persona.
+  Map<String, dynamic>? caseDetail;
   IntakeTemplateId intakeTemplateId = IntakeTemplateId.full;
   bool intakeLocked = false;
   bool intakeLinkExpired = false;
@@ -162,6 +168,7 @@ class SonaAppState extends ChangeNotifier {
     triageOutcome = 'short_block';
     prepStatus = 'Ready';
     clinicianCases = [];
+    caseDetail = null;
     intake
       ..email = ''
       ..childName = ''
