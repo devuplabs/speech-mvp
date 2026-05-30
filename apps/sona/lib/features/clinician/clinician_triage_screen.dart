@@ -9,12 +9,27 @@ class ClinicianTriageScreen extends StatelessWidget {
     super.key,
     required this.onPublishSummary,
     required this.onBackPrep,
+    this.caseDetail,
     this.busy = false,
   });
 
+  /// `{case: {...}, intake: {...}, drafts: [...]}` — the case the clinician
+  /// clicked on Today / Clients. Header reads the child's display name from
+  /// this rather than hardcoding a persona.
+  final Map<String, dynamic>? caseDetail;
   final VoidCallback onPublishSummary;
   final VoidCallback onBackPrep;
   final bool busy;
+
+  String get _childName {
+    final caseMap = caseDetail?['case'] as Map<String, dynamic>?;
+    final fromCase = (caseMap?['childDisplayName'] as String?)?.trim();
+    if (fromCase != null && fromCase.isNotEmpty) return fromCase;
+    final answers = caseDetail?['intake']?['answers'] as Map<String, dynamic>?;
+    final fromIntake = (answers?['childName'] as String?)?.trim();
+    if (fromIntake != null && fromIntake.isNotEmpty) return fromIntake;
+    return 'Client';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +46,10 @@ class ClinicianTriageScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextButton(onPressed: onBackPrep, child: const Text('← Consult prep')),
-              const Text('Aria M. · Free consultation complete', style: TextStyle(fontSize: 12, color: SonaColors.textMuted)),
+              Text(
+                '$_childName · Free consultation complete',
+                style: const TextStyle(fontSize: 12, color: SonaColors.textMuted),
+              ),
               const SonaPageTitle('Triage & session plan', style: SonaTypography.clinicianTitle),
             ],
           ),
