@@ -1,20 +1,99 @@
 import 'dart:convert';
 
 import 'package:sona/services/api_client.dart';
+import 'package:sona/utils/intake_field_labels.dart';
+
+/// One field-level issue from a `validation_failed` API response.
+typedef ApiFieldIssue = ({String fieldKey, String label, String message});
+
+/// Parsed API validation payload for routing to the intake form.
+class ApiValidationFailure {
+  ApiValidationFailure({required this.issues});
+
+  final List<ApiFieldIssue> issues;
+
+  String? get firstFieldKey => issues.isEmpty ? null : issues.first.fieldKey;
+
+  String get summaryMessage {
+    if (issues.isEmpty) return 'Some answers are invalid. Check required fields.';
+    final parts = issues
+        .map((i) => '${i.label} (${i.message})')
+        .join(', ');
+    return 'Please fix: $parts.';
+  }
+}
+
+String _normalizeFieldKey(String raw) {
+  final key = raw.trim();
+  if (key.startsWith('answers.')) return key.substring('answers.'.length);
+  return key;
+}
+
+String _messageForField(dynamic raw) {
+  if (raw is List && raw.isNotEmpty) {
+    return raw.first.toString();
+  }
+  return raw?.toString() ?? 'invalid';
+}
+
+/// Returns structured validation when [error] is a 400 `validation_failed` body.
+ApiValidationFailure? parseApiValidationFailure(SonaApiException error) {
+  if (error.statusCode != 400 || !error.body.contains('validation_failed')) {
+    return null;
+  }
+  try {
+    final map = jsonDecode(error.body) as Map<String, dynamic>;
+    final issuesRoot = map['issues'];
+    if (issuesRoot is! Map<String, dynamic>) return null;
+
+    final fieldErrors = issuesRoot['fieldErrors'];
+    final formErrors = issuesRoot['formErrors'];
+
+    final issues = <ApiFieldIssue>[];
+
+    if (fieldErrors is Map) {
+      for (final entry in fieldErrors.entries) {
+        final key = _normalizeFieldKey(entry.key.toString());
+        issues.add((
+          fieldKey: key,
+          label: IntakeFieldLabels.labelFor(key),
+          message: _messageForField(entry.value),
+        ));
+      }
+    }
+
+    if (formErrors is List) {
+      for (final err in formErrors) {
+        final msg = err.toString();
+        if (msg.isNotEmpty) {
+          issues.add((
+            fieldKey: 'form',
+            label: 'Form',
+            message: msg,
+          ));
+        }
+      }
+    }
+
+    if (issues.isEmpty) return null;
+    return ApiValidationFailure(issues: issues);
+  } catch (_) {
+    return null;
+  }
+}
 
 /// User-facing hint when Flutter web cannot reach the API.
 String friendlyApiError(Object error) {
   if (error is SonaApiException) {
+    final validation = parseApiValidationFailure(error);
+    if (validation != null) {
+      return validation.summaryMessage;
+    }
     if (error.statusCode == 400 && error.body.contains('validation_failed')) {
-      try {
-        final map = jsonDecode(error.body) as Map<String, dynamic>;
-        final field = map['issues']?['fieldErrors'];
-        if (field is Map && field.isNotEmpty) {
-          final first = field.entries.first;
-          return 'Please check your answers (${first.key}).';
-        }
-      } catch (_) {}
-      return 'Some answers are invalid. Check email addresses and required fields.';
+      final excerpt = error.body.length > 160
+          ? '${error.body.substring(0, 157)}…'
+          : error.body;
+      return 'Validation failed (${error.statusCode}): $excerpt';
     }
     if (error.body.contains('database_not_configured')) {
       return 'API database not configured. Add DATABASE_URL to apps/api/.env, '
