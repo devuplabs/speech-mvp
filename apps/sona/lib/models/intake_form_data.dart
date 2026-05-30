@@ -295,6 +295,76 @@ class IntakeFormData {
     'motherEmail',
   };
 
+  /// Maps intake field keys to the step where they are edited (for API errors).
+  static int stepForFieldKey(String fieldKey) {
+    if (step1aFieldKeys.contains(fieldKey)) return 1;
+    if (step1bFieldKeys.contains(fieldKey)) return 1;
+    const stepFields = <int, Set<String>>{
+      2: {'mainConcern', 'difficulties'},
+      3: {
+        'assessedByOthers',
+        'assessedByOthersDetails',
+        'receivingTherapy',
+        'therapyDetails',
+        'languagesExposed',
+        'parentLanguages',
+        'childLanguages',
+        'familyHistory',
+        'familyHistoryDetails',
+      },
+      4: {
+        'pregnancyHealth',
+        'prematureDetails',
+        'birthWeight',
+        'birthComplications',
+        'afterBirthComplications',
+      },
+      5: {
+        'earlyIllnesses',
+        'generalHealth',
+        'diagnosis',
+        'medications',
+        'hospitalised',
+        'hospitalisedDetails',
+        'hearingTested',
+        'hearingTestedDetails',
+        'earInfections',
+        'earInfectionsDetails',
+        'entInvolvement',
+        'entInvolvementDetails',
+        'visionTested',
+        'visionTestedDetails',
+      },
+      6: {
+        'respondsToName',
+        'ageFirstWords',
+        'ageTwoWordPhrases',
+        'attentionListening',
+        'sentenceExamples',
+        'showsUnderstanding',
+      },
+      7: {
+        'temperament',
+        'socialSkills',
+        'peerInteraction',
+        'favouritePlay',
+        'communicationAwareness',
+      },
+      8: {
+        'schoolNameAddress',
+        'nurseryDays',
+        'senPlan',
+        'anythingElse',
+        'photoConsent',
+        'completedBy',
+      },
+    };
+    for (final entry in stepFields.entries) {
+      if (entry.value.contains(fieldKey)) return entry.key;
+    }
+    return 1;
+  }
+
   /// Field keys rendered on step 1 page 2 (1b): second parent, GP, referral.
   static const Set<String> step1bFieldKeys = {
     'secondParentRelationship',

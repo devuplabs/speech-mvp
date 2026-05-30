@@ -5,6 +5,7 @@ import { aiDrafts, cases } from "../db/schema.js";
 import { buildIntakeContextForLlm, generatePrepBriefLlm } from "../llm/generate-drafts.js";
 import { writeAudit } from "./audit.js";
 import { loadIntakeAnswers } from "./intake-context.js";
+import { buildPrepBriefStubContent } from "./stub-draft-content.js";
 
 /** Prep brief after intake submit — LLM when configured, else MVP stub. */
 export async function draftPrepBrief(db: Db, caseId: string, env?: Env) {
@@ -24,15 +25,11 @@ export async function draftPrepBrief(db: Db, caseId: string, env?: Env) {
   const intakeContext = buildIntakeContextForLlm(answers);
   const childName = row.childDisplayName ?? (answers.childName as string) ?? "Child";
 
-  let stubContent: Record<string, unknown> = {
-    label: "DRAFT — clinician must review",
-    probeAreas: [
-      "Confirm primary concern and onset from intake answers",
-      "Check red flags (feeding, hearing, regression)",
-      "EHCP status if indicated in intake",
-    ],
-    source: "mvp_stub",
-  };
+  let stubContent: Record<string, unknown> = buildPrepBriefStubContent({
+    childDisplayName: childName,
+    mainConcern: answers.mainConcern as string | undefined,
+    ageAtReferral: answers.ageAtReferral as string | undefined,
+  });
   let modelId = "mvp-stub";
 
   if (env) {
