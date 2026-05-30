@@ -22,9 +22,10 @@
 - **Actual:** Text vanishes; controller reverts to empty/stale `widget.value`.
 - **Evidence:** `apps/sona/test/widget/parent_intake_text_persistence_test.dart`
 - **Root cause:** `SonaTextField.didUpdateWidget` overwrote the live controller when the parent rebuilt with a stale `value` prop (web IME / rebuild before model sync).
-- **Fix:** TBD
+- **Root cause:** `SonaTextField.didUpdateWidget` overwrote the live controller when the parent rebuilt with a stale empty `widget.value` (web IME / sibling setState race).
+- **Fix:** `fe0f1f5` — guard stale empty parent value; sync via `TextField.onChanged`.
 - **Regression test:** `apps/sona/test/widget/parent_intake_text_persistence_test.dart`
-- **Status:** 🔴
+- **Status:** 🟢
 
 ---
 
@@ -40,9 +41,9 @@
 - **Actual:** Generic message; user cannot tell what to fix.
 - **Evidence:** `apps/sona/test/api_errors_test.dart`, `apps/api/src/__tests__/intake-validation.test.ts`
 - **Root cause:** `friendlyApiError` surfaced only the first Zod key (not label); server errors were not routed to `pendingValidationFieldKey`.
-- **Fix:** TBD
+- **Fix:** `55da2e7` + `3e7296e` (`_applyApiValidationFailure` in shell) — parse all fieldErrors, human labels, route to form.
 - **Regression test:** `apps/sona/test/api_errors_test.dart`, `apps/api/src/__tests__/intake-validation.test.ts`
-- **Status:** 🔴
+- **Status:** 🟢
 
 ---
 
@@ -58,9 +59,9 @@
 - **Actual:** Stale `caseDetail` until fetch completes; generic stub probe areas look like wrong child.
 - **Evidence:** `apps/sona/test/widget/clinician_screens_uses_case_detail_test.dart`, `apps/api/src/__tests__/prep-brief-stub.test.ts`
 - **Root cause:** `caseDetail` not cleared when `caseId` changes; MVP prep stub did not interpolate child name/concern.
-- **Fix:** TBD
-- **Regression test:** extended clinician widget test + API stub test
-- **Status:** 🔴
+- **Fix:** `3e7296e` — `_selectClinicianCase` clears stale detail; stub interpolation in `stub-draft-content.ts`.
+- **Regression test:** `clinician_screens_uses_case_detail_test.dart`, `prep-brief-stub.test.ts`
+- **Status:** 🟢
 
 ---
 
@@ -72,8 +73,8 @@
 - **Expected:** Loading/empty state until B loads; never show A's name for B's row.
 - **Actual:** Previous `caseDetail` remains visible during fetch.
 - **Root cause:** Same as BUG-003 shell path.
-- **Fix:** merged into BUG-003
-- **Status:** 🔴
+- **Fix:** merged into BUG-003 (`3e7296e`)
+- **Status:** 🟢
 
 ---
 
@@ -85,8 +86,8 @@
 - **Expected:** Stub references child name and main concern.
 - **Actual:** Generic probe area strings with no case-specific text.
 - **Root cause:** Static stub template.
-- **Fix:** merged into BUG-003
-- **Status:** 🔴
+- **Fix:** merged into BUG-003 (`3e7296e`)
+- **Status:** 🟢
 
 ---
 
@@ -98,3 +99,13 @@
 - **Expected:** Reliable automation (out of scope for this pass).
 - **Actual:** Known flake; smoke test used instead.
 - **Status:** ⚪
+
+---
+
+## 15. Run summary (filled in by the agent)
+
+- **Date:** 2026-05-30
+- **Agent:** Composer (Cursor Cloud)
+- **Bug log:** `docs/qa/intake-flow-bug-bash-log.md`
+- **Found / fixed / deferred:** 6 logged (5 fixed, 1 design-debt)
+- **Tests added:** 2 widget files, 1 Dart unit file, 2 API vitest files
