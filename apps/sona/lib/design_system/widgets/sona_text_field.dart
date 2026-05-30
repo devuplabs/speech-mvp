@@ -59,7 +59,17 @@ class _SonaTextFieldState extends State<SonaTextField> {
   @override
   void didUpdateWidget(SonaTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+    if (oldWidget.value == widget.value) return;
+
+    // Parent pushed a new [value]. Do not clobber live typing when the model is
+    // still stale (common on Flutter web when a sibling widget triggers rebuild).
+    if (widget.value.isEmpty && _controller.text.isNotEmpty) {
+      _lastReported = _controller.text;
+      widget.onChanged(_controller.text);
+      return;
+    }
+
+    if (_controller.text != widget.value) {
       _suppressListener = true;
       _controller.text = widget.value;
       _lastReported = widget.value;
@@ -96,6 +106,12 @@ class _SonaTextFieldState extends State<SonaTextField> {
           const SizedBox(height: 6),
           TextField(
             controller: _controller,
+            onChanged: (text) {
+              if (_suppressListener) return;
+              if (text == _lastReported) return;
+              _lastReported = text;
+              widget.onChanged(text);
+            },
             maxLines: widget.maxLines,
             keyboardType: widget.keyboardType,
             autofillHints: widget.autofillHints,
