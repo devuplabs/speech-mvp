@@ -165,6 +165,14 @@ class _SonaAppShellState extends State<SonaAppShell> {
     try {
       await fn();
     } catch (e) {
+      if (e is SonaApiException) {
+        final validation = parseApiValidationFailure(e);
+        if (validation != null) {
+          _applyApiValidationFailure(validation);
+          setState(() => _status = 'Error: ${validation.summaryMessage}');
+          return;
+        }
+      }
       final friendly = friendlyApiError(e);
       setState(() => _status = 'Error: $friendly');
       if (mounted) {
@@ -367,6 +375,35 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Save');
   }
 
+  void _applyApiValidationFailure(ApiValidationFailure failure) {
+    final firstKey = failure.firstFieldKey;
+    if (firstKey == null) return;
+    final step = IntakeFormData.stepForFieldKey(firstKey);
+    setState(() {
+      _state.formStep = step;
+      if (step == 1) {
+        _state.formSubstep =
+            IntakeFormData.step1aFieldKeys.contains(firstKey) ? 0 : 1;
+      } else {
+        _state.formSubstep = 0;
+      }
+      _state.pendingValidationFieldKey = firstKey;
+      _state.pendingValidationMessage = failure.summaryMessage;
+      if (_route == SonaRoute.parentReview) {
+        _route = SonaRoute.parentIntake;
+      }
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(failure.summaryMessage),
+          duration: const Duration(seconds: 8),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   void _showValidationError(({String message, String fieldKey}) err) {
     setState(() {
       _state.pendingValidationFieldKey = err.fieldKey;
@@ -563,6 +600,19 @@ class _SonaAppShellState extends State<SonaAppShell> {
     });
   }
 
+  /// Switches the active clinician case and drops stale detail from a prior row
+  /// so prep/triage never flash the wrong child while the new fetch is in flight.
+  void _selectClinicianCase(String caseId) {
+    setState(() {
+      _state.caseId = caseId;
+      final loadedId =
+          (_state.caseDetail?['case'] as Map<String, dynamic>?)?['id'] as String?;
+      if (loadedId != caseId) {
+        _state.caseDetail = null;
+      }
+    });
+  }
+
   Future<void> _refreshCase() async {
     final id = _state.caseId;
     if (id == null) return;
@@ -694,8 +744,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
   }
 
   Future<void> _openIntakeReview(String caseId) async {
+    _selectClinicianCase(caseId);
     await _run(() async {
-      _state.caseId = caseId;
       final detail = await _api.getCase(caseId);
       _syncTenantFromCaseDetail(detail);
       final intake = detail['intake'] as Map<String, dynamic>?;
@@ -1119,7 +1169,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
           state: _state,
           onRefresh: _loadClinicianDashboard,
           onOpenCase: (caseId) {
-            setState(() => _state.caseId = caseId);
+            _selectClinicianCase(caseId);
             _refreshCase();
             _go(SonaRoute.clinicianPrep);
           },
@@ -1195,7 +1245,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
           state: _state,
           showAvailabilityBanner: _needsAvailabilityConfirm,
           onOpenPrep: (caseId) {
-            setState(() => _state.caseId = caseId);
+            _selectClinicianCase(caseId);
             _refreshCase();
             _go(SonaRoute.clinicianPrep);
           },

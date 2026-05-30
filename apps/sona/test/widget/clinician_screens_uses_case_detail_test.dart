@@ -14,6 +14,29 @@ import 'package:sona/features/clinician/clinician_triage_screen.dart';
 /// We use Jaden (7yo stutter persona) on purpose — Aria's name MUST NOT
 /// appear anywhere on the rendered tree when a non-Aria case is loaded.
 
+Map<String, dynamic> _ariaDetail() => {
+      'case': {
+        'id': 'case-aria',
+        'tenantId': 't-1',
+        'status': 'prep_ready',
+        'parentEmail': 'emma.m@example.com',
+        'childDisplayName': 'Aria M.',
+      },
+      'intake': {
+        'id': 'intake-aria',
+        'caseId': 'case-aria',
+        'answers': {
+          'childName': 'Aria M.',
+          'email': 'emma.m@example.com',
+          'mainConcern': 'Selective mutism at school — speaks freely at home.',
+          'difficulties': ['Expressing ideas clearly'],
+          'ageAtReferral': '5',
+        },
+        'submittedAt': '2026-05-29T09:00:00Z',
+      },
+      'drafts': [],
+    };
+
 Map<String, dynamic> _jadenDetail() => {
       'case': {
         'id': 'case-jaden',
@@ -102,6 +125,16 @@ Future<void> _pumpPrep(WidgetTester tester, Map<String, dynamic>? detail) async 
 }
 
 void main() {
+  testWidgets('switching from Aria case detail to Jaden never shows Aria', (tester) async {
+    await _pumpPrep(tester, _ariaDetail());
+    expect(find.textContaining('Aria M.'), findsWidgets);
+
+    await _pumpPrep(tester, _jadenDetail());
+    expect(find.textContaining('Jaden O.'), findsWidgets);
+    expect(find.textContaining('Aria'), findsNothing);
+    expect(find.textContaining('Selective mutism'), findsNothing);
+  });
+
   testWidgets('prep screen header reads child name from caseDetail (not Aria)',
       (tester) async {
     await _pumpPrep(tester, _jadenDetail());

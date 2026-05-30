@@ -5,6 +5,7 @@ import { aiDrafts, cases, triageRecords } from "../db/schema.js";
 import { buildIntakeContextForLlm, generateSessionPlanLlm } from "../llm/generate-drafts.js";
 import { writeAudit } from "./audit.js";
 import { loadIntakeAnswers } from "./intake-context.js";
+import { buildSessionPlanStubContent } from "./stub-draft-content.js";
 
 export async function draftSessionPlanStub(db: Db, caseId: string, env?: Env) {
   const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
@@ -25,16 +26,10 @@ export async function draftSessionPlanStub(db: Db, caseId: string, env?: Env) {
     .where(eq(triageRecords.caseId, caseId))
     .limit(1);
 
-  let content: Record<string, unknown> = {
-    label: "DRAFT — clinician must review",
-    sections: {
-      goals: ["Establish baseline for first session"],
-      activities: ["Play-based observation", "Parent interview probes from prep brief"],
-      homePractice: ["Short daily practice suggestion (clinician to refine)"],
-      materials: ["Toys / pictures as appropriate"],
-    },
-    source: "mvp_stub",
-  };
+  let content: Record<string, unknown> = buildSessionPlanStubContent({
+    childDisplayName: childName,
+    mainConcern: answers.mainConcern as string | undefined,
+  });
   let modelId = "mvp-stub";
 
   if (env) {
