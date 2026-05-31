@@ -26,7 +26,34 @@ The MVP was scoped from a 1.5-hour interview with **one** private SLT (the desig
 
 What is **real today**: the 8-step parent intake form, case management, audit trail, the design system, and slot-based booking. What is **vision**: AI prep brief, AI plan, AI parent summary, telehealth, calendar sync. Anything below that relies on the vision side is flagged as such.
 
-# 1. Where the one-therapist tailoring leaks through
+# 1. The full case lifecycle
+
+The founder's flow for a case end-to-end. Each step is tagged with what is built today, what is on the 90-day vision side, and what is roadmap. The MVP's "first 30 days" loop is a subset of this lifecycle, not the whole shape.
+
+<table class="lifecycle">
+<thead>
+<tr><th>#</th><th>Step</th><th>What happens</th><th>State today</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>Omni-channel enquiry</td><td>Parent reaches the practice via any channel — web form, phone, email, WhatsApp, social, school or GP referral.</td><td>Not built. Inbound is ad-hoc today; the practice consolidates into a contact-us form and an email inbox.</td></tr>
+<tr><td>2</td><td>Basic-details questionnaire</td><td>Short, low-friction initial capture: child name, age, one-line concern, parent contact. ~2 minutes to complete.</td><td><strong>Missing.</strong> Today the parent's first form is the deep 8-step intake — too much for first contact.</td></tr>
+<tr><td>3</td><td>Assessment &amp; summary by the clinician</td><td>Clinician reviews the enquiry + basic details and decides whether to invite, refer out, or signpost.</td><td>Vision. The clinician makes this call by hand today; an AI-drafted triage suggestion is on the 90-day vision side.</td></tr>
+<tr><td>4</td><td>Appointment booking</td><td>Confirm the 20-min free consult slot; auto-attach calendar invite and video link.</td><td>Slot-based booking is built. Calendar round-trip and video deep-link are Year-1 integrations (see section 5).</td></tr>
+<tr><td>5</td><td>Pre-appointment details capture</td><td>The deeper structured intake the clinician needs before the consult — the 8-step form lives here.</td><td><strong>Built.</strong> The audited subject of section 2.</td></tr>
+<tr><td>6</td><td>Appointment + summary-report preparation &amp; sharing</td><td>The 20-min consult itself, then AI-drafted prep brief, first-session plan, and parent summary, reviewed and published by the clinician.</td><td>The screens are built; the AI drafting is stub today and is the 90-day vision side.</td></tr>
+<tr><td>7</td><td>Follow-up actions: arrangement &amp; communication</td><td>Between-session carryover — home-practice prompts, school / TA comms, parent feedback fed back into the next session plan.</td><td>Roadmap v0.2. The single biggest unaddressed pain after intake / triage.</td></tr>
+<tr><td>8</td><td>Referral to other agencies</td><td>When the case is out of scope (ENT, OT, paediatrics, audiology) the parent is handed off cleanly with a structured referral packet.</td><td>The triage "refer out" outcome captures the decision today; no integration with external referral systems yet. Natural Year-2 integration play.</td></tr>
+<tr><td>9</td><td>Analysis of cases &amp; planning for future cases</td><td>Caseload-level analytics — override rates, demographics, outcome trends, capacity planning.</td><td>Roadmap. The natural up-sell at clinic scale and the foundation for the multi-clinician version of the product.</td></tr>
+</tbody>
+</table>
+
+Three observations the rest of this memo turns on:
+
+- **The MVP "first 30 days" loop is steps 2 → 6**, with light footprint on step 4. Steps 1, 7, 8, 9 are out of scope today and each opens a distinct future direction.
+- **Steps 1 and 2 are the highest-leverage missing pieces near-term.** Today the parent's first touch is the deep 8-step intake (step 5). That is a high-friction first interaction. A lighter "enquiry → basic-details → clinician triage" funnel in front of the deep intake materially reduces drop-off before the free consult, and re-orders the parent journey to feel less like a bureaucratic form and more like a conversation. Doing this does not require any change to the AI loop.
+- **Steps 7, 8, 9 are the platform plays.** Step 7 is the obvious roadmap-next item (carryover was the design partner's second-biggest pain after intake). Step 8 is the integration play for Year-2 referrals. Step 9 is the analytics layer that unlocks clinic-scale and NHS-framework conversations.
+
+# 2. Where the one-therapist tailoring leaks through
 
 The audit walks the intake spec, the AI output shapes, the triage outcomes, and the vocabulary choices. Each surface is classified by **who it fits**, **who it breaks**, and a **fix class** — *config* (a per-practice setting toggle in existing infrastructure), *template* (a new template family), or *branch* (a fork in the product).
 
@@ -151,7 +178,7 @@ Three leaks matter more than the others, and each maps to a single concrete fix.
 
 **Leak 3: the AI output schemas are tight, which is good for safety and bad for portability.** The session-plan output schema enumerates seven specialty domains. Extending to dysphagia or AAC means schema + prompt + few-shot examples + UI badge. That is doable, but the *cost* per new specialty is non-trivial, and Sona should not invite an AAC clinician to a feedback session until that work is scoped.
 
-# 2. Unique selling point and moat
+# 3. Unique selling point and moat
 
 ## One-sentence USP
 
@@ -331,7 +358,7 @@ No single item below is a 5-year moat on its own. The strength is in the **stack
 
 The net: **moats 1, 2, and 3 are real and reinforce each other** — the loop, the posture, and the specialty-aware shape. Moat 4 deserves to be marketed but is a *trust* play, not a *defensibility* play. Moats 6, 7, and 8 should be dropped from the moat conversation; they belong in the principles / engineering footnotes.
 
-# 3. The seams to add so Sona generalises without forking
+# 4. The seams to add so Sona generalises without forking
 
 Each seam is a single named change to a single subsystem. T-shirt sizes are relative to a 2-person team.
 
@@ -363,7 +390,7 @@ Each seam is a single named change to a single subsystem. T-shirt sizes are rela
 
 Not a code seam, but a product seam. Today: four UK paediatric personas. Add three minimum before the first non-paediatric pitch: **adult voice (38yo gender-affirming voice), AAC introduction (5yo, non-verbal), feeding (3yo with progressed sensory profile)**. Personas drive the demo, the seed scripts, and the few-shot examples for the AI prompts. The cost of *not* adding them is showing up to the next SLT with a paediatric demo and learning nothing.
 
-# 4. External-systems integration roadmap
+# 5. External-systems integration roadmap
 
 Integrations are graded by **what they unlock** vs **what they cost**. "Cost" includes technical work, certification, and commercial / contracting overhead. Phasing is realistic for a two-person team plus one design partner.
 
@@ -508,7 +535,23 @@ Integrations are graded by **what they unlock** vs **what they cost**. "Cost" in
 </tbody>
 </table>
 
-# 5. Pricing options
+# 6. Authentication and security
+
+Sona's commercial story depends on a defensible trust posture. This section pulls together what is in place today, what is designed but not yet built, and where the gaps are. Most of this is sourced from the team's architecture decisions and is mentioned in passing elsewhere in the memo — it lives in one place here so an investor or NHS commissioner does not have to assemble it from fragments.
+
+**Identity.** Parents authenticate via signed, time-limited magic links sent to a verified email at intake submission; each link is single-use and the parent portal is the only place clinical content is rendered (no PHI in email bodies). Clinicians authenticate via passkeys / WebAuthn — no shared passwords, no SMS one-time codes. A future migration to NHS Login for parents is a documented Year-2 integration. Every published artifact carries the clinician's HCPC registration number on its audit trail.
+
+**Data residency and AI inference.** UK tenant data lives only in the London Google Cloud region — database, file storage, audit logs, and AI inference all pinned to the same region. AI inference runs on a self-hosted open-weights model inside a private network with no external internet egress; client data never reaches a third-party AI vendor. US tenants (when launched) get a physically separate stack in a US region; cross-jurisdiction queries, backups, and analytics on raw clinical data are forbidden by an architecture decision.
+
+**Audit and AI disclosure.** Every clinical artifact is constructed so it cannot leave the system without a clinician act: an append-only audit log records who accessed which case, when, and what changed, with 7-year retention; review gates require a clinician timestamp before any AI draft can be published; a hard-coded AI-disclosure footer sits at the bottom of every parent-facing summary and cannot be removed by the clinician. Audit data is non-mutable at the application layer.
+
+**Encryption and subprocessors.** TLS 1.2+ in transit. Encryption at rest by default, plus customer-managed encryption keys (CMEK) on UK clinical data. A public subprocessor list is maintained and refreshed when any vendor changes. Email-as-channel is rejected for clinical content because no transactional-email vendor will sign a BAA at this scale — parent communications go via the authenticated portal (the Epic MyChart model).
+
+**Compliance posture.** UK GDPR Article 9 lawful basis (explicit parent consent for special-category child data, plus clinician legitimate interest) is captured on the intake review screen and versioned per submission. Children's data is collected only at the level needed for clinical triage. DSAR (data-subject access request) and right-to-erasure endpoints are first-class. A documented 72-hour ICO breach-notification runbook is in place.
+
+**What is not done yet.** NHS DSPT Standards Met, HIPAA BAA audit for any new payment / email vendors, a third-party penetration test, and a formal Data Protection Impact Assessment (DPIA). All four are Year-2 prerequisites for the NHS path and are called out as such in the integration roadmap (section 5). None are blockers for the private-practice pilot.
+
+# 7. Pricing options
 
 ## Cost-side reality check
 
@@ -577,7 +620,7 @@ At the design partner's stated 3–8 cases / week / clinician, inference cost pe
 
 **Why £79 and not £49 (Clindoc) or £99 (Heidi Pro era):** Sona is not a scribe-only product, so it should not be priced like one. £79 sits exactly between Smilenotes (£5, no AI) and Heidi Clinician (~£120 GBP, scribe-only) and quantifies the bundle: PMS-light + AI loop + UK residency + audit. The price-anchor effect of being deliberately "between" two known reference points helps the discovery call.
 
-# 6. Market size and growth path
+# 8. Market size and growth path
 
 Sona has three concentric markets, each with a different shape. All figures below are directional sketches from public membership data and the team's pricing recommendation, not primary survey data — they should be tightened with a willingness-to-pay study before being put in a deck.
 
@@ -585,7 +628,7 @@ Sona has three concentric markets, each with a different shape. All figures belo
 
 **Expansion: NHS and clinic mode (Years 2–4).** Clinic mode (£149 base + £49 / seat) lifts average revenue per practice 2–3x. DSPT + a G-Cloud listing opens ICB-level deals at typical small-tool framework sizes of **£15–25k per ICB per year** (England has 42 ICBs). 8–12 ICB wins over Years 3–4 add **£120–300k of NHS ARR** on top of the private base. UK ceiling at this stage: **~£1.5–2.5M ARR**.
 
-**Prize: US, AU, CA (Year 3+).** US private-practice SLPs number around 25,000 — roughly 10x the UK (ASHA workforce data, ~14% of certified SLPs in private settings). At equivalent pricing that is a **~£20–25M ARR ceiling**. Distribution is the bottleneck; the realistic entry is the Jane App and Cliniko marketplaces (the "Sona for Cliniko" wedge from section 4), not direct sales. AU + CA add another **~£3–4M ARR ceiling**.
+**Prize: US, AU, CA (Year 3+).** US private-practice SLPs number around 25,000 — roughly 10x the UK (ASHA workforce data, ~14% of certified SLPs in private settings). At equivalent pricing that is a **~£20–25M ARR ceiling**. Distribution is the bottleneck; the realistic entry is the Jane App and Cliniko marketplaces (the "Sona for Cliniko" wedge from section 5), not direct sales. AU + CA add another **~£3–4M ARR ceiling**.
 
 **What this implies for investment.** Year-1 milestones (20–50 paying clinicians, £20–50k ARR) are reachable on **seed funding of £400–800k** for an 18-month runway for a 2–3 person team. The clinic-mode + DSPT bet is the **Series A test**: 10–15% UK base capture plus 3–5 NHS framework wins inside two years puts the company on a credible **£5–10M ARR trajectory** by Years 4–5.
 
@@ -607,7 +650,7 @@ Ordered by leverage. Day windows are windows, not deadlines — the slice that f
 In priority order; each blocks something downstream.
 
 1. **Is the next bet generalisation (intake template engine) or completion (AI loop end-to-end)?** Both at half-speed is the failure mode (Recommendation 3).
-2. **What is the actual paying-customer hypothesis: paediatric-only private SLT, or all-of-SLT-on-launch?** The honest answer changes everything in section 1 and the pitch deck. The current personas and the EHCP wiring suggest paediatric-only is the truthful framing.
+2. **What is the actual paying-customer hypothesis: paediatric-only private SLT, or all-of-SLT-on-launch?** The honest answer changes everything in section 2 and the pitch deck. The current personas and the EHCP wiring suggest paediatric-only is the truthful framing.
 3. **Are you willing to be priced below Heidi and above Smilenotes, or do you want a wedge price?** £79 / clinician / mo is a defensible middle. A £29 wedge price changes the product (closer to Smilenotes) and the moat conversation (less "premium UK posture", more "low-cost ASLTIP default").
 4. **DSPT — Year-2 commit or Year-3 "wait and see"?** A real DSPT commit unlocks GP Connect, NHS Login, and the G-Cloud listing in series. A wait-and-see lets the product mature on private-pay first. Both are defensible; the deck cannot be vague about which one.
 5. **OEPR (Octopus EPR) — competitor, co-existent, or eventual partner?** OEPR is the most clinically aware UK SLT-specific competitor surfaced in this review. They market via ASLTIP. The interesting future is a Sona-on-OEPR integration, not a Sona-vs-OEPR fight. The founders need to decide whether to reach out now or later.
