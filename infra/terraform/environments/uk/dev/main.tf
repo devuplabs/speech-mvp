@@ -30,4 +30,10 @@ module "stack" {
   inference_node_pool_min_count = var.inference_node_pool_min_count
   inference_node_pool_max_count = var.inference_node_pool_max_count
   inference_deletion_protection = var.inference_deletion_protection
+
+  # First AI loop — wire prep_brief through Vertex AI Gemini 2.5 in europe-west2.
+  inference_openai_base_url_override = var.inference_openai_base_url_override
+  llm_model                          = var.llm_model
+  llm_enabled_kinds                  = var.llm_enabled_kinds
+  grant_vertex_aiplatform_iam        = var.grant_vertex_aiplatform_iam
 }

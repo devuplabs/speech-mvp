@@ -24,6 +24,10 @@ const envSchema = z.object({
   ),
   LLM_MODEL: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   LLM_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  /** Comma-separated AI artifact kinds the LLM is allowed to generate.
+   * Anything else falls back to the deterministic stub. `*` or `all`
+   * enables every kind. Default (when unset): `prep_brief` only. */
+  LLM_ENABLED_KINDS: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   SONA_WEB_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   LLM_CLOUD_TASKS_QUEUE: z.string().default("sona-llm-dev"),
   RUNTIME_SERVICE_ACCOUNT: z.string().optional(),

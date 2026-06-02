@@ -87,6 +87,14 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.inference_openai_base_url
       }
       env {
+        name  = "LLM_MODEL"
+        value = var.llm_model
+      }
+      env {
+        name  = "LLM_ENABLED_KINDS"
+        value = var.llm_enabled_kinds
+      }
+      env {
         name  = "GCP_REGION"
         value = var.region
       }
@@ -194,6 +202,14 @@ resource "google_cloud_run_v2_service" "worker" {
       env {
         name  = "INFERENCE_OPENAI_BASE_URL"
         value = var.inference_openai_base_url
+      }
+      env {
+        name  = "LLM_MODEL"
+        value = var.llm_model
+      }
+      env {
+        name  = "LLM_ENABLED_KINDS"
+        value = var.llm_enabled_kinds
       }
 
       env {

@@ -114,3 +114,29 @@ variable "inference_deletion_protection" {
   type    = bool
   default = false
 }
+
+# ---- LLM inference (Vertex AI Gemini in europe-west2 — first AI loop) ----
+
+variable "inference_openai_base_url_override" {
+  description = "Override the GKE vLLM URL with an external OpenAI-compatible endpoint. For Vertex AI Gemini in europe-west2: 'https://europe-west2-aiplatform.googleapis.com/v1beta1/projects/<PROJECT>/locations/europe-west2/endpoints/openapi'."
+  type        = string
+  default     = ""
+}
+
+variable "llm_model" {
+  description = "Model id sent to the chat-completions endpoint. Examples: 'google/gemini-2.5-flash' (cheap default), 'google/gemini-2.5-pro' (better quality), 'google/gemma-3-27b-it' (self-hosted vLLM)."
+  type        = string
+  default     = ""
+}
+
+variable "llm_enabled_kinds" {
+  description = "AI draft kinds the LLM may generate. Empty string => app default (prep_brief only — the first AI loop). Use '*' to enable all four (prep_brief, session_plan, clinical_report, parent_summary)."
+  type        = string
+  default     = ""
+}
+
+variable "grant_vertex_aiplatform_iam" {
+  description = "Grant the Cloud Run runtime SA roles/aiplatform.user. Set true together with a Vertex inference_openai_base_url_override."
+  type        = bool
+  default     = false
+}

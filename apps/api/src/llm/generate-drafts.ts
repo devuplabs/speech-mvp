@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Env } from "../config.js";
-import { chatCompletion, isLlmConfigured, parseJsonFromLlm } from "./chat.js";
+import { chatCompletion, isLlmConfigured, isLlmEnabledFor, parseJsonFromLlm } from "./chat.js";
 import { buildIntakeContextForLlm } from "./intake-context.js";
 
 const prepBriefSchema = z.object({
@@ -41,7 +41,7 @@ export async function generatePrepBriefLlm(
   env: Env,
   params: { childDisplayName: string; intakeContext: string },
 ): Promise<{ content: Record<string, unknown>; modelId: string } | null> {
-  if (!isLlmConfigured(env)) return null;
+  if (!isLlmEnabledFor(env, "prep_brief")) return null;
 
   const res = await chatCompletion({
     env,
@@ -77,7 +77,7 @@ export async function generateSessionPlanLlm(
   env: Env,
   params: { childDisplayName: string; intakeContext: string; triageOutcome: string },
 ): Promise<{ content: Record<string, unknown>; modelId: string } | null> {
-  if (!isLlmConfigured(env)) return null;
+  if (!isLlmEnabledFor(env, "session_plan")) return null;
 
   const res = await chatCompletion({
     env,
@@ -116,7 +116,7 @@ export async function generateClinicalReportLlm(
   env: Env,
   params: { childDisplayName: string; intakeContext: string; triageOutcome?: string },
 ): Promise<{ content: Record<string, unknown>; modelId: string } | null> {
-  if (!isLlmConfigured(env)) return null;
+  if (!isLlmEnabledFor(env, "clinical_report")) return null;
 
   const res = await chatCompletion({
     env,
@@ -159,7 +159,7 @@ export async function generateParentSummaryHtmlLlm(
   env: Env,
   params: { childDisplayName: string; intakeContext: string },
 ): Promise<{ html: string; modelId: string } | null> {
-  if (!isLlmConfigured(env)) return null;
+  if (!isLlmEnabledFor(env, "parent_summary")) return null;
 
   const res = await chatCompletion({
     env,
@@ -187,3 +187,6 @@ export async function generateParentSummaryHtmlLlm(
 }
 
 export { buildIntakeContextForLlm };
+// Re-export for callers (services) that need to check whether to even
+// attempt the LLM path (e.g. for logging / branching), and for tests.
+export { isLlmConfigured, isLlmEnabledFor };

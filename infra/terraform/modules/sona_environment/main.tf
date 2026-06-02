@@ -115,22 +115,22 @@ resource "google_secret_manager_secret_iam_member" "runtime_db_password" {
 module "inference" {
   source = "../inference"
 
-  enabled               = var.inference_enabled
-  project_id            = var.project_id
-  region                = var.region
-  name_prefix           = var.name_prefix
-  environment           = var.environment
-  vpc_id                = module.network.vpc_id
-  vpc_network_name      = module.network.vpc_name
-  vpc_connector_cidr    = var.vpc_connector_cidr
-  models_bucket_name    = module.model_storage.models_bucket_name
-  model_gcs_prefix      = var.model_gcs_prefix
-  vllm_container_image  = var.vllm_container_image
-  inference_zone        = local.inference_zone
-  gpu_machine_type      = var.inference_gpu_machine_type
-  node_pool_min_count   = var.inference_node_pool_min_count
-  node_pool_max_count   = var.inference_node_pool_max_count
-  deletion_protection   = var.inference_deletion_protection
+  enabled                 = var.inference_enabled
+  project_id              = var.project_id
+  region                  = var.region
+  name_prefix             = var.name_prefix
+  environment             = var.environment
+  vpc_id                  = module.network.vpc_id
+  vpc_network_name        = module.network.vpc_name
+  vpc_connector_cidr      = var.vpc_connector_cidr
+  models_bucket_name      = module.model_storage.models_bucket_name
+  model_gcs_prefix        = var.model_gcs_prefix
+  vllm_container_image    = var.vllm_container_image
+  inference_zone          = local.inference_zone
+  gpu_machine_type        = var.inference_gpu_machine_type
+  node_pool_min_count     = var.inference_node_pool_min_count
+  node_pool_max_count     = var.inference_node_pool_max_count
+  deletion_protection     = var.inference_deletion_protection
   master_authorized_cidrs = var.gke_master_authorized_cidrs
 }
 
@@ -145,20 +145,26 @@ module "cloud_run" {
   runtime_service_account_email = module.app_identity.runtime_service_account_email
   vpc_connector_id              = module.network.vpc_connector_id
 
-  cloud_sql_connection_name = module.cloud_sql.instance_connection_name
-  cloud_sql_private_ip      = module.cloud_sql.private_ip_address
-  cloud_sql_database        = module.cloud_sql.database_name
-  cloud_sql_app_user        = module.cloud_sql.db_user_name
+  cloud_sql_connection_name      = module.cloud_sql.instance_connection_name
+  cloud_sql_private_ip           = module.cloud_sql.private_ip_address
+  cloud_sql_database             = module.cloud_sql.database_name
+  cloud_sql_app_user             = module.cloud_sql.db_user_name
   db_password_secret_resource_id = module.cloud_sql.db_password_secret_resource_id
 
   artifact_registry_docker_url = module.artifact_registry.docker_repository_url
-  api_image                 = local.api_image
-  web_image                 = local.web_image
-  enable_web                = var.cloud_run_enable_web
-  inference_openai_base_url = module.inference.vllm_openai_base_url
-  allow_unauthenticated_api    = var.cloud_run_allow_unauthenticated
-  allow_unauthenticated_web    = var.cloud_run_allow_unauthenticated
-  deletion_protection          = var.cloud_run_deletion_protection
+  api_image                    = local.api_image
+  web_image                    = local.web_image
+  enable_web                   = var.cloud_run_enable_web
+  inference_openai_base_url = (
+    length(trimspace(var.inference_openai_base_url_override)) > 0
+    ? var.inference_openai_base_url_override
+    : module.inference.vllm_openai_base_url
+  )
+  llm_model                 = var.llm_model
+  llm_enabled_kinds         = var.llm_enabled_kinds
+  allow_unauthenticated_api = var.cloud_run_allow_unauthenticated
+  allow_unauthenticated_web = var.cloud_run_allow_unauthenticated
+  deletion_protection       = var.cloud_run_deletion_protection
 
   depends_on = [
     module.enable_apis,
@@ -184,6 +190,16 @@ resource "google_storage_bucket_iam_member" "runtime_exports" {
   bucket = module.storage.exports_bucket_name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${module.app_identity.runtime_service_account_email}"
+}
+
+# Vertex AI access for the Cloud Run runtime SA. Only granted when the
+# operator opts in via grant_vertex_aiplatform_iam (typically together
+# with setting inference_openai_base_url_override to a Vertex URL).
+resource "google_project_iam_member" "runtime_vertex_ai_user" {
+  count   = var.grant_vertex_aiplatform_iam ? 1 : 0
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${module.app_identity.runtime_service_account_email}"
 }
 
 resource "google_storage_bucket_iam_member" "runtime_models_reader" {
