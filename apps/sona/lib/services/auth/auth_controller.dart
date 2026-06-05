@@ -39,6 +39,15 @@ class AuthController extends ChangeNotifier {
   Future<void> sendPasswordReset(String email) =>
       _auth.sendPasswordResetEmail(email: email);
 
+  /// Verifies an invite/reset action code and returns the associated email
+  /// (set-password / invite-accept, Auth·13).
+  Future<String> verifyPasswordResetCode(String code) =>
+      _auth.verifyPasswordResetCode(code);
+
+  /// Completes a password reset from an invite/reset action code (Auth·13).
+  Future<void> confirmPasswordReset(String code, String newPassword) =>
+      _auth.confirmPasswordReset(code: code, newPassword: newPassword);
+
   /// Sends a passwordless magic-link sign-in email (clinician login, Auth·12).
   Future<void> sendSignInLink(String email, ActionCodeSettings settings) =>
       _auth.sendSignInLinkToEmail(email: email, actionCodeSettings: settings);
