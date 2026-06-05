@@ -11,7 +11,10 @@ class AuthedHttpClient extends http.BaseClient {
   AuthedHttpClient({
     required Future<String?> Function() tokenProvider,
     http.Client? inner,
-  })  : _tokenProvider = tokenProvider,
+  })  // Keep a public `tokenProvider` param name (an initializing formal would
+      // expose the private field name to callers).
+      // ignore: prefer_initializing_formals
+      : _tokenProvider = tokenProvider,
         _inner = inner ?? http.Client();
 
   final Future<String?> Function() _tokenProvider;
