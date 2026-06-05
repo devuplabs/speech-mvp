@@ -123,3 +123,9 @@ output "firebase_auth_domain" {
 output "firebase_messaging_sender_id" {
   value = module.firebase_auth.messaging_sender_id
 }
+
+# Secret Manager IDs that sona-web-dev-deploy reads via availableSecrets.
+output "firebase_web_secret_ids" {
+  description = "Map of {api_key|app_id|project_id|auth_domain|messaging_sender_id} -> Secret Manager secret_id. Used by infra/ci/cloudbuild.web.yaml."
+  value       = module.firebase_auth.firebase_web_secret_ids
+}

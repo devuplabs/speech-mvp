@@ -28,3 +28,22 @@ output "messaging_sender_id" {
 output "identity_platform_configured" {
   value = google_identity_platform_config.auth.id
 }
+
+# --- Secret Manager IDs for the Cloud Build web pipeline (Option A) ----------
+# These are short secret IDs (e.g. "sona-firebase-web-api-key"), suitable for
+# the `availableSecrets:` block of cloudbuild.web.yaml. Empty when
+# publish_web_config_secrets = false.
+
+output "firebase_web_secret_ids" {
+  description = "Map of {api_key|app_id|project_id|auth_domain|messaging_sender_id} -> Secret Manager secret_id."
+  value = {
+    for k, s in google_secret_manager_secret.firebase_web : k => s.secret_id
+  }
+}
+
+output "firebase_web_secret_resource_ids" {
+  description = "Map of fully-qualified secret resource IDs (projects/.../secrets/...). Useful when wiring Cloud Run secret_key_ref."
+  value = {
+    for k, s in google_secret_manager_secret.firebase_web : k => s.id
+  }
+}

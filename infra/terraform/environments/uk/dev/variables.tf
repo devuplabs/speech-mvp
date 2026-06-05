@@ -114,3 +114,17 @@ variable "inference_deletion_protection" {
   type    = bool
   default = false
 }
+
+# ---- Firebase Auth: Secret Manager wiring for sona-web-dev-deploy -----------
+
+variable "publish_firebase_web_config_secrets" {
+  description = "When true, the 5 Firebase Web client-config values are mirrored into Secret Manager so cloudbuild.web.yaml can read them via availableSecrets. The Firebase Web API key is public client config per Firebase docs — Secret Manager is used for hygiene + central rotation, not because the value is secret."
+  type        = bool
+  default     = true
+}
+
+variable "cloudbuild_service_account_email" {
+  description = "Cloud Build service account that runs sona-web-dev-deploy — granted roles/secretmanager.secretAccessor on each Firebase client-config secret."
+  type        = string
+  default     = "sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com"
+}
