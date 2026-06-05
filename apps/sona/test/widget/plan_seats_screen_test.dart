@@ -119,5 +119,9 @@ class _Harness {
     return http.Response('{"error":"not_found"}', 404);
   }));
 
-  void onContinue() => continued = true;
+  int? continuedSeats;
+  void onContinue(int seats) {
+    continued = true;
+    continuedSeats = seats;
+  }
 }

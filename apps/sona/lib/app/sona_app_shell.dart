@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:firebase_auth/firebase_auth.dart' show ActionCodeSettings;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sona/config/env.dart';
+import 'package:sona/features/auth/admin_home_screen.dart';
+import 'package:sona/features/auth/clinician_login_screen.dart';
+import 'package:sona/features/auth/onboarding_flow.dart';
+import 'package:sona/services/auth/auth_controller.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
@@ -35,6 +40,9 @@ import 'package:sona/utils/open_url.dart';
 
 enum SonaRoute {
   launcher,
+  signIn,
+  onboarding,
+  adminHome,
   parentWelcome,
   parentIntake,
   parentReview,
@@ -53,7 +61,12 @@ enum SonaRoute {
 }
 
 class SonaAppShell extends StatefulWidget {
-  const SonaAppShell({super.key, this.apiClient, this.intakeToken});
+  const SonaAppShell({
+    super.key,
+    this.apiClient,
+    this.intakeToken,
+    this.authController,
+  });
 
   /// Optional override; integration tests inject a [SonaApiClient] backed by
   /// a `MockClient` so the full 8-step flow can run with no live API.
@@ -61,6 +74,10 @@ class SonaAppShell extends StatefulWidget {
 
   /// Magic-link token from parent web URL `?t=`.
   final String? intakeToken;
+
+  /// Present only when Firebase is configured; enables the auth/onboarding
+  /// flows (Auth·14). Null in demo/test builds.
+  final AuthController? authController;
 
   @override
   State<SonaAppShell> createState() => _SonaAppShellState();
@@ -82,6 +99,61 @@ class _SonaAppShellState extends State<SonaAppShell> {
   bool _needsAvailabilityConfirm = true;
   List<Map<String, dynamic>> _intakeFormItems = [];
   List<Map<String, dynamic>> _clinicalReportItems = [];
+  String _adminPracticeName = 'Your practice';
+
+  /// Web origin used for Firebase action-link continue URLs (Auth·14).
+  String get _webBaseUrl {
+    const override = String.fromEnvironment('SONA_WEB_BASE_URL');
+    if (override.isNotEmpty) return override;
+    return 'https://sona-web-dev-3rhenudy6a-nw.a.run.app';
+  }
+
+  /// After auth, read the profile and land on the role's home (Auth·14). Sets
+  /// the practice-scoped tenant so dashboard data never crosses tenants.
+  Future<void> _resolveRoleAndRoute() async {
+    await _run(() async {
+      final me = await _api.fetchMe();
+      final user = me['user'] as Map<String, dynamic>?;
+      final practice = me['practice'] as Map<String, dynamic>?;
+      final tenantId = user?['tenantId'] as String?;
+      if (tenantId != null && tenantId.isNotEmpty) {
+        _state.tenantId = tenantId;
+        await _draftStorage.saveLastTenantId(tenantId);
+      }
+      _adminPracticeName =
+          (practice?['displayName'] as String?) ?? 'Your practice';
+      if (user?['role'] == 'admin') {
+        setState(() => _route = SonaRoute.adminHome);
+      } else {
+        await _openClinicianToday();
+      }
+    }, label: 'Loading your dashboard');
+  }
+
+  Future<void> _signOut() async {
+    await widget.authController?.signOut();
+    _state.tenantId = null;
+    setState(() => _route = SonaRoute.launcher);
+  }
+
+  /// Launcher entry into the auth flows (Auth·14). Routes an already-signed-in
+  /// user straight to their role home; otherwise opens login.
+  void _openAuthEntry() {
+    final controller = widget.authController;
+    if (controller == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign-in needs Firebase configuration (FIREBASE_* at build).'),
+        ),
+      );
+      return;
+    }
+    if (controller.isSignedIn) {
+      unawaited(_resolveRoleAndRoute());
+    } else {
+      _go(SonaRoute.signIn);
+    }
+  }
 
   @override
   void initState() {
@@ -1022,6 +1094,33 @@ class _SonaAppShellState extends State<SonaAppShell> {
       backgroundColor: SonaColors.background,
       body: switch (_route) {
         SonaRoute.launcher => _launcher(),
+        SonaRoute.signIn => ClinicianLoginScreen(
+            subtitle: 'Sign in to your practice',
+            onPasswordSignIn: ({required email, required password}) =>
+                widget.authController!.signInWithPassword(email, password),
+            onMagicLink: (email) => widget.authController!.sendSignInLink(
+                  email,
+                  ActionCodeSettings(
+                    url: '$_webBaseUrl/auth/login',
+                    handleCodeInApp: true,
+                  ),
+                ),
+            onForgotPassword: (email) =>
+                widget.authController!.sendPasswordReset(email),
+            onSignedIn: _resolveRoleAndRoute,
+          ),
+        SonaRoute.onboarding => OnboardingFlow(
+            apiClient: _api,
+            onCreateAccount: ({required email, required password}) =>
+                widget.authController!.createAccount(email, password),
+            onComplete: _resolveRoleAndRoute,
+            onSignIn: () => _go(SonaRoute.signIn),
+          ),
+        SonaRoute.adminHome => AdminHomeScreen(
+            practiceName: _adminPracticeName,
+            onOpenWorkspace: _openClinicianToday,
+            onSignOut: _signOut,
+          ),
         SonaRoute.parentWelcome => ParentWelcomeScreen(
             hasDraft: _hasResumableDraft,
             linkExpired: _state.intakeLinkExpired,
@@ -1071,7 +1170,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.clinicianSummaryPreview =>
           _clinicianBody(),
       },
-      bottomNavigationBar: _route == SonaRoute.launcher
+      bottomNavigationBar: (_route == SonaRoute.launcher ||
+              _route == SonaRoute.signIn ||
+              _route == SonaRoute.onboarding ||
+              _route == SonaRoute.adminHome)
           ? null
           : Material(
               elevation: 2,
@@ -1154,6 +1256,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
                   label: 'Clinician workspace (desktop)',
                   variant: SonaButtonVariant.secondary,
                   onPressed: () => _openClinicianToday(),
+                ),
+                const SizedBox(height: 12),
+                SonaButton(
+                  label: 'Clinician / Admin sign-in',
+                  variant: SonaButtonVariant.ghost,
+                  onPressed: _openAuthEntry,
                 ),
               ],
             ),

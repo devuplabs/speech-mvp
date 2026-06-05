@@ -131,6 +131,45 @@ export async function getPractice(db: Db, tenantId: string): Promise<Tenant | nu
   return tenant ?? null;
 }
 
+/**
+ * Resolve the current user from a verified Firebase uid (Auth·14 — "who am I").
+ *
+ * First authenticated access from an invite **activates** the seat
+ * (`invited` → `active`), so an invited clinician who set their password via the
+ * Auth·05 link becomes usable. Returns null when the uid has no seat; a disabled
+ * seat is returned as-is so the caller can route to a "disabled" state.
+ */
+export async function resolveCurrentUser(
+  db: Db,
+  firebaseUid: string,
+): Promise<{ user: User; practice: Tenant | null } | null> {
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.firebaseUid, firebaseUid))
+    .limit(1);
+  if (!row) return null;
+
+  let user = row;
+  if (row.status === "invited") {
+    const [activated] = await db
+      .update(users)
+      .set({ status: "active" })
+      .where(eq(users.id, row.id))
+      .returning();
+    user = activated ?? { ...row, status: "active" };
+    await writeAudit(db, {
+      tenantId: row.tenantId,
+      actor: row.id,
+      action: "clinician.activated",
+      metadata: { email: row.email },
+    });
+  }
+
+  const practice = await getPractice(db, user.tenantId);
+  return { user, practice };
+}
+
 export async function getClinician(
   db: Db,
   tenantId: string,

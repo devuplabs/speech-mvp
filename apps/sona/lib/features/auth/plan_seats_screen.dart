@@ -24,8 +24,8 @@ class PlanSeatsScreen extends StatefulWidget {
   final SonaApiClient apiClient;
   final String practiceId;
 
-  /// Advance to Practice setup (screen 03).
-  final VoidCallback onContinue;
+  /// Advance to Practice setup (screen 03), passing the chosen seat count.
+  final void Function(int seats) onContinue;
 
   final PracticeMode initialMode;
   final int initialSeats;
@@ -70,7 +70,7 @@ class _PlanSeatsScreenState extends State<PlanSeatsScreen> {
         seats: _seats,
       );
       if (!mounted) return;
-      widget.onContinue();
+      widget.onContinue(_seats);
     } on SonaApiException {
       setState(() => _error = 'Could not save your plan. Please try again.');
     } catch (_) {
