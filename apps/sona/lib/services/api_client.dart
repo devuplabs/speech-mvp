@@ -35,6 +35,26 @@ class SonaApiClient {
     return body['tenantId'] as String;
   }
 
+  /// Admin sign-up (screen 01). Creates the practice + admin seat from the
+  /// caller's verified Firebase token. Returns `{ practice, admin }`.
+  Future<Map<String, dynamic>> createPractice({
+    required String practiceName,
+    required String adminFullName,
+    String? adminEmail,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/practices'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'practiceName': practiceName,
+        'adminFullName': adminFullName,
+        'adminEmail': adminEmail,
+      }),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> createTenant(String displayName) async {
     final res = await _client.post(
       _base.replace(path: '/v1/tenants'),

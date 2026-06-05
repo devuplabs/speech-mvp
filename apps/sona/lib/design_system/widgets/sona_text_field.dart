@@ -13,6 +13,7 @@ class SonaTextField extends StatefulWidget {
     this.keyboardType,
     this.autofillHints,
     this.errorText,
+    this.obscureText = false,
   });
 
   final String label;
@@ -24,6 +25,7 @@ class SonaTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final Iterable<String>? autofillHints;
   final String? errorText;
+  final bool obscureText;
 
   @override
   State<SonaTextField> createState() => _SonaTextFieldState();
@@ -113,6 +115,7 @@ class _SonaTextFieldState extends State<SonaTextField> {
               widget.onChanged(text);
             },
             maxLines: widget.maxLines,
+            obscureText: widget.obscureText,
             keyboardType: widget.keyboardType,
             autofillHints: widget.autofillHints,
             decoration: InputDecoration(

@@ -28,6 +28,11 @@ class AuthController extends ChangeNotifier {
     return user.getIdToken();
   }
 
+  /// Creates a new email/password user and signs them in (admin sign-up,
+  /// Auth·07).
+  Future<UserCredential> createAccount(String email, String password) =>
+      _auth.createUserWithEmailAndPassword(email: email, password: password);
+
   Future<UserCredential> signInWithPassword(String email, String password) =>
       _auth.signInWithEmailAndPassword(email: email, password: password);
 
