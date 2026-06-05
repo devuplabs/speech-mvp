@@ -34,6 +34,56 @@ class SonaApiClient {
     return body['tenantId'] as String;
   }
 
+  /// Roster (screen 04). Returns `{ clinicians: [...], seatsUsed }`.
+  Future<Map<String, dynamic>> listPracticeClinicians(String practiceId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/practices/$practiceId/clinicians'),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Invite a clinician (screen 04) — triggers the Auth·05 invite email.
+  Future<Map<String, dynamic>> inviteClinician(
+    String practiceId, {
+    required String email,
+    String? fullName,
+    String role = 'clinician',
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/practices/$practiceId/clinicians'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({'email': email, 'fullName': fullName, 'role': role}),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Bulk invite via CSV import (screen 04).
+  Future<Map<String, dynamic>> importClinicians(
+    String practiceId,
+    List<Map<String, dynamic>> clinicians,
+  ) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/practices/$practiceId/clinicians/import'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'clinicians': clinicians}),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Finish setup (screen 04 → 05). Activates the practice.
+  Future<Map<String, dynamic>> activatePractice(String practiceId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/practices/$practiceId/activate'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   /// Practice config (screen 03). Updates name / location / specialties.
   Future<Map<String, dynamic>> updatePracticeConfig(
     String practiceId, {
