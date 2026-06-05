@@ -4,10 +4,17 @@ import 'package:sona/design_system/sona_colors.dart';
 /// The 4-step onboarding progress header
 /// (Account — Plan & seats — Practice — Clinicians), shared by screens 02–05.
 class OnboardingSteps extends StatelessWidget {
-  const OnboardingSteps({super.key, required this.currentStep});
+  const OnboardingSteps({
+    super.key,
+    required this.currentStep,
+    this.showChecks = false,
+  });
 
   /// 1-based index of the active step.
   final int currentStep;
+
+  /// Render completed steps (before [currentStep]) with a ✓ instead of a number.
+  final bool showChecks;
 
   static const _labels = ['Account', 'Plan & seats', 'Practice', 'Clinicians'];
 
@@ -21,6 +28,7 @@ class OnboardingSteps extends StatelessWidget {
         label: _labels[i],
         done: step <= currentStep,
         current: step == currentStep,
+        showCheck: showChecks && step < currentStep,
       ));
       if (i < _labels.length - 1) {
         children.add(const Text(
@@ -44,12 +52,14 @@ class _StepChip extends StatelessWidget {
     required this.label,
     required this.done,
     required this.current,
+    this.showCheck = false,
   });
 
   final int number;
   final String label;
   final bool done;
   final bool current;
+  final bool showCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +79,7 @@ class _StepChip extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Text(
-            '$number',
+            showCheck ? '✓' : '$number',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
