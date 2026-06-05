@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ZodError } from "zod";
+import { AuthError, type AuthErrorCode } from "./auth/verifier.js";
 import { buildDatabaseUrl, loadEnv } from "./config.js";
 import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
@@ -18,6 +19,14 @@ const databaseUrl = buildDatabaseUrl(env);
 
 const app = new Hono();
 
+const AUTH_ERROR_STATUS: Record<AuthErrorCode, 401 | 403 | 503> = {
+  no_token: 401,
+  invalid_token: 401,
+  auth_not_configured: 503,
+  not_provisioned: 403,
+  forbidden: 403,
+};
+
 app.onError((err, c) => {
   if (err instanceof ZodError) {
     return c.json(
@@ -27,6 +36,9 @@ app.onError((err, c) => {
       },
       400,
     );
+  }
+  if (err instanceof AuthError) {
+    return c.json({ error: err.code }, AUTH_ERROR_STATUS[err.code]);
   }
   console.error(err);
   return c.json({ error: "internal_error" }, 500);
