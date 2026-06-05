@@ -73,10 +73,37 @@ Best-effort: if Firebase/Postmark is unconfigured it returns
 `getAdminAuth(env)` (ADC) from `auth/verifier.ts` — no secrets. CSV import
 dispatches an invite per imported row.
 
+## Auth·06 — Flutter auth scaffolding (client primitives)
+Additive, non-breaking foundation for the auth screens (`apps/sona`):
+- `config/firebase_options.dart` — `FirebaseOptions` from **build-time
+  `--dart-define`s** sourced from the `firebase_auth` Terraform outputs (public
+  client config, not secrets). `isConfigured` is false for demo/test builds.
+- `services/auth/auth_controller.dart` — `ChangeNotifier` over `FirebaseAuth`
+  (auth state, `idToken()`, password sign-in, magic link, sign-out).
+- `services/auth/authed_http_client.dart` — `http.BaseClient` that attaches
+  `Authorization: Bearer <idToken>` to every request, so `SonaApiClient` gains
+  auth without per-call changes.
+- `app/auth_gate.dart` — gates authenticated surfaces; falls through to the
+  existing app when Firebase isn't configured (keeps demo + widget tests green).
+- `main.dart` — initialises Firebase only when configured and wires the
+  token-injecting client.
+
+Build wiring (CI injects the TF outputs):
+```sh
+flutter build web \
+  --dart-define=FIREBASE_API_KEY="$(terraform output -raw firebase_web_api_key)" \
+  --dart-define=FIREBASE_APP_ID="$(terraform output -raw firebase_web_app_id)" \
+  --dart-define=FIREBASE_PROJECT_ID="$(terraform output -raw firebase_project_id)" \
+  --dart-define=FIREBASE_AUTH_DOMAIN="$(terraform output -raw firebase_auth_domain)" \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID="$(terraform output -raw firebase_messaging_sender_id)"
+```
+> Not compiled in the dev container (no Flutter toolchain) — verify with
+> `flutter pub get` + `flutter analyze` in CI. The login UI + forced route
+> guards land in **Auth·12 / Auth·14**.
+
 ## Follow-ups (tracked in Notion)
 - Demo seeding of an admin/clinician roster (optional).
 - The patient-history import path stays gated pending GDPR review (**Auth·17**).
-- Magic-link sign-in for clinician login is wired on the client (Auth·12).
 
 ## Verification
 `npm run typecheck`, `npm run build`, and `npm test` (30 tests) all pass.
