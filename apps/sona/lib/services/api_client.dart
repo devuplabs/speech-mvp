@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:sona/config/env.dart';
 import 'package:sona/utils/api_response.dart';
-import 'package:sona/utils/json_encode_util.dart';
 
 class SonaApiClient {
   SonaApiClient({http.Client? client}) : _client = client ?? http.Client();
@@ -33,6 +32,26 @@ class SonaApiClient {
     _ensureOk(res, allowedStatuses: {200, 201});
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return body['tenantId'] as String;
+  }
+
+  /// Practice config (screen 03). Updates name / location / specialties.
+  Future<Map<String, dynamic>> updatePracticeConfig(
+    String practiceId, {
+    String? practiceName,
+    String? location,
+    List<String>? specialties,
+  }) async {
+    final res = await _client.patch(
+      _base.replace(path: '/v1/practices/$practiceId'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'practiceName': practiceName,
+        'location': location,
+        'specialties': specialties,
+      }),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   /// Plan & seats (screen 02). Sets the practice `mode` + `seats`.

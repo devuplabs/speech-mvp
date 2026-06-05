@@ -8,14 +8,20 @@ class SonaSelectChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onChanged,
+    this.pill = false,
   });
 
   final String label;
   final bool selected;
   final ValueChanged<bool> onChanged;
 
+  /// Compact pill style (teal-filled when selected) used by the practice
+  /// specialties multi-select; defaults to the checkbox-row style.
+  final bool pill;
+
   @override
   Widget build(BuildContext context) {
+    if (pill) return _pill();
     return Semantics(
       button: true,
       toggled: selected,
@@ -43,6 +49,39 @@ class SonaSelectChip extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(child: Text(label, style: const TextStyle(fontSize: 14))),
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill() {
+    return Semantics(
+      button: true,
+      toggled: selected,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onChanged(!selected),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? SonaColors.primary : SonaColors.surface,
+              border: Border.all(
+                color: selected ? SonaColors.primary : SonaColors.chipBorder,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: selected ? Colors.white : SonaColors.textSecondary,
               ),
             ),
           ),
