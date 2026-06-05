@@ -56,6 +56,7 @@ import {
   assertIntakeNotLocked,
 } from "../services/intake-forms.js";
 import { intakeTemplateIdEnum } from "../schemas/intake-template.js";
+import { createPracticeRoutes } from "./practices.js";
 
 
 
@@ -80,6 +81,9 @@ const publishParentSummaryBody = z.object({
 
 export function createV1Routes(db: Db, env: Env) {
   const app = new Hono();
+
+  // Practice onboarding & auth-gated admin API (Feature 3).
+  app.route("/practices", createPracticeRoutes(db, env));
 
   const webBaseUrl =
     env.SONA_WEB_BASE_URL ??

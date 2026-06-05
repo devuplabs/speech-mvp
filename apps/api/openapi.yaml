@@ -24,3 +24,128 @@ paths:
       responses:
         "200":
           description: OK
+  # --- Practice onboarding (Feature 3). Bearer = Firebase ID token. ---
+  /v1/practices:
+    post:
+      summary: Create practice + admin seat (admin sign-up, screen 01)
+      description: >-
+        Authenticated by a Firebase ID token; provisions the practice and the
+        admin's seat from the verified identity. Idempotent per Firebase user.
+      security:
+        - firebaseToken: []
+      responses:
+        "201":
+          description: Practice created
+        "200":
+          description: Practice already exists for this user
+        "401":
+          description: Missing/invalid token
+        "503":
+          description: Firebase Admin not configured (pending Auth·01)
+  /v1/practices/{id}/plan:
+    patch:
+      summary: Set plan mode + seats (screen 02)
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Plan updated
+        "403":
+          description: Not an admin of this practice
+        "409":
+          description: Seat count below seats already in use
+  /v1/practices/{id}:
+    patch:
+      summary: Update practice name / location / specialties (screen 03)
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Practice updated
+        "403":
+          description: Not an admin of this practice
+  /v1/practices/{id}/clinicians:
+    get:
+      summary: List clinician seats (screen 04)
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Clinician roster + seats used
+    post:
+      summary: Invite a clinician (screen 04)
+      description: Creates an invited seat. Firebase email invite is sent by Auth·05.
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Clinician invited
+        "409":
+          description: Already a member of this practice
+        "422":
+          description: No seats available
+  /v1/practices/{id}/clinicians/import:
+    post:
+      summary: Bulk invite clinicians via CSV import (screen 04)
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Import processed (per-row invited/skipped)
+  /v1/practices/{id}/activate:
+    post:
+      summary: Finish setup / go live (screen 05)
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Practice live; returns onboarding summary
+components:
+  securitySchemes:
+    firebaseToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication ID token.
