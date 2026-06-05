@@ -101,3 +101,25 @@ output "web_service_uri" {
 output "worker_service_uri" {
   value = module.stack.worker_service_uri
 }
+
+# --- Firebase Authentication (client config for the Flutter app) ---
+output "firebase_project_id" {
+  value = module.firebase_auth.firebase_project_id
+}
+
+output "firebase_web_app_id" {
+  value = module.firebase_auth.web_app_id
+}
+
+output "firebase_web_api_key" {
+  description = "Public Firebase Web API key (client config, not a secret)."
+  value       = module.firebase_auth.web_api_key
+}
+
+output "firebase_auth_domain" {
+  value = module.firebase_auth.auth_domain
+}
+
+output "firebase_messaging_sender_id" {
+  value = module.firebase_auth.messaging_sender_id
+}

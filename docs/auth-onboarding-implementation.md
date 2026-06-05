@@ -43,12 +43,21 @@ Mounted at `/v1/practices`:
 Seat limits, cross-practice isolation, and email de-dupe are enforced in the
 service layer.
 
-## How Firebase plugs in (Auth·01)
-Replace the body of `FirebaseTokenVerifier.verify()` in `src/auth/verifier.ts`
-with a real `firebase-admin` `verifyIdToken(idToken)` call returning
-`{ uid, email }`. Nothing else changes — every route already depends on the
-`TokenVerifier` interface. Credentials come from the Cloud Run service account
-(ADC), configured in `src/config.ts`.
+## Firebase (Auth·01) — done via Terraform + ADC
+Firebase Authentication is provisioned **entirely in Terraform**
+(`infra/terraform/modules/firebase_auth`, wired into `environments/uk/dev`) —
+no console steps:
+- Identity Platform with email/password + passwordless email-link (Magic Link).
+- A Firebase web app registration; client config (apiKey/appId/authDomain/…)
+  is exposed as TF outputs for the Flutter build (these are public, not secret).
+- Runtime SA granted `roles/firebaseauth.admin`.
+
+`FirebaseTokenVerifier` (`src/auth/verifier.ts`) now calls
+`firebase-admin verifyIdToken()` using **Application Default Credentials** — on
+Cloud Run that is the runtime service account, so there is **no service-account
+key and no secret to store**. It still fails closed (`auth_not_configured`)
+when `GCP_PROJECT_ID` is unset. `GCP_PROJECT_ID` is already injected into the
+API service by `modules/cloud_run`.
 
 ## Follow-ups (tracked in Notion)
 - **Auth·05** — on invite, create the Firebase user + send the email action

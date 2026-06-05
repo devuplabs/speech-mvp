@@ -1,3 +1,5 @@
+import { applicationDefault, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAuth, type Auth } from "firebase-admin/auth";
 import type { Env } from "../config.js";
 import type { VerifiedIdentity } from "./types.js";
 
@@ -24,23 +26,57 @@ export interface TokenVerifier {
   verify(idToken: string): Promise<VerifiedIdentity>;
 }
 
+/** Dedicated Admin SDK app name so we never clash with any default app. */
+const FIREBASE_APP_NAME = "sona-auth";
+
 /**
- * Firebase ID-token verifier.
+ * Firebase ID-token verifier backed by the Firebase Admin SDK.
  *
- * Wiring to the Firebase Admin SDK lands in **Auth·01 (Firebase setup)**, which
- * provides the project credentials via the Cloud Run service account. Until
- * then this fails closed with `auth_not_configured` so no protected route can
- * be reached without real verification.
+ * Credentials come from **Application Default Credentials** — on Cloud Run that
+ * is the runtime service account (no JSON key, no secret). The Identity
+ * Platform / Firebase project itself is provisioned via Terraform
+ * (`infra/terraform/modules/firebase_auth`). When `GCP_PROJECT_ID` is unset
+ * (e.g. local dev with no GCP context) it fails closed with
+ * `auth_not_configured` so no protected route can be reached.
  */
 export class FirebaseTokenVerifier implements TokenVerifier {
+  private auth: Auth | null = null;
+
   constructor(private readonly env: Env) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async verify(_idToken: string): Promise<VerifiedIdentity> {
-    throw new AuthError(
-      "auth_not_configured",
-      "Firebase Admin not configured yet (see Auth·01).",
-    );
+  private getAuthClient(): Auth {
+    const projectId = this.env.GCP_PROJECT_ID;
+    if (!projectId) {
+      throw new AuthError(
+        "auth_not_configured",
+        "GCP_PROJECT_ID is not set; cannot verify Firebase tokens.",
+      );
+    }
+    if (!this.auth) {
+      const existing = getApps().find((a) => a.name === FIREBASE_APP_NAME);
+      const app: App =
+        existing ??
+        initializeApp(
+          { credential: applicationDefault(), projectId },
+          FIREBASE_APP_NAME,
+        );
+      this.auth = getAuth(app);
+    }
+    return this.auth;
+  }
+
+  async verify(idToken: string): Promise<VerifiedIdentity> {
+    const client = this.getAuthClient();
+    let decoded;
+    try {
+      decoded = await client.verifyIdToken(idToken);
+    } catch (err) {
+      throw new AuthError(
+        "invalid_token",
+        err instanceof Error ? err.message : "token verification failed",
+      );
+    }
+    return { uid: decoded.uid, email: decoded.email ?? null };
   }
 }
 
