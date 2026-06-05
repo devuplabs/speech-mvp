@@ -3,6 +3,12 @@ provider "google" {
   region  = var.region
 }
 
+# Required for Firebase project + web app registration (firebase_auth module).
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
 module "stack" {
   source = "../../../modules/sona_environment"
 
@@ -30,4 +36,23 @@ module "stack" {
   inference_node_pool_min_count = var.inference_node_pool_min_count
   inference_node_pool_max_count = var.inference_node_pool_max_count
   inference_deletion_protection = var.inference_deletion_protection
+}
+
+# Firebase Authentication (Identity Platform) — Auth·01 / Feature 2.
+module "firebase_auth" {
+  source = "../../../modules/firebase_auth"
+
+  providers = {
+    google      = google
+    google-beta = google-beta
+  }
+
+  project_id                    = var.project_id
+  runtime_service_account_email = module.stack.runtime_service_account_email
+
+  # Allow sign-in / email-link completion from the hosted web UI + localhost dev.
+  authorized_domains = compact([
+    "localhost",
+    replace(replace(module.stack.web_service_uri, "https://", ""), "http://", ""),
+  ])
 }
