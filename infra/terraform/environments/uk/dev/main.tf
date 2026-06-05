@@ -49,10 +49,21 @@ module "firebase_auth" {
 
   project_id                    = var.project_id
   runtime_service_account_email = module.stack.runtime_service_account_email
+  region                        = var.region
+  name_prefix                   = var.name_prefix
 
   # Allow sign-in / email-link completion from the hosted web UI + localhost dev.
   authorized_domains = compact([
     "localhost",
     replace(replace(module.stack.web_service_uri, "https://", ""), "http://", ""),
   ])
+
+  # Mirror the 5 Firebase Web client-config values into Secret Manager so the
+  # sona-web-dev-deploy Cloud Build pipeline reads them via availableSecrets
+  # rather than substitutions. The Cloud Build SA below already runs the
+  # web trigger (see infra/ci/triggers/sona-web-dev-deploy.yaml).
+  publish_web_config_secrets = var.publish_firebase_web_config_secrets
+  cloudbuild_secret_accessor_emails = var.publish_firebase_web_config_secrets ? [
+    var.cloudbuild_service_account_email,
+  ] : []
 }

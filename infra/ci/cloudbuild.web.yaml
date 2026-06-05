@@ -15,6 +15,25 @@ options:
 
 serviceAccount: projects/project-a625d19b-de99-48e9-9a9/serviceAccounts/sona-cloudbuild@project-a625d19b-de99-48e9-9a9.iam.gserviceaccount.com
 
+# Firebase Web client config — provisioned in Secret Manager by Terraform
+# (infra/terraform/modules/firebase_auth). The values are public client
+# config that ships in the browser bundle; we route them through Secret
+# Manager so they live in one place and rotate cleanly, and so the
+# Cloud Build SA reads them with explicit IAM rather than via a hardcoded
+# substitution in this file. See ADR-006 / firebase_auth/README.md.
+availableSecrets:
+  secretManager:
+    - versionName: projects/${_PROJECT_ID}/secrets/sona-firebase-web-api-key/versions/latest
+      env: FIREBASE_API_KEY
+    - versionName: projects/${_PROJECT_ID}/secrets/sona-firebase-web-app-id/versions/latest
+      env: FIREBASE_APP_ID
+    - versionName: projects/${_PROJECT_ID}/secrets/sona-firebase-project-id/versions/latest
+      env: FIREBASE_PROJECT_ID
+    - versionName: projects/${_PROJECT_ID}/secrets/sona-firebase-auth-domain/versions/latest
+      env: FIREBASE_AUTH_DOMAIN
+    - versionName: projects/${_PROJECT_ID}/secrets/sona-firebase-messaging-sender-id/versions/latest
+      env: FIREBASE_MESSAGING_SENDER_ID
+
 timeout: 1800s
 
 steps:
@@ -22,12 +41,23 @@ steps:
     name: ghcr.io/cirruslabs/flutter:stable
     dir: apps/sona
     entrypoint: bash
+    secretEnv:
+      - FIREBASE_API_KEY
+      - FIREBASE_APP_ID
+      - FIREBASE_PROJECT_ID
+      - FIREBASE_AUTH_DOMAIN
+      - FIREBASE_MESSAGING_SENDER_ID
     args:
       - -c
       - |
         flutter pub get
         flutter build web --release \
-          --dart-define=SONA_API_BASE_URL=${_API_URL}
+          --dart-define=SONA_API_BASE_URL=${_API_URL} \
+          --dart-define=FIREBASE_API_KEY="$$FIREBASE_API_KEY" \
+          --dart-define=FIREBASE_APP_ID="$$FIREBASE_APP_ID" \
+          --dart-define=FIREBASE_PROJECT_ID="$$FIREBASE_PROJECT_ID" \
+          --dart-define=FIREBASE_AUTH_DOMAIN="$$FIREBASE_AUTH_DOMAIN" \
+          --dart-define=FIREBASE_MESSAGING_SENDER_ID="$$FIREBASE_MESSAGING_SENDER_ID"
 
   - id: docker-build
     name: gcr.io/cloud-builders/docker
