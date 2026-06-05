@@ -64,7 +64,11 @@ class SonaApp extends StatelessWidget {
       title: 'Sona',
       debugShowCheckedModeBanner: false,
       theme: sonaTheme(),
-      home: SonaAppShell(apiClient: client, intakeToken: intakeToken),
+      home: SonaAppShell(
+        apiClient: client,
+        intakeToken: intakeToken,
+        authController: authController,
+      ),
     );
   }
 }

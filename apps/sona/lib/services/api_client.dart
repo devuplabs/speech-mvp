@@ -34,6 +34,14 @@ class SonaApiClient {
     return body['tenantId'] as String;
   }
 
+  /// Current-user profile for role-based routing (Auth·14). Returns
+  /// `{ user, practice }`; the call activates an invited seat on first login.
+  Future<Map<String, dynamic>> fetchMe() async {
+    final res = await _client.get(_base.replace(path: '/v1/me'));
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   /// Roster (screen 04). Returns `{ clinicians: [...], seatsUsed }`.
   Future<Map<String, dynamic>> listPracticeClinicians(String practiceId) async {
     final res = await _client.get(

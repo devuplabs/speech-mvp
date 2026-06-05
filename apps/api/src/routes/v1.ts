@@ -57,6 +57,8 @@ import {
 } from "../services/intake-forms.js";
 import { intakeTemplateIdEnum } from "../schemas/intake-template.js";
 import { createPracticeRoutes } from "./practices.js";
+import { getTokenVerifier, AuthError } from "../auth/verifier.js";
+import { resolveCurrentUser } from "../services/practice.js";
 
 
 
@@ -84,6 +86,20 @@ export function createV1Routes(db: Db, env: Env) {
 
   // Practice onboarding & auth-gated admin API (Feature 3).
   app.route("/practices", createPracticeRoutes(db, env));
+
+  // Current-user profile for role-based routing (Auth·14). Token-only so an
+  // invited clinician (not yet `active`) can fetch it on first login — which
+  // activates their seat. AuthError is mapped to a status by the global handler.
+  const verifier = getTokenVerifier(env);
+  app.get("/me", async (c) => {
+    const match = /^Bearer\s+(.+)$/i.exec((c.req.header("Authorization") ?? "").trim());
+    if (!match) throw new AuthError("no_token");
+    const identity = await verifier.verify(match[1].trim());
+    const me = await resolveCurrentUser(db, identity.uid);
+    if (!me) return c.json({ error: "not_provisioned" }, 404);
+    if (me.user.status === "disabled") return c.json({ error: "forbidden" }, 403);
+    return c.json({ user: me.user, practice: me.practice });
+  });
 
   const webBaseUrl =
     env.SONA_WEB_BASE_URL ??

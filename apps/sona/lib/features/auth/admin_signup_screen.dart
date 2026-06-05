@@ -29,8 +29,8 @@ class AdminSignupScreen extends StatefulWidget {
   final Future<void> Function({required String email, required String password})
       onCreateAccount;
 
-  /// Called with the new practice id once the seat is created.
-  final void Function(String practiceId) onAccountCreated;
+  /// Called with the new practice id + name once the seat is created.
+  final void Function(String practiceId, String practiceName) onAccountCreated;
 
   /// "Already have an account? Sign in" → Clinician Login (screen 06).
   final VoidCallback? onSignIn;
@@ -107,7 +107,10 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
         return;
       }
       if (!mounted) return;
-      widget.onAccountCreated(id);
+      final name = (practice?['displayName'] as String?)?.isNotEmpty == true
+          ? practice!['displayName'] as String
+          : _practiceName.trim();
+      widget.onAccountCreated(id, name);
     } on FirebaseAuthException catch (e) {
       setState(() {
         switch (e.code) {

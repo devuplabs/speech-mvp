@@ -153,5 +153,9 @@ class _Harness {
     createdPassword = password;
   }
 
-  void onCreated(String id) => createdPracticeId = id;
+  String? createdPracticeName;
+  void onCreated(String id, String name) {
+    createdPracticeId = id;
+    createdPracticeName = name;
+  }
 }

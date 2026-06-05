@@ -24,6 +24,24 @@ paths:
       responses:
         "200":
           description: OK
+  /v1/me:
+    get:
+      summary: Current-user profile for role-based routing (Auth·14)
+      description: >-
+        Returns `{ user, practice }` for the verified Firebase token. Token-only
+        so an invited clinician can call it on first login — which activates
+        their seat (`invited` → `active`).
+      security:
+        - firebaseToken: []
+      responses:
+        "200":
+          description: Profile + practice
+        "401":
+          description: Missing/invalid token
+        "403":
+          description: Seat disabled
+        "404":
+          description: No seat for this identity
   # --- Practice onboarding (Feature 3). Bearer = Firebase ID token. ---
   /v1/practices:
     post:
