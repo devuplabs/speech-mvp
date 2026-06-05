@@ -28,6 +28,18 @@ variable "inference_openai_base_url" {
   default = ""
 }
 
+variable "llm_model" {
+  description = "Model id passed to the OpenAI-compatible inference endpoint. Examples: 'google/gemini-2.5-flash' (Vertex AI Gemini), 'google/gemma-3-27b-it' (self-hosted vLLM)."
+  type        = string
+  default     = ""
+}
+
+variable "llm_enabled_kinds" {
+  description = "Comma-separated AI draft kinds the LLM is allowed to generate (prep_brief|session_plan|clinical_report|parent_summary). Use '*' to enable all. Empty string => app default (prep_brief only)."
+  type        = string
+  default     = ""
+}
+
 variable "api_min_instances" {
   type    = number
   default = 0

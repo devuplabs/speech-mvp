@@ -28,3 +28,17 @@ inference_enabled = false
 # inference_node_pool_min_count = 1
 # inference_node_pool_max_count = 1
 # inference_deletion_protection = false
+
+# ---- First AI loop — Vertex AI Gemini 2.5 (europe-west2, OpenAI-compatible) ----
+# Bypasses the self-hosted vLLM path above. Same GCP project, no new vendor.
+# Uncomment the four lines below, fill in the project id, merge, and the
+# sona-terraform-dev-apply trigger will:
+#   - point INFERENCE_OPENAI_BASE_URL at Vertex AI
+#   - set LLM_MODEL to Gemini 2.5 Flash (cheap; swap to gemini-2.5-pro for quality)
+#   - keep LLM_ENABLED_KINDS unset so only prep_brief uses the LLM (the first loop)
+#   - grant roles/aiplatform.user to the Cloud Run runtime SA
+#
+# inference_openai_base_url_override = "https://europe-west2-aiplatform.googleapis.com/v1beta1/projects/project-a625d19b-de99-48e9-9a9/locations/europe-west2/endpoints/openapi"
+# llm_model                          = "google/gemini-2.5-flash"
+# llm_enabled_kinds                  = ""        # "" => prep_brief only; "*" => all four
+# grant_vertex_aiplatform_iam        = true

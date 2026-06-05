@@ -160,3 +160,35 @@ variable "cloud_run_allow_unauthenticated" {
   type        = bool
   default     = true
 }
+
+# ---- LLM inference (Vertex AI Gemini or external OpenAI-compatible endpoint) ----
+#
+# When set, these override the self-hosted vLLM URL produced by the
+# `inference` module. Use this to point Sona at Vertex AI Gemini 2.5 in
+# europe-west2 (or any other OpenAI-compatible endpoint) without standing
+# up GKE / GPU. The runtime SA gets `roles/aiplatform.user` when
+# `grant_vertex_aiplatform_iam = true`.
+
+variable "inference_openai_base_url_override" {
+  description = "If non-empty, used as INFERENCE_OPENAI_BASE_URL instead of the GKE vLLM module output. For Vertex AI Gemini use: https://{REGION}-aiplatform.googleapis.com/v1beta1/projects/{PROJECT}/locations/{REGION}/endpoints/openapi"
+  type        = string
+  default     = ""
+}
+
+variable "llm_model" {
+  description = "Model id sent in the chat-completions request. Vertex AI Gemini: 'google/gemini-2.5-flash' or 'google/gemini-2.5-pro'. Self-hosted vLLM: 'google/gemma-3-27b-it'."
+  type        = string
+  default     = ""
+}
+
+variable "llm_enabled_kinds" {
+  description = "AI draft kinds the LLM may generate (comma-separated). Default '' lets the app pick: prep_brief only. Use '*' to enable all."
+  type        = string
+  default     = ""
+}
+
+variable "grant_vertex_aiplatform_iam" {
+  description = "Grant the Cloud Run runtime SA roles/aiplatform.user at project scope. Needed when inference_openai_base_url_override points at Vertex AI (*aiplatform.googleapis.com*)."
+  type        = bool
+  default     = false
+}
