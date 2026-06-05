@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
 import 'package:sona/design_system/widgets/sona_text_field.dart';
+import 'package:sona/features/auth/widgets/onboarding_header.dart';
 import 'package:sona/services/api_client.dart';
 import 'package:sona/utils/intake_validation.dart';
 
@@ -137,7 +138,7 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
       backgroundColor: SonaColors.background,
       body: Column(
         children: [
-          const _SignupHeader(),
+          const OnboardingHeader(),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
@@ -328,66 +329,6 @@ class _AdminSignupScreenState extends State<AdminSignupScreen> {
                 fontWeight: FontWeight.w600,
                 color: SonaColors.primary,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Top bar: Sona lockup + "Group Practice Setup".
-class _SignupHeader extends StatelessWidget {
-  const _SignupHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-      decoration: const BoxDecoration(
-        color: SonaColors.surface,
-        border: Border(bottom: BorderSide(color: SonaColors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: SonaColors.primary,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'S',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'Sona',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: SonaColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const Text(
-            'Group Practice Setup',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: SonaColors.textMuted,
             ),
           ),
         ],

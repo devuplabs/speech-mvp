@@ -35,6 +35,21 @@ class SonaApiClient {
     return body['tenantId'] as String;
   }
 
+  /// Plan & seats (screen 02). Sets the practice `mode` + `seats`.
+  Future<Map<String, dynamic>> updatePlan(
+    String practiceId, {
+    required String mode,
+    required int seats,
+  }) async {
+    final res = await _client.patch(
+      _base.replace(path: '/v1/practices/$practiceId/plan'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'mode': mode, 'seats': seats}),
+    );
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   /// Admin sign-up (screen 01). Creates the practice + admin seat from the
   /// caller's verified Firebase token. Returns `{ practice, admin }`.
   Future<Map<String, dynamic>> createPractice({
