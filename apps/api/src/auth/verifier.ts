@@ -28,45 +28,48 @@ export interface TokenVerifier {
 
 /** Dedicated Admin SDK app name so we never clash with any default app. */
 const FIREBASE_APP_NAME = "sona-auth";
+let cachedAuth: Auth | null = null;
 
 /**
- * Firebase ID-token verifier backed by the Firebase Admin SDK.
+ * Shared Firebase Admin **Auth** client, backed by Application Default
+ * Credentials — on Cloud Run that is the runtime service account (no JSON key,
+ * no secret). The Identity Platform / Firebase project is provisioned via
+ * Terraform (`infra/terraform/modules/firebase_auth`). Throws
+ * `auth_not_configured` when `GCP_PROJECT_ID` is unset (e.g. local dev with no
+ * GCP context) so callers fail closed.
  *
- * Credentials come from **Application Default Credentials** — on Cloud Run that
- * is the runtime service account (no JSON key, no secret). The Identity
- * Platform / Firebase project itself is provisioned via Terraform
- * (`infra/terraform/modules/firebase_auth`). When `GCP_PROJECT_ID` is unset
- * (e.g. local dev with no GCP context) it fails closed with
- * `auth_not_configured` so no protected route can be reached.
+ * Used by both token verification and clinician credential provisioning.
+ */
+export function getAdminAuth(env: Env): Auth {
+  const projectId = env.GCP_PROJECT_ID;
+  if (!projectId) {
+    throw new AuthError(
+      "auth_not_configured",
+      "GCP_PROJECT_ID is not set; Firebase Admin is unavailable.",
+    );
+  }
+  if (!cachedAuth) {
+    const existing = getApps().find((a) => a.name === FIREBASE_APP_NAME);
+    const app: App =
+      existing ??
+      initializeApp(
+        { credential: applicationDefault(), projectId },
+        FIREBASE_APP_NAME,
+      );
+    cachedAuth = getAuth(app);
+  }
+  return cachedAuth;
+}
+
+/**
+ * Firebase ID-token verifier backed by the Firebase Admin SDK (see
+ * {@link getAdminAuth} for the credential/secret posture).
  */
 export class FirebaseTokenVerifier implements TokenVerifier {
-  private auth: Auth | null = null;
-
   constructor(private readonly env: Env) {}
 
-  private getAuthClient(): Auth {
-    const projectId = this.env.GCP_PROJECT_ID;
-    if (!projectId) {
-      throw new AuthError(
-        "auth_not_configured",
-        "GCP_PROJECT_ID is not set; cannot verify Firebase tokens.",
-      );
-    }
-    if (!this.auth) {
-      const existing = getApps().find((a) => a.name === FIREBASE_APP_NAME);
-      const app: App =
-        existing ??
-        initializeApp(
-          { credential: applicationDefault(), projectId },
-          FIREBASE_APP_NAME,
-        );
-      this.auth = getAuth(app);
-    }
-    return this.auth;
-  }
-
   async verify(idToken: string): Promise<VerifiedIdentity> {
-    const client = this.getAuthClient();
+    const client = getAdminAuth(this.env);
     let decoded;
     try {
       decoded = await client.verifyIdToken(idToken);

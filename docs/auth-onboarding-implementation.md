@@ -59,11 +59,24 @@ key and no secret to store**. It still fails closed (`auth_not_configured`)
 when `GCP_PROJECT_ID` is unset. `GCP_PROJECT_ID` is already injected into the
 API service by `modules/cloud_run`.
 
+## Auth·05 — clinician invite & credential provisioning (done)
+On invite, `services/clinician-provisioning.ts#dispatchClinicianInvite`:
+1. creates (or reuses) the Firebase user for the clinician's email,
+2. links it to the seat (`firebase_uid`),
+3. generates a Firebase **set-password** action link (continue URL →
+   `/auth/accept-invite`), and
+4. emails it via Postmark (`services/email.ts#sendClinicianInviteEmail`).
+
+Best-effort: if Firebase/Postmark is unconfigured it returns
+`{ provisioned/emailSent: false }` without rolling back the seat — admins can
+`POST /v1/practices/:id/clinicians/:userId/resend`. Uses the shared
+`getAdminAuth(env)` (ADC) from `auth/verifier.ts` — no secrets. CSV import
+dispatches an invite per imported row.
+
 ## Follow-ups (tracked in Notion)
-- **Auth·05** — on invite, create the Firebase user + send the email action
-  link. Hook point marked `TODO(Auth·05)` in `services/practice.ts`.
 - Demo seeding of an admin/clinician roster (optional).
 - The patient-history import path stays gated pending GDPR review (**Auth·17**).
+- Magic-link sign-in for clinician login is wired on the client (Auth·12).
 
 ## Verification
 `npm run typecheck`, `npm run build`, and `npm test` (30 tests) all pass.

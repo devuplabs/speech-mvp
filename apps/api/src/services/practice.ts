@@ -126,6 +126,24 @@ export async function updatePracticeConfig(
   return { ok: true, tenant: updated };
 }
 
+export async function getPractice(db: Db, tenantId: string): Promise<Tenant | null> {
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1);
+  return tenant ?? null;
+}
+
+export async function getClinician(
+  db: Db,
+  tenantId: string,
+  userId: string,
+): Promise<User | null> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.tenantId, tenantId), eq(users.id, userId)))
+    .limit(1);
+  return user ?? null;
+}
+
 export async function listClinicians(db: Db, tenantId: string): Promise<User[]> {
   return db
     .select()
@@ -142,8 +160,8 @@ type InviteResult =
 
 /**
  * Invite a clinician (screen 04). Enforces the seat limit and de-dupes by email.
- * Creates the seat in `invited` state; the Firebase email invite + credential
- * provisioning is sent by **Auth·05** (hook point marked below).
+ * Creates the seat in `invited` state; the caller then dispatches the Firebase
+ * email invite via `dispatchClinicianInvite` (Auth·05).
  */
 export async function inviteClinician(
   db: Db,
@@ -183,8 +201,6 @@ export async function inviteClinician(
     action: "clinician.invited",
     metadata: { email, role: input.role },
   });
-
-  // TODO(Auth·05): send Firebase email invite + generate credential link here.
 
   return { ok: true, user: row };
 }

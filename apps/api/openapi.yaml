@@ -95,7 +95,10 @@ paths:
           description: Clinician roster + seats used
     post:
       summary: Invite a clinician (screen 04)
-      description: Creates an invited seat. Firebase email invite is sent by Auth·05.
+      description: >-
+        Creates an invited seat, provisions a Firebase user, and emails a
+        set-password link (Auth·05). Response includes an `invite` object with
+        `provisioned` / `emailSent` flags (best-effort; never rolls back).
       security:
         - firebaseToken: []
       parameters:
@@ -107,11 +110,37 @@ paths:
             format: uuid
       responses:
         "201":
-          description: Clinician invited
+          description: Clinician invited (+ invite dispatch result)
         "409":
           description: Already a member of this practice
         "422":
           description: No seats available
+  /v1/practices/{id}/clinicians/{userId}/resend:
+    post:
+      summary: Resend a clinician's invite (screen 04)
+      description: Regenerates the Firebase set-password link and re-sends the invite email.
+      security:
+        - firebaseToken: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Invite re-dispatched
+        "404":
+          description: Clinician not found in this practice
+        "409":
+          description: Clinician is already active
   /v1/practices/{id}/clinicians/import:
     post:
       summary: Bulk invite clinicians via CSV import (screen 04)
