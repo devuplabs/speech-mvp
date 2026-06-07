@@ -103,6 +103,37 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      # Public web origin used to build invite / intake links (Auth·05/16).
+      dynamic "env" {
+        for_each = var.enable_web ? [1] : []
+        content {
+          name  = "SONA_WEB_BASE_URL"
+          value = google_cloud_run_v2_service.web[0].uri
+        }
+      }
+
+      # Transactional email (Postmark) — only wired when configured.
+      dynamic "env" {
+        for_each = var.postmark_from_email != "" ? [1] : []
+        content {
+          name  = "POSTMARK_FROM_EMAIL"
+          value = var.postmark_from_email
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.postmark_token_secret_resource_id != "" ? [1] : []
+        content {
+          name = "POSTMARK_API_TOKEN"
+          value_source {
+            secret_key_ref {
+              secret  = var.postmark_token_secret_resource_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       env {
         name = "DB_PASSWORD"
         value_source {

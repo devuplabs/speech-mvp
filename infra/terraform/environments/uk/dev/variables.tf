@@ -25,6 +25,19 @@ variable "gcs_bucket_force_destroy" {
   default     = false
 }
 
+variable "postmark_api_token" {
+  description = "Postmark server token for transactional email. Supply at apply time via TF_VAR_postmark_api_token (CI secret / local env) — never commit. Empty disables email."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "postmark_from_email" {
+  description = "Verified Postmark sender address for transactional email (e.g. no-reply@yourdomain). Empty disables email."
+  type        = string
+  default     = ""
+}
+
 variable "db_tier" {
   description = "Cloud SQL machine type."
   type        = string

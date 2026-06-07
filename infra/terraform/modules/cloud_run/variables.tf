@@ -16,6 +16,18 @@ variable "db_password_secret_resource_id" {
   type        = string
 }
 
+variable "postmark_token_secret_resource_id" {
+  description = "Full Secret Manager resource ID for the Postmark server token (Cloud Run secret_key_ref). Empty string leaves POSTMARK_API_TOKEN unset (email disabled)."
+  type        = string
+  default     = ""
+}
+
+variable "postmark_from_email" {
+  description = "Verified Postmark sender address for transactional email. Empty string leaves POSTMARK_FROM_EMAIL unset (email disabled)."
+  type        = string
+  default     = ""
+}
+
 variable "artifact_registry_docker_url" { type = string }
 
 variable "api_image" {

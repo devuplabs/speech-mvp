@@ -160,3 +160,16 @@ variable "cloud_run_allow_unauthenticated" {
   type        = bool
   default     = true
 }
+
+variable "postmark_api_token" {
+  description = "Postmark server token for transactional email (clinician invites). Supply at apply time (e.g. TF_VAR_postmark_api_token) — never commit. Empty string disables email and creates no secret."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "postmark_from_email" {
+  description = "Verified Postmark sender address for transactional email. Empty string disables email."
+  type        = string
+  default     = ""
+}

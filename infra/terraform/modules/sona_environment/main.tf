@@ -112,6 +112,37 @@ resource "google_secret_manager_secret_iam_member" "runtime_db_password" {
   member    = "serviceAccount:${module.app_identity.runtime_service_account_email}"
 }
 
+# Postmark server token in Secret Manager (transactional email — clinician
+# invites). Created only when a token is supplied at apply time; the value never
+# lives in git. Mirrors the db-password secret pattern.
+resource "google_secret_manager_secret" "postmark_token" {
+  count     = var.postmark_api_token != "" ? 1 : 0
+  project   = var.project_id
+  secret_id = "${var.name_prefix}-postmark-token-${var.environment}"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret_version" "postmark_token" {
+  count       = var.postmark_api_token != "" ? 1 : 0
+  secret      = google_secret_manager_secret.postmark_token[0].id
+  secret_data = var.postmark_api_token
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime_postmark_token" {
+  count     = var.postmark_api_token != "" ? 1 : 0
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.postmark_token[0].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.app_identity.runtime_service_account_email}"
+}
+
 module "inference" {
   source = "../inference"
 
@@ -151,6 +182,9 @@ module "cloud_run" {
   cloud_sql_app_user        = module.cloud_sql.db_user_name
   db_password_secret_resource_id = module.cloud_sql.db_password_secret_resource_id
 
+  postmark_token_secret_resource_id = try(google_secret_manager_secret.postmark_token[0].id, "")
+  postmark_from_email               = var.postmark_from_email
+
   artifact_registry_docker_url = module.artifact_registry.docker_repository_url
   api_image                 = local.api_image
   web_image                 = local.web_image
@@ -166,6 +200,7 @@ module "cloud_run" {
     module.cloud_sql,
     module.app_identity,
     google_secret_manager_secret_iam_member.runtime_db_password,
+    google_secret_manager_secret_iam_member.runtime_postmark_token,
   ]
 }
 
