@@ -125,10 +125,11 @@ rubric and Definition of Done. Strong already: two-tier abstraction, specific
 numeric pain points, explicit Real-vs-Vision honesty, and a visual emotion curve.
 The following gaps were closed:
 
-- **Worked persona** (skill: "one persona, consistent") — added a synthetic
-  worked-example card ("Priya", parent of Aanya (4), speech-sound delay; solo
-  paediatric SLT) to the Executive view, with a note that the journey shape
-  generalises across ASLTIP.
+- **Worked persona** (skill: "one persona, consistent") — added an example-persona
+  card using the repo's **Aria** profile (`scripts/personas/aria_speech_sounds_4yo.json`):
+  Aria (4), speech-sound delay, parent Anna, referred by the nursery SENCO; clinician =
+  solo paediatric SLT — to the Executive view, with a note that the journey generalises
+  across SLTs (paediatric + adult).
 - **Touchpoint inventory** (skill: "comprehensive, specific channels") — added a
   **Touchpoints / channel** lane to the Product view naming the channel + device
   per stage (phone/email/web/WhatsApp/ASLTIP directory, magic-link SMS, web
