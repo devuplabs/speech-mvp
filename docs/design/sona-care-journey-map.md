@@ -14,10 +14,12 @@ Speech & Language Therapy — covering the **first ~30 days of a new case**. The
    (anxious → confident), **top pain points** (one per phase), **business metrics** (hero
    numbers), and **strategic opportunities**. Deliberately monochrome-clean — no swimlanes,
    no Real-vs-Vision colour coding, no jargon.
-2. **Product view (working swimlane).** Actor lanes (frontstage→backstage) × the 9 stages,
-   plus analytical bands (mindset/emotion, pain today, Sona intervention, AI artifacts,
-   trust/compliance, value/KPI), with branch points and the Real/Vision colour split. The
-   team's working map — short phrases per cell, not a system/data/state dump.
+2. **Product view (build overview).** A high-level, team-facing map: the 9 stages
+   **grouped into the 5 phases**, with just three rows per stage — **What Sona does**
+   (the capability), **Status** (Real / Vision / Mixed, colour-coded), and **Surface /
+   owner**. Deliberately lean so the team can see *what they're building and where it
+   stands* at a glance; the richer analytical detail (emotions, pains, KPIs,
+   prioritisation) lives in the Executive view.
 
 The five executive phases map onto the nine product stages as: **Find & enquire** (1) ·
 **Understand** (2–3) · **Meet & decide** (4–6) · **Plan & share** (7–8) ·
@@ -137,6 +139,15 @@ The following gaps were closed:
 - **Update cadence / ownership** (skill anti-pattern: "one-time exercise") — added a
   footer with owner, source, last-updated, quarterly review date, and a validation
   TODO (corroborate with 3–5 more ASLTIP SLTs).
+
+**Later simplification (team feedback):** the Product view was subsequently
+**slimmed to a build overview** (phase band → stages → What Sona does / Status /
+Surface) because the full multi-lane swimlane was too detailed for a working team
+view. The skill-driven dimensions still live on the board, but at the right
+altitude: **emotions, pains, KPIs, persona and prioritisation in the Executive
+view**, and **touchpoints folded into the Product view's "Surface / owner" row**.
+The verbatim quote band was retired with the dense lanes. The legend was trimmed to
+the three colours now in use (Real / Vision / Mixed).
 
 **Informed divergences from the skill (kept on purpose):** the artifact is a
 healthcare **care-pathway / service blueprint**, not a B2B marketing funnel, so it
