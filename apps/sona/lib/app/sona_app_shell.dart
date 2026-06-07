@@ -8,6 +8,7 @@ import 'package:sona/config/env.dart';
 import 'package:sona/features/auth/admin_home_screen.dart';
 import 'package:sona/features/auth/clinician_login_screen.dart';
 import 'package:sona/features/auth/onboarding_flow.dart';
+import 'package:sona/features/auth/set_password_screen.dart';
 import 'package:sona/services/auth/auth_controller.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
@@ -40,6 +41,7 @@ import 'package:sona/utils/open_url.dart';
 
 enum SonaRoute {
   launcher,
+  setPassword,
   signIn,
   onboarding,
   adminHome,
@@ -65,6 +67,7 @@ class SonaAppShell extends StatefulWidget {
     super.key,
     this.apiClient,
     this.intakeToken,
+    this.inviteCode,
     this.authController,
   });
 
@@ -74,6 +77,10 @@ class SonaAppShell extends StatefulWidget {
 
   /// Magic-link token from parent web URL `?t=`.
   final String? intakeToken;
+
+  /// Firebase reset/invite action code from the web URL; routes a fresh visitor
+  /// straight to the set-password screen when present (Auth·16).
+  final String? inviteCode;
 
   /// Present only when Firebase is configured; enables the auth/onboarding
   /// flows (Auth·14). Null in demo/test builds.
@@ -91,6 +98,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
   SonaRoute _route = SonaRoute.launcher;
   ClinicianRoute _clinicianNav = ClinicianRoute.today;
+
+  /// Email resolved from the invite/reset action code, used to sign in once the
+  /// new password is set (Auth·16).
+  String? _inviteEmail;
   bool _busy = false;
   String? _status;
   String? _parentSummaryHtml;
@@ -155,6 +166,20 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }
   }
 
+  /// Launcher entry into the admin "create a practice" wizard (Auth·16). New
+  /// practice owners start here; clinicians are invited instead.
+  void _openOnboarding() {
+    if (widget.authController == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sign-up needs Firebase configuration (FIREBASE_* at build).'),
+        ),
+      );
+      return;
+    }
+    _go(SonaRoute.onboarding);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -167,6 +192,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_openFromIntakeToken(token));
       });
+    }
+    // An invite/reset deep link drops the clinician straight on set-password
+    // (Auth·16). Needs Firebase; ignored in demo/test builds without auth.
+    final invite = widget.inviteCode;
+    if (invite != null && invite.isNotEmpty && widget.authController != null) {
+      _route = SonaRoute.setPassword;
     }
   }
 
@@ -1108,6 +1139,22 @@ class _SonaAppShellState extends State<SonaAppShell> {
             onForgotPassword: (email) =>
                 widget.authController!.sendPasswordReset(email),
             onSignedIn: _resolveRoleAndRoute,
+            onCreatePractice: () => _go(SonaRoute.onboarding),
+          ),
+        SonaRoute.setPassword => SetPasswordScreen(
+            oobCode: widget.inviteCode ?? '',
+            onVerifyCode: (code) async {
+              final email =
+                  await widget.authController!.verifyPasswordResetCode(code);
+              _inviteEmail = email;
+              return email;
+            },
+            onSetPassword: ({required code, required password}) async {
+              await widget.authController!.confirmPasswordReset(code, password);
+              await widget.authController!
+                  .signInWithPassword(_inviteEmail ?? '', password);
+            },
+            onCompleted: () => unawaited(_resolveRoleAndRoute()),
           ),
         SonaRoute.onboarding => OnboardingFlow(
             apiClient: _api,
@@ -1172,6 +1219,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
       },
       bottomNavigationBar: (_route == SonaRoute.launcher ||
               _route == SonaRoute.signIn ||
+              _route == SonaRoute.setPassword ||
               _route == SonaRoute.onboarding ||
               _route == SonaRoute.adminHome)
           ? null
@@ -1256,6 +1304,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
                   label: 'Clinician workspace (desktop)',
                   variant: SonaButtonVariant.secondary,
                   onPressed: () => _openClinicianToday(),
+                ),
+                const SizedBox(height: 12),
+                SonaButton(
+                  label: 'Create a practice',
+                  onPressed: _openOnboarding,
                 ),
                 const SizedBox(height: 12),
                 SonaButton(
