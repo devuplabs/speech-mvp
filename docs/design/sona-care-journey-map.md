@@ -108,3 +108,38 @@ more capacity.
    v1 template pack must cover.
 6. **Channel / portal vs app** for family delivery — partner says either is fine "so long as
    it's secure"; confirm the default for v1.
+
+---
+
+## Review against the Customer-Journey-Map skill (Dean Peters) — improvements applied
+
+The board was reviewed against the [customer-journey-map skill](https://github.com/deanpeters/Product-Manager-Skills/blob/main/skills/customer-journey-map/SKILL.md)
+rubric and Definition of Done. Strong already: two-tier abstraction, specific
+numeric pain points, explicit Real-vs-Vision honesty, and a visual emotion curve.
+The following gaps were closed:
+
+- **Worked persona** (skill: "one persona, consistent") — added a synthetic
+  worked-example card ("Priya", parent of Aanya (4), speech-sound delay; solo
+  paediatric SLT) to the Executive view, with a note that the journey shape
+  generalises across ASLTIP.
+- **Touchpoint inventory** (skill: "comprehensive, specific channels") — added a
+  **Touchpoints / channel** lane to the Product view naming the channel + device
+  per stage (phone/email/web/WhatsApp/ASLTIP directory, magic-link SMS, web
+  dashboard, video, secure portal/app, etc.).
+- **Prioritization framework** (skill DoD: "rank improvements by impact/feasibility")
+  — added an **impact × effort 2×2** plus a **sequenced-bets** ranked list to the
+  Executive view.
+- **Substantiated emotion** (skill: "authentic, preferably with quotes") — added a
+  **Voice of the field** band with verbatim (anonymised, synthetic) partner quotes.
+- **Measurable KPIs** (skill: "trackable, stage-appropriate") — replaced several
+  "(TBC)" KPIs with directional targets (e.g. intake completion ≥ 80%, consult →
+  engagement ≥ 50%, report turnaround < 72 h vs the ~3-wk baseline).
+- **Update cadence / ownership** (skill anti-pattern: "one-time exercise") — added a
+  footer with owner, source, last-updated, quarterly review date, and a validation
+  TODO (corroborate with 3–5 more ASLTIP SLTs).
+
+**Informed divergences from the skill (kept on purpose):** the artifact is a
+healthcare **care-pathway / service blueprint**, not a B2B marketing funnel, so it
+uses care stages (not Awareness→Loyalty), keeps **two actor lanes** rather than a
+single buyer persona, and represents "teams" via frontstage/backstage actors
+(solo-practitioner context).
