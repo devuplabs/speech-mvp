@@ -25,6 +25,10 @@ The five executive phases map onto the nine product stages as: **Find & enquire*
 **Understand** (2–3) · **Meet & decide** (4–6) · **Plan & share** (7–8) ·
 **Progress together** (9).
 
+> The board's first slide (**Overview**) is exec-facing: it explains *what Sona is* and
+> *how to read the board*, and intentionally omits provenance (Notion / repo / how it was
+> generated). Methodology and sources live in this companion doc instead.
+
 ---
 
 ## Methodology & sources
