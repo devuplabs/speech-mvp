@@ -20,6 +20,8 @@ Speech & Language Therapy — covering the **first ~30 days of a new case**. The
    clinician web, or background AI that delivers it). This is a **pre-development
    plan**, so there is intentionally **no build-status / Real-vs-Vision coding** — every
    capability here is proposed, not shipped. Written for readers with no prior context.
+   Stages are **colour-coded by phase** using the same five-colour palette as the
+   Executive phase cards, so the two views read as one.
 
 The five executive phases map onto the nine product stages as: **Find & enquire** (1) ·
 **Understand** (2–3) · **Meet & decide** (4–6) · **Plan & share** (7–8) ·
