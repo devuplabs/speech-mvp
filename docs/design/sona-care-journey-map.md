@@ -14,12 +14,12 @@ Speech & Language Therapy — covering the **first ~30 days of a new case**. The
    (anxious → confident), **top pain points** (one per phase), **business metrics** (hero
    numbers), and **strategic opportunities**. Deliberately monochrome-clean — no swimlanes,
    no Real-vs-Vision colour coding, no jargon.
-2. **Product view (build overview).** A high-level, team-facing map: the 9 stages
-   **grouped into the 5 phases**, with just three rows per stage — **What Sona does**
-   (the capability), **Status** (Real / Vision / Mixed, colour-coded), and **Surface /
-   owner**. Deliberately lean so the team can see *what they're building and where it
-   stands* at a glance; the richer analytical detail (emotions, pains, KPIs,
-   prioritisation) lives in the Executive view.
+2. **Product view (overview of the proposed solution).** A high-level, team-facing
+   map: the 9 stages **grouped into the 5 phases**, with two rows per stage —
+   **What Sona does** (the capability) and **Surface / owner** (the family app/portal,
+   clinician web, or background AI that delivers it). This is a **pre-development
+   plan**, so there is intentionally **no build-status / Real-vs-Vision coding** — every
+   capability here is proposed, not shipped. Written for readers with no prior context.
 
 The five executive phases map onto the nine product stages as: **Find & enquire** (1) ·
 **Understand** (2–3) · **Meet & decide** (4–6) · **Plan & share** (7–8) ·
@@ -148,6 +148,12 @@ altitude: **emotions, pains, KPIs, persona and prioritisation in the Executive
 view**, and **touchpoints folded into the Product view's "Surface / owner" row**.
 The verbatim quote band was retired with the dense lanes. The legend was trimmed to
 the three colours now in use (Real / Vision / Mixed).
+
+**Pre-development reframing:** because this board is created at the **start of
+development** for readers with **no prior context**, build-status framing was removed —
+the Product view dropped the Status / Real-vs-Vision row, the Executive value numbers
+are labelled **TARGET**, and the colour legend was replaced by a **"How to read this
+board"** guide. Everything reads as a proposed plan, not a shipped product.
 
 **Informed divergences from the skill (kept on purpose):** the artifact is a
 healthcare **care-pathway / service blueprint**, not a B2B marketing funnel, so it
