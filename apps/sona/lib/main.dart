@@ -24,10 +24,28 @@ Future<void> main() async {
   }
 
   String? intakeToken;
+  String? inviteCode;
   if (kIsWeb) {
     intakeToken = Uri.base.queryParameters['t'];
+    inviteCode = inviteCodeFromUri(Uri.base);
   }
-  runApp(SonaApp(intakeToken: intakeToken, authController: authController));
+  runApp(SonaApp(
+    intakeToken: intakeToken,
+    inviteCode: inviteCode,
+    authController: authController,
+  ));
+}
+
+/// Extracts a Firebase action code from an inbound invite / password-reset link
+/// (Auth·16). Invite-accept (Auth·05) and "forgot password" emails both land as
+/// `…/auth/accept-invite?mode=resetPassword&oobCode=…`; either routes to the
+/// set-password screen. Returns null when no usable reset code is present.
+String? inviteCodeFromUri(Uri uri) {
+  final code = uri.queryParameters['oobCode'];
+  if (code == null || code.isEmpty) return null;
+  final mode = uri.queryParameters['mode'];
+  if (mode != null && mode != 'resetPassword') return null;
+  return code;
 }
 
 class SonaApp extends StatelessWidget {
@@ -35,6 +53,7 @@ class SonaApp extends StatelessWidget {
     super.key,
     this.apiClient,
     this.intakeToken,
+    this.inviteCode,
     this.authController,
   });
 
@@ -42,6 +61,9 @@ class SonaApp extends StatelessWidget {
   /// (e.g. one backed by a `MockClient`) without spinning up the real API.
   final SonaApiClient? apiClient;
   final String? intakeToken;
+
+  /// Firebase reset/invite action code from the inbound web URL (Auth·16).
+  final String? inviteCode;
 
   /// Present only when Firebase is configured; drives auth state + token
   /// injection on API calls (Auth·06).
@@ -67,6 +89,7 @@ class SonaApp extends StatelessWidget {
       home: SonaAppShell(
         apiClient: client,
         intakeToken: intakeToken,
+        inviteCode: inviteCode,
         authController: authController,
       ),
     );

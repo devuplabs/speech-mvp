@@ -19,6 +19,7 @@ class ClinicianLoginScreen extends StatefulWidget {
     required this.onMagicLink,
     required this.onForgotPassword,
     this.onSignedIn,
+    this.onCreatePractice,
     this.subtitle = 'Sign in to your practice',
   });
 
@@ -27,6 +28,10 @@ class ClinicianLoginScreen extends StatefulWidget {
   final Future<void> Function(String email) onMagicLink;
   final Future<void> Function(String email) onForgotPassword;
   final VoidCallback? onSignedIn;
+
+  /// Opens the admin "create a practice" onboarding wizard. New practice owners
+  /// start here; clinicians are invited and never reach this link (Auth·16).
+  final VoidCallback? onCreatePractice;
   final String subtitle;
 
   @override
@@ -269,6 +274,30 @@ class _ClinicianLoginScreenState extends State<ClinicianLoginScreen> {
             variant: SonaButtonVariant.secondary,
             onPressed: _busy ? null : _magicLink,
           ),
+          if (widget.onCreatePractice != null) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                key: const ValueKey('create-practice-link'),
+                onPressed: _busy ? null : widget.onCreatePractice,
+                child: const Text.rich(
+                  TextSpan(
+                    text: 'New to Sona? ',
+                    style: TextStyle(fontSize: 13, color: SonaColors.textSecondary),
+                    children: [
+                      TextSpan(
+                        text: 'Create a practice',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: SonaColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           const Center(
             child: Text(

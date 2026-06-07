@@ -8,6 +8,25 @@ import { sendClinicianInviteEmail } from "./email.js";
 
 type User = typeof users.$inferSelect;
 
+/**
+ * Rewrites the Firebase-generated reset link to our own invite-accept screen,
+ * preserving the one-time `oobCode`. The in-app set-password flow (Auth·16)
+ * verifies and consumes that code, so the invite email never depends on
+ * Firebase's hosted action handler or a console action-URL setting. Falls back
+ * to the original link if no code can be extracted.
+ */
+export function buildInviteAcceptUrl(webBaseUrl: string, firebaseLink: string): string {
+  let code: string | null = null;
+  try {
+    code = new URL(firebaseLink).searchParams.get("oobCode");
+  } catch {
+    code = null;
+  }
+  if (!code) return firebaseLink;
+  const base = webBaseUrl.replace(/\/$/, "");
+  return `${base}/auth/accept-invite?mode=resetPassword&oobCode=${encodeURIComponent(code)}`;
+}
+
 export type InviteDispatchContext = {
   practiceName: string;
   inviterName?: string | null;
@@ -70,11 +89,15 @@ export async function dispatchClinicianInvite(
     await db.update(users).set({ firebaseUid }).where(eq(users.id, user.id));
   }
 
-  // 3. Generate a set-password link that returns to the invite-accept screen.
-  const continueUrl = `${ctx.webBaseUrl.replace(/\/$/, "")}/auth/accept-invite`;
+  // 3. Generate a password-set code and point it at our own invite-accept
+  //    screen, carrying the one-time code, so the in-app set-password flow
+  //    (Auth·16) consumes it directly. We email the link ourselves (Postmark),
+  //    so the path never touches Firebase's hosted action page or any console
+  //    "action URL" setting — it's owned entirely by our code + Terraform.
   let actionLink: string;
   try {
-    actionLink = await auth.generatePasswordResetLink(user.email, { url: continueUrl });
+    const firebaseLink = await auth.generatePasswordResetLink(user.email);
+    actionLink = buildInviteAcceptUrl(ctx.webBaseUrl, firebaseLink);
   } catch (err) {
     return {
       provisioned: true,

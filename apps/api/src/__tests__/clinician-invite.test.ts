@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "../config.js";
-import { dispatchClinicianInvite } from "../services/clinician-provisioning.js";
+import {
+  buildInviteAcceptUrl,
+  dispatchClinicianInvite,
+} from "../services/clinician-provisioning.js";
 import { renderClinicianInviteEmail } from "../services/email.js";
 
 describe("renderClinicianInviteEmail", () => {
@@ -28,6 +31,33 @@ describe("renderClinicianInviteEmail", () => {
     expect(htmlBody).not.toContain("<script>alert(1)</script>");
     expect(htmlBody).toContain("&lt;script&gt;");
     expect(htmlBody).toContain("an admin");
+  });
+});
+
+describe("buildInviteAcceptUrl", () => {
+  it("rewrites a Firebase link to our invite-accept screen with the code", () => {
+    const link = buildInviteAcceptUrl(
+      "https://app.sona.dev/",
+      "https://proj.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=ABC123&apiKey=k",
+    );
+    expect(link).toBe(
+      "https://app.sona.dev/auth/accept-invite?mode=resetPassword&oobCode=ABC123",
+    );
+  });
+
+  it("url-encodes the code and trims a trailing slash", () => {
+    const link = buildInviteAcceptUrl(
+      "https://app.sona.dev",
+      "https://x/action?oobCode=a%2Fb+c",
+    );
+    expect(link).toContain("/auth/accept-invite?mode=resetPassword&oobCode=");
+    // The decoded code round-trips through our URL untouched.
+    expect(new URL(link).searchParams.get("oobCode")).toBe("a/b c");
+  });
+
+  it("falls back to the original link when there is no code", () => {
+    const original = "https://proj.firebaseapp.com/__/auth/action?mode=verifyEmail";
+    expect(buildInviteAcceptUrl("https://app.sona.dev", original)).toBe(original);
   });
 });
 

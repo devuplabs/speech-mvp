@@ -85,6 +85,37 @@ void main() {
     expect(find.text('Enter your email first'), findsOneWidget);
     expect(calls.magicLinkEmail, isNull);
   });
+
+  testWidgets('create-practice link is hidden without the callback',
+      (tester) async {
+    await pumpScreen(tester);
+    expect(find.byKey(const ValueKey('create-practice-link')), findsNothing);
+  });
+
+  testWidgets('create-practice link opens the onboarding wizard',
+      (tester) async {
+    tester.view.physicalSize = const Size(700, 1500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    var created = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: ClinicianLoginScreen(
+        onPasswordSignIn: ({required email, required password}) async {},
+        onMagicLink: (_) async {},
+        onForgotPassword: (_) async {},
+        onCreatePractice: () => created++,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final link = find.byKey(const ValueKey('create-practice-link'));
+    await tester.ensureVisible(link);
+    await tester.tap(link);
+    await tester.pump();
+    expect(created, 1);
+  });
 }
 
 class _Calls {
