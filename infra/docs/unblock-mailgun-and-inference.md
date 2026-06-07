@@ -8,7 +8,7 @@ Monal co-design and DPIA sign-off are **deferred to next week**. This runbook co
 
 Work **Mailgun first** (same day), then **GPU/inference** (quota + upload can run in parallel).
 
-> Email today is the **clinician invite** only (set-password link — no patient data / PHI). Parent-summary delivery stays portal-first per `docs/decisions/005-portal-first-patient-communications.md`. Confirm a **DPA/BAA** with Mailgun (Sinch) before sending anything containing PHI.
+> **Email is notification-only and never carries PHI** (design rule — ADR-005), regardless of any Mailgun BAA/DPA. Today that's the **clinician invite** (set-password link); clinical content (parent summaries) is rendered only in the authenticated portal. A BAA/DPA is preferred for email **metadata** but is never a gate to emailing clinical content — that simply doesn't happen.
 
 ---
 
