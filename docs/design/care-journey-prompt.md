@@ -1,10 +1,15 @@
 # Care Journey + Swimlane Diagram — Agent Prompt
 
-**Status:** v1 · 6 June 2026
+**Status:** v2 · 6 June 2026
 **Purpose:** A ready-to-use prompt for an Opus 4.8 agent (with access to Notion, Figma,
-and this repo) to build a healthcare **care journey / patient-pathway map with swimlanes**
-in **FigJam** for the Sona product — the "customer journey" equivalent in a healthcare
-context, for both executive storytelling and product/engineering planning.
+and this repo) to build a healthcare **care journey / patient-pathway map** in **FigJam**
+for the Sona product — the "customer journey" equivalent in a healthcare context. It asks
+for **three tiers of abstraction**: a clean, template-style **executive overview** (the
+priority), a **team/product working swimlane**, and a **full-detail build/agent reference**.
+
+**Changelog:** v2 restructures the deliverable into three abstraction tiers after a v1
+board came out too detailed for executives — density now lives in the bottom tier, and
+the top tier is an abstract, slide-like "journey at a glance".
 
 **How to use:** Copy everything in the prompt block below and hand it to the agent.
 The prompt is self-contained but instructs the agent to verify against the live sources.
@@ -26,13 +31,30 @@ You are a senior product designer + healthcare service designer. Produce a **car
 journey (patient/care-pathway) map with swimlanes** in **FigJam** for a product
 codenamed **Sona** — an AI co-pilot for private Speech & Language Therapy (SLT)
 practice in the UK. The diagram is the "customer journey" equivalent for a
-healthcare context, and has **two audiences**:
+healthcare context.
 
-1. **Executives / non-technical founders** — a clear narrative of the care journey,
-   where the pain is today, and where Sona creates value (and how much time it saves).
-2. **Product & engineering** — a detailed, swimlaned map of every stage, actor,
-   touchpoint, system action, AI artifact, data handoff, and state, usable to plan
-   and build the product.
+Produce **three tiers at different levels of abstraction**, as separate frames on
+one board. They are ordered by importance — **Tier 1 is the star deliverable**:
+
+1. **Executive overview (highest abstraction — the priority).** A clean,
+   template-quality "journey at a glance" a non-technical founder or investor can
+   absorb in **30–60 seconds**. ~5 grouped phases across the top, one headline line
+   per phase, a single emotion/sentiment curve, 2–3 "moments that matter", a
+   before→after contrast, and one hero value metric. **No swimlanes, no system
+   actions, no AI internals.** Lots of whitespace, big readable type — it must look
+   like a polished published journey-map template, not a working board.
+2. **Team / product working view (mid abstraction).** The swimlane journey: ~9
+   stages, the pain today, the Sona intervention, and the real-vs-vision split.
+   Human-readable; used in product discussions and as the working "product view".
+3. **Build / agent reference (full detail).** The exhaustive swimlaned map of every
+   stage, actor, touchpoint, system action, AI artifact, data handoff, and state.
+   **Label it explicitly as a developer/agent reference — not for human
+   presentation.** This is where all the dense detail lives so the other tiers stay
+   clean.
+
+> The previous version of this board was too detailed at the top: the high-detail
+> map is useful for build work but is not human-readable for executives. Push all
+> density **down** into Tier 3, and make Tier 1 genuinely abstract and beautiful.
 
 You have access to **Notion**, **Figma**, and this **code repository**. Use all three.
 
@@ -128,11 +150,24 @@ markers where the path forks:
 For each stage, also capture the **before vs after**: the manual baseline today vs.
 the Sona-assisted flow.
 
+**For the Tier 1 executive overview, collapse the 9 stages into ~5 plain-English
+phases** (avoid product jargon). Suggested grouping:
+
+1. **Find & enquire** (referral / first contact)
+2. **Understand** (smart intake → intake review & overview)
+3. **Meet & decide** (consult prep → consultation → triage)
+4. **Plan & share** (first session plan → client/family summary)
+5. **Progress together** (carryover, resources, progress, report turnaround)
+
+Use the detailed 9 stages only in Tiers 2 and 3.
+
 ---
 
 ## Step 4 — Swimlanes (the rows) and analytical layers
 
-Lay the board out as a **swimlane journey map**: stages as columns, lanes as rows.
+These swimlanes and layers apply to **Tiers 2 and 3** (the working and reference
+views). **Tier 1 stays abstract — do not put swimlanes on it.** Lay these tiers out
+as a **swimlane journey map**: stages as columns, lanes as rows.
 
 **Actor lanes (frontstage → backstage):**
 - **Client / Parent / Carer** (the family or adult client)
@@ -165,23 +200,52 @@ Lay the board out as a **swimlane journey map**: stages as columns, lanes as row
 
 - **Before any `use_figma` call, load the Figma skills** `/figma-use` and
   `/figma-use-figjam` (and `/figma-create-new-file` before creating a file). Follow them.
-- Create a **FigJam board** (or a new file if none exists) titled
-  **"Sona — Care Journey & Swimlanes (v1)"**.
-- Use FigJam's **customer-journey-map + swimlane** conventions: a clear stage header
-  row, lane labels down the left, sticky notes per cell, connectors showing flow and
-  branch points, and a legend.
-- Produce **two coordinated views on the same board (separate sections/frames):**
-  1. **Executive view** — condensed swimlane: the 9 stages, one line of narrative each,
-     the headline pain, the Sona value, and a "before vs after / time saved" band.
-     Skimmable in 2 minutes by a non-technical founder.
-  2. **Product view** — the full detailed swimlane with all analytical layers,
-     system/AI actions, data handoffs, states, branch points, and edge cases.
-- **Visual system:** consistent sticky colours with a **legend** — e.g. one colour for
-  Real-today, one for Vision/roadmap, one for Pain, one for AI-draft artifact, one for
-  Assumption/open-question. Use the existing Sona palette if easily available
-  (teal primary `#2D6A6E`, apricot accent `#F2A878`) so it feels on-brand.
-- Keep it **presentable to executives**: tidy alignment, readable hierarchy, a title
-  block with purpose + date + "synthetic data, generalised across ASLTIP" disclaimer.
+- Create a **FigJam board** (or update the existing one) titled
+  **"Sona — Care Journey & Swimlanes (v1)"**. Lay out the three tiers top-to-bottom
+  as clearly separated, titled sections: **Tier 1 at the top**, then Tier 2, then Tier 3.
+
+### Tier 1 — Executive overview (the priority; make it template-beautiful)
+
+Model this on a **polished, published customer-journey-map template** — the kind of
+clean "journey at a glance" you find as a sample online — not on a working swimlane.
+Aim for something an executive grasps in **30–60 seconds**.
+
+- **One horizontal row of ~5 grouped phases** (use the Step 3 grouping). Big phase
+  titles, generous whitespace, minimal words.
+- **Per phase, at most:** a one-line "what happens", a one-line "what Sona changes",
+  and an emotion marker. No system actions, no AI internals, no data, no states.
+- **A single emotion/sentiment curve** flowing left→right across the phases (the
+  classic journey-map line — from anxious/overloaded → relieved/confident).
+- **2–3 "moments that matter"** called out as highlights (e.g. the first overview in
+  one place; the same-day summary; fast report turnaround).
+- **A before→after strip** (manual today vs. Sona-assisted) and **one hero metric**
+  (e.g. "**frees ≥4 productive hours / month**").
+- Keep it **abstract**: no swimlanes, no Real-vs-Vision colour coding, no jargon.
+  If it looks like a working board, it's wrong — simplify until it reads like a slide.
+
+### Tier 2 — Team / product working view
+
+- A readable **swimlane journey**: ~9 stages as columns, actor lanes + a few key
+  analytical bands as rows (actions, pain today, Sona intervention, value).
+- Apply the **Real-today vs Vision** colour split here. Keep cells to short phrases,
+  not paragraphs — this is a working view, but still skimmable.
+
+### Tier 3 — Build / agent reference (full detail)
+
+- The **exhaustive swimlane** with every analytical layer from Step 4: system/AI
+  actions, data handoffs, states, branch points, compliance checkpoints, edge cases.
+- Add a visible banner: **"Developer / agent reference — not for executive
+  presentation."**
+
+### Visual system (all tiers)
+
+- Consistent sticky/section colours with a **legend** — one colour each for
+  Real-today, Vision/roadmap, Pain, AI-draft artifact, and Assumption/open-question.
+  (The legend and Real-vs-Vision coding apply to Tiers 2–3; keep Tier 1 monochrome-clean.)
+- Use the Sona palette if easily available (teal primary `#2D6A6E`, apricot accent
+  `#F2A878`) so it feels on-brand.
+- Each tier gets a title block: name, one-line purpose, date, and a "synthetic data,
+  generalised across ASLTIP" disclaimer.
 
 ---
 
@@ -195,9 +259,13 @@ Lay the board out as a **swimlane journey map**: stages as columns, lanes as row
 - **Self-check before finishing:**
   - [ ] No single-therapist / single-brand / paediatric-only tailoring leaked in.
   - [ ] Every AI artifact is marked as a clinician-reviewed draft.
-  - [ ] Real-today vs Vision is unambiguous to a non-technical reader.
+  - [ ] Real-today vs Vision is unambiguous to a non-technical reader (Tiers 2–3).
   - [ ] Partner pain points appear as evidence, generalised (not "Monal-specific").
-  - [ ] Both the executive and product views are complete and aligned.
+  - [ ] **Tier 1 reads like a clean template/slide** — abstract, ~5 phases, no
+        swimlanes or jargon, graspable in under a minute. (This is the main fix:
+        the prior board was too detailed at the top.)
+  - [ ] Tier 3 is clearly labelled as a developer/agent reference, not for executives.
+  - [ ] All three tiers are present, aligned, and tell the same story at their level.
   - [ ] No PHI / real names; adult-facing only.
 
 **Deliverable:** the FigJam board URL, a 5-bullet summary of the journey, and a list
