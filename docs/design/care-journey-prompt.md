@@ -39,12 +39,11 @@ board. The executive view is the priority:
 
 1. **Executive view (highest abstraction — the priority).** A clean, slide-quality
    "journey at a glance" a non-technical founder or investor absorbs in **under a
-   minute**. ~5 grouped phases, one short headline per phase, a single emotion curve,
-   2–3 "moments that matter", a before→after contrast, and one hero value metric.
-   **No swimlanes, no system actions, no AI internals, no jargon, minimal words.** It
-   must look like a polished, published journey-map template — not a working board.
-   Be ruthless about cutting detail: make it **even more abstract and readable than a
-   typical journey map**. If in doubt, remove it.
+   minute**. A one-slide journey map with five elements only: **journey stages, an
+   emotion curve, top pain points, business metrics, and strategic opportunities**.
+   **No swimlanes, no system actions, no AI internals, no jargon, minimal words.**
+   Explicitly avoid wall-of-stickies density, service blueprints, and detailed UX
+   research artifacts. Be ruthless about cutting detail — if in doubt, remove it.
 2. **Product view (working swimlane).** A readable swimlane journey: ~9 stages as
    columns; actor lanes plus a few key bands (actions, pain today, Sona intervention,
    value) as rows; the real-vs-vision colour split. This is the team's working map for
@@ -210,20 +209,30 @@ system/data/state dump (that view is intentionally removed).
 
 Model this on a **polished, published customer-journey-map template** — the kind of
 clean "journey at a glance" you find as a sample online — not on a working swimlane.
-Aim for something an executive grasps in **under a minute**.
+This is for **executive presentation**: it must fit the idea of **one slide** and be
+graspable in **under a minute**.
 
-- **One horizontal row of ~5 grouped phases** (use the Step 3 grouping). Big phase
-  titles, generous whitespace, minimal words.
-- **Per phase, at most:** a one-line "what happens", a one-line "what Sona changes",
-  and an emotion marker. No system actions, no AI internals, no data, no states.
-- **A single emotion/sentiment curve** flowing left→right across the phases (the
-  classic journey-map line — from anxious/overloaded → relieved/confident).
-- **2–3 "moments that matter"** called out as highlights (e.g. the first overview in
-  one place; the same-day summary; fast report turnaround).
-- **A before→after strip** (manual today vs. Sona-assisted) and **one hero metric**
-  (e.g. "**frees ≥4 productive hours / month**").
-- Keep it **abstract**: no swimlanes, no Real-vs-Vision colour coding, no jargon.
-  If it looks like a working board, it's wrong — simplify until it reads like a slide.
+**Aim for a one-slide journey map with exactly these five elements** (and little else):
+
+1. **Journey stages** — one horizontal row of ~5 grouped phases (use the Step 3
+   grouping). Big titles, generous whitespace, minimal words.
+2. **Emotion curve** — a single sentiment line flowing left→right across the phases
+   (anxious / overloaded → relieved / confident).
+3. **Top pain points** — the few headline pains only (one short call-out per phase at
+   most), not an inventory.
+4. **Business metrics** — one or two hero numbers (e.g. "**frees ≥4 productive hours /
+   month**"; faster report turnaround vs. ~3-week baseline).
+5. **Strategic opportunities** — where Sona creates value / the bet, as 3–5 crisp
+   one-liners.
+
+**For executive presentations, deliberately avoid:**
+- 50+ sticky notes / wall-of-stickies density.
+- Large service blueprints (system lanes, backstage processes, data handoffs).
+- Detailed UX-research artifacts (verbatim quotes walls, exhaustive touchpoint logs).
+
+Keep it **abstract and monochrome-clean**: no swimlanes, no Real-vs-Vision colour
+coding, no jargon. If it looks like a working board, it's wrong — cut until it reads
+like a single slide.
 
 ### Product view (working swimlane)
 
@@ -258,8 +267,9 @@ Aim for something an executive grasps in **under a minute**.
   - [ ] Every AI artifact is marked as a clinician-reviewed draft.
   - [ ] Real-today vs Vision is unambiguous to a non-technical reader (Product view).
   - [ ] Partner pain points appear as evidence, generalised (not "Monal-specific").
-  - [ ] **Executive view reads like a clean template/slide** — abstract, ~5 phases,
-        no swimlanes or jargon, graspable in under a minute.
+  - [ ] **Executive view reads like one slide** — exactly the five elements (stages,
+        emotion curve, top pain points, business metrics, strategic opportunities),
+        no swimlanes/blueprints/wall-of-stickies, graspable in under a minute.
   - [ ] **Only two tiers exist** — no third exhaustive build/agent detail view.
   - [ ] Both tiers are present, aligned, and tell the same story at their level.
   - [ ] No PHI / real names; adult-facing only.
