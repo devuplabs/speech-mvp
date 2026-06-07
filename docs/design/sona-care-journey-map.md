@@ -6,14 +6,22 @@
 
 A care-pathway ("customer journey") map for **Sona** — the AI co-pilot for UK private
 Speech & Language Therapy — covering the **first ~30 days of a new case**. The board has
-two coordinated views on one canvas:
+**two tiers at different levels of abstraction** on one canvas:
 
-1. **Executive view** — the 9 stages, one line of narrative each, the headline pain today,
-   where Sona creates value (Real vs Vision), a before→after row, and a time-saved band.
-   Skimmable in ~2 minutes by a non-technical founder.
-2. **Product view** — the detailed swimlane: actor lanes (frontstage→backstage) × the 9
-   stages, plus six analytical layers (mindset/emotion, pain today, Sona intervention,
-   AI artifacts, trust/compliance, value/KPI), with branch points and Real/Vision tags.
+1. **Executive view (highest abstraction — the priority).** A slide-quality "journey at a
+   glance", graspable in **under a minute**, with five elements only: **journey stages**
+   (the 9 detailed stages collapsed into ~5 plain-English phases), an **emotion curve**
+   (anxious → confident), **top pain points** (one per phase), **business metrics** (hero
+   numbers), and **strategic opportunities**. Deliberately monochrome-clean — no swimlanes,
+   no Real-vs-Vision colour coding, no jargon.
+2. **Product view (working swimlane).** Actor lanes (frontstage→backstage) × the 9 stages,
+   plus analytical bands (mindset/emotion, pain today, Sona intervention, AI artifacts,
+   trust/compliance, value/KPI), with branch points and the Real/Vision colour split. The
+   team's working map — short phrases per cell, not a system/data/state dump.
+
+The five executive phases map onto the nine product stages as: **Find & enquire** (1) ·
+**Understand** (2–3) · **Meet & decide** (4–6) · **Plan & share** (7–8) ·
+**Progress together** (9).
 
 ---
 
