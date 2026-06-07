@@ -1,15 +1,16 @@
 # Care Journey + Swimlane Diagram — Agent Prompt
 
-**Status:** v2 · 6 June 2026
+**Status:** v3 · 6 June 2026
 **Purpose:** A ready-to-use prompt for an Opus 4.8 agent (with access to Notion, Figma,
 and this repo) to build a healthcare **care journey / patient-pathway map** in **FigJam**
 for the Sona product — the "customer journey" equivalent in a healthcare context. It asks
-for **three tiers of abstraction**: a clean, template-style **executive overview** (the
-priority), a **team/product working swimlane**, and a **full-detail build/agent reference**.
+for **two tiers of abstraction**: a clean, slide-style **executive view** (the priority)
+and a readable **product view** (a working swimlane).
 
-**Changelog:** v2 restructures the deliverable into three abstraction tiers after a v1
-board came out too detailed for executives — density now lives in the bottom tier, and
-the top tier is an abstract, slide-like "journey at a glance".
+**Changelog:** v3 drops the exhaustive build/agent detail view (not human-readable);
+the working swimlane becomes the **product view**, and the **executive view** is pushed
+to a higher, slide-like level of abstraction. (v2 had three tiers; v1 had two views that
+came out too detailed at the top.)
 
 **How to use:** Copy everything in the prompt block below and hand it to the agent.
 The prompt is self-contained but instructs the agent to verify against the live sources.
@@ -33,28 +34,26 @@ codenamed **Sona** — an AI co-pilot for private Speech & Language Therapy (SLT
 practice in the UK. The diagram is the "customer journey" equivalent for a
 healthcare context.
 
-Produce **three tiers at different levels of abstraction**, as separate frames on
-one board. They are ordered by importance — **Tier 1 is the star deliverable**:
+Produce **two tiers at different levels of abstraction**, as separate frames on one
+board. The executive view is the priority:
 
-1. **Executive overview (highest abstraction — the priority).** A clean,
-   template-quality "journey at a glance" a non-technical founder or investor can
-   absorb in **30–60 seconds**. ~5 grouped phases across the top, one headline line
-   per phase, a single emotion/sentiment curve, 2–3 "moments that matter", a
-   before→after contrast, and one hero value metric. **No swimlanes, no system
-   actions, no AI internals.** Lots of whitespace, big readable type — it must look
-   like a polished published journey-map template, not a working board.
-2. **Team / product working view (mid abstraction).** The swimlane journey: ~9
-   stages, the pain today, the Sona intervention, and the real-vs-vision split.
-   Human-readable; used in product discussions and as the working "product view".
-3. **Build / agent reference (full detail).** The exhaustive swimlaned map of every
-   stage, actor, touchpoint, system action, AI artifact, data handoff, and state.
-   **Label it explicitly as a developer/agent reference — not for human
-   presentation.** This is where all the dense detail lives so the other tiers stay
-   clean.
+1. **Executive view (highest abstraction — the priority).** A clean, slide-quality
+   "journey at a glance" a non-technical founder or investor absorbs in **under a
+   minute**. ~5 grouped phases, one short headline per phase, a single emotion curve,
+   2–3 "moments that matter", a before→after contrast, and one hero value metric.
+   **No swimlanes, no system actions, no AI internals, no jargon, minimal words.** It
+   must look like a polished, published journey-map template — not a working board.
+   Be ruthless about cutting detail: make it **even more abstract and readable than a
+   typical journey map**. If in doubt, remove it.
+2. **Product view (working swimlane).** A readable swimlane journey: ~9 stages as
+   columns; actor lanes plus a few key bands (actions, pain today, Sona intervention,
+   value) as rows; the real-vs-vision colour split. This is the team's working map for
+   product and design discussions — human-readable, **short phrases per cell, not
+   paragraphs**.
 
-> The previous version of this board was too detailed at the top: the high-detail
-> map is useful for build work but is not human-readable for executives. Push all
-> density **down** into Tier 3, and make Tier 1 genuinely abstract and beautiful.
+> **Do not build a third, exhaustive build/agent view.** An earlier version had a
+> dense system/data/state map that was not human-readable; it is removed. Keep the
+> board to these two readable tiers and push nothing back into a detail dump.
 
 You have access to **Notion**, **Figma**, and this **code repository**. Use all three.
 
@@ -150,8 +149,8 @@ markers where the path forks:
 For each stage, also capture the **before vs after**: the manual baseline today vs.
 the Sona-assisted flow.
 
-**For the Tier 1 executive overview, collapse the 9 stages into ~5 plain-English
-phases** (avoid product jargon). Suggested grouping:
+**For the Executive view, collapse the 9 stages into ~5 plain-English phases**
+(avoid product jargon). Suggested grouping:
 
 1. **Find & enquire** (referral / first contact)
 2. **Understand** (smart intake → intake review & overview)
@@ -159,15 +158,17 @@ phases** (avoid product jargon). Suggested grouping:
 4. **Plan & share** (first session plan → client/family summary)
 5. **Progress together** (carryover, resources, progress, report turnaround)
 
-Use the detailed 9 stages only in Tiers 2 and 3.
+Use the detailed 9 stages only in the Product view.
 
 ---
 
 ## Step 4 — Swimlanes (the rows) and analytical layers
 
-These swimlanes and layers apply to **Tiers 2 and 3** (the working and reference
-views). **Tier 1 stays abstract — do not put swimlanes on it.** Lay these tiers out
-as a **swimlane journey map**: stages as columns, lanes as rows.
+These swimlanes and layers apply to the **Product view only**. **The Executive view
+stays abstract — do not put swimlanes on it.** Lay the Product view out as a
+**swimlane journey map**: stages as columns, lanes as rows. Keep it readable: pick
+the few bands below that earn their place; don't turn it into an exhaustive
+system/data/state dump (that view is intentionally removed).
 
 **Actor lanes (frontstage → backstage):**
 - **Client / Parent / Carer** (the family or adult client)
@@ -201,14 +202,15 @@ as a **swimlane journey map**: stages as columns, lanes as rows.
 - **Before any `use_figma` call, load the Figma skills** `/figma-use` and
   `/figma-use-figjam` (and `/figma-create-new-file` before creating a file). Follow them.
 - Create a **FigJam board** (or update the existing one) titled
-  **"Sona — Care Journey & Swimlanes (v1)"**. Lay out the three tiers top-to-bottom
-  as clearly separated, titled sections: **Tier 1 at the top**, then Tier 2, then Tier 3.
+  **"Sona — Care Journey & Swimlanes (v1)"**. Lay out the two tiers top-to-bottom as
+  clearly separated, titled sections: the **Executive view at the top**, the
+  **Product view** below it.
 
-### Tier 1 — Executive overview (the priority; make it template-beautiful)
+### Executive view (the priority; make it template-beautiful)
 
 Model this on a **polished, published customer-journey-map template** — the kind of
 clean "journey at a glance" you find as a sample online — not on a working swimlane.
-Aim for something an executive grasps in **30–60 seconds**.
+Aim for something an executive grasps in **under a minute**.
 
 - **One horizontal row of ~5 grouped phases** (use the Step 3 grouping). Big phase
   titles, generous whitespace, minimal words.
@@ -223,25 +225,20 @@ Aim for something an executive grasps in **30–60 seconds**.
 - Keep it **abstract**: no swimlanes, no Real-vs-Vision colour coding, no jargon.
   If it looks like a working board, it's wrong — simplify until it reads like a slide.
 
-### Tier 2 — Team / product working view
+### Product view (working swimlane)
 
 - A readable **swimlane journey**: ~9 stages as columns, actor lanes + a few key
   analytical bands as rows (actions, pain today, Sona intervention, value).
 - Apply the **Real-today vs Vision** colour split here. Keep cells to short phrases,
-  not paragraphs — this is a working view, but still skimmable.
+  not paragraphs — this is a working view, but still skimmable. Do not expand it into
+  an exhaustive system/data/state map.
 
-### Tier 3 — Build / agent reference (full detail)
-
-- The **exhaustive swimlane** with every analytical layer from Step 4: system/AI
-  actions, data handoffs, states, branch points, compliance checkpoints, edge cases.
-- Add a visible banner: **"Developer / agent reference — not for executive
-  presentation."**
-
-### Visual system (all tiers)
+### Visual system
 
 - Consistent sticky/section colours with a **legend** — one colour each for
   Real-today, Vision/roadmap, Pain, AI-draft artifact, and Assumption/open-question.
-  (The legend and Real-vs-Vision coding apply to Tiers 2–3; keep Tier 1 monochrome-clean.)
+  (The legend and Real-vs-Vision coding apply to the **Product view**; keep the
+  **Executive view monochrome-clean**.)
 - Use the Sona palette if easily available (teal primary `#2D6A6E`, apricot accent
   `#F2A878`) so it feels on-brand.
 - Each tier gets a title block: name, one-line purpose, date, and a "synthetic data,
@@ -259,13 +256,12 @@ Aim for something an executive grasps in **30–60 seconds**.
 - **Self-check before finishing:**
   - [ ] No single-therapist / single-brand / paediatric-only tailoring leaked in.
   - [ ] Every AI artifact is marked as a clinician-reviewed draft.
-  - [ ] Real-today vs Vision is unambiguous to a non-technical reader (Tiers 2–3).
+  - [ ] Real-today vs Vision is unambiguous to a non-technical reader (Product view).
   - [ ] Partner pain points appear as evidence, generalised (not "Monal-specific").
-  - [ ] **Tier 1 reads like a clean template/slide** — abstract, ~5 phases, no
-        swimlanes or jargon, graspable in under a minute. (This is the main fix:
-        the prior board was too detailed at the top.)
-  - [ ] Tier 3 is clearly labelled as a developer/agent reference, not for executives.
-  - [ ] All three tiers are present, aligned, and tell the same story at their level.
+  - [ ] **Executive view reads like a clean template/slide** — abstract, ~5 phases,
+        no swimlanes or jargon, graspable in under a minute.
+  - [ ] **Only two tiers exist** — no third exhaustive build/agent detail view.
+  - [ ] Both tiers are present, aligned, and tell the same story at their level.
   - [ ] No PHI / real names; adult-facing only.
 
 **Deliverable:** the FigJam board URL, a 5-bullet summary of the journey, and a list
