@@ -14,6 +14,10 @@ Work **Mailgun first** (same day), then **GPU/inference** (quota + upload can ru
 
 ## A — Mailgun (transactional email)
 
+> Canonical setup, rotation, and troubleshooting live in the integration runbook:
+> [`docs/integrations/mailgun.md`](../../docs/integrations/mailgun.md). The steps below
+> are the time-boxed "do it this week" checklist.
+
 ### A1. Mailgun account + sending domain
 
 1. [Mailgun](https://www.mailgun.com) (Sinch) → add a **sending domain** (e.g. `mg.yourdomain.com`).
