@@ -12,7 +12,7 @@ import math
 W,H=1920,1080
 T=dict(bg="FAFAF7",surf="FFFFFF",teal="2D6A6E",dteal="1E4A4D",apri="F2A878",ink="142433",
        sec="4A5B6B",mut="8597A4",bord="E5E7EB",hero="E6F0F0",lt="EAF1F0",ltteal="A9C7C7",
-       paincard="F2F5F6",painink="3A4A55",area="D9E7E6",aibg="FFF0E6",aibd="C45A1A",band2="F3F6F6",cline="9AA7AD")
+       paincard="F2F5F6",painink="3A4A55",area="D9E7E6",guide="D7DDE0",aibg="FFF0E6",aibd="C45A1A",band2="F3F6F6",cline="9AA7AD")
 PS=["2D6A6E","356985","C0703F","6E5A86","4C8060"]; PT=["DCE9E8","DCE7EE","F6E5D7","E8E2F0","DCEBE0"]
 slides=[]
 def NS(): s=[("rect",0,0,W,H,T["bg"],None,0)]; slides.append(s); return s
@@ -65,20 +65,21 @@ R(s,92,224,140,5,T["apri"],2)
 gap=22; cw=(R0-L0-4*gap)/5; step=cw+gap; xs=[L0+i*step for i in range(5)]; cx=[x+cw/2 for x in xs]
 ph=["1 · Find & enquire","2 · Understand","3 · Meet & decide","4 · Plan & share","5 · Progress together"]
 for i in range(5): CELL(s,xs[i],262,cw,66,PS[i],ph[i],18,"FFFFFF",True,'c',12)
-TX(s,90,360,900,24,[("SENTIMENT · FAMILY + CLINICIAN",14,True,T["mut"],0)])
-lvl=[0.18,0.06,0.5,0.78,0.96]; base=540; py=[410+(1-l)*110 for l in lvl]
+TX(s,90,360,1200,24,[("HOW EACH PHASE FEELS  ·  one point per phase, family + clinician",14,True,T["mut"],0)])
+lvl=[0.18,0.06,0.5,0.78,0.96]; base=540; py=[414+(1-l)*108 for l in lvl]
+for i in range(5): L(s,cx[i],330,cx[i],py[i]-9,T["guide"],1.5)
 AREA(s,[(cx[0],base)]+[(cx[i],py[i]) for i in range(5)]+[(cx[4],base)],T["area"])
 L(s,L0,base,R0,base,T["bord"],1.5)
 for i in range(4): L(s,cx[i],py[i],cx[i+1],py[i+1],T["teal"],4)
 moods=["Anxious","Overwhelmed","Hopeful","Reassured","Confident"]
 desc=["unsure where to start","so much to take in","a clear path forward","kept in the loop","confident & in control"]
 for i in range(5):
-    O(s,cx[i]-10,py[i]-10,20,20,T["teal"],"FFFFFF")
-    TX(s,xs[i],556,cw,24,[(moods[i],17,True,T["teal"],0)],'m','c'); TX(s,xs[i],582,cw,22,[(desc[i],13.5,False,T["sec"],0)],'m','c')
+    O(s,cx[i]-11,py[i]-11,22,22,PS[i],"FFFFFF")
+    TX(s,xs[i],556,cw,24,[(moods[i],17,True,PS[i],0)],'m','c'); TX(s,xs[i],582,cw,22,[(desc[i],13.5,False,T["sec"],0)],'m','c')
 TX(s,90,636,900,24,[("TODAY'S PAIN — BY PHASE",14,True,T["mut"],0)])
 pains=["Enquiries slip through the cracks","Chasing forms — everything is manual","Prep is rushed; the free consult under-delivers","Plans hand-built; reports take ~3 weeks","Carryover is ad-hoc (email / WhatsApp)"]
 for i in range(5):
-    R(s,xs[i],668,cw,116,T["paincard"],12,T["bord"]); O(s,xs[i]+16,668+16,9,9,T["apri"],None)
+    R(s,xs[i],668,cw,116,T["paincard"],12,T["bord"]); O(s,xs[i]+16,668+16,9,9,PS[i],None)
     TX(s,xs[i]+16,668,cw-32,116,[(pains[i],16,False,T["painink"],0)],'m','c',True)
 TX(s,90,812,900,24,[("TARGET OUTCOMES",14,True,T["mut"],0)])
 R(s,92,844,90,5,T["apri"],2); TX(s,90,858,820,56,[("≥ 4 hours / month",42,True,T["teal"],0)]); TX(s,90,924,820,30,[("productive hours given back to each clinician",18,False,T["sec"],0)])
