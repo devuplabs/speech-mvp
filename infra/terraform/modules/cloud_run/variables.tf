@@ -16,14 +16,26 @@ variable "db_password_secret_resource_id" {
   type        = string
 }
 
-variable "postmark_token_secret_resource_id" {
-  description = "Full Secret Manager resource ID for the Postmark server token (Cloud Run secret_key_ref). Empty string leaves POSTMARK_API_TOKEN unset (email disabled)."
+variable "mailgun_api_key_secret_resource_id" {
+  description = "Full Secret Manager resource ID for the Mailgun API key (Cloud Run secret_key_ref). Empty string leaves MAILGUN_API_KEY unset (email disabled)."
   type        = string
   default     = ""
 }
 
-variable "postmark_from_email" {
-  description = "Verified Postmark sender address for transactional email. Empty string leaves POSTMARK_FROM_EMAIL unset (email disabled)."
+variable "mailgun_domain" {
+  description = "Mailgun sending domain (e.g. mg.yourdomain.com). Empty string leaves MAILGUN_DOMAIN unset (email disabled)."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_from_email" {
+  description = "Verified Mailgun sender address for transactional email. Empty string leaves MAILGUN_FROM_EMAIL unset (email disabled)."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_base_url" {
+  description = "Mailgun API region base, e.g. https://api.eu.mailgun.net for EU. Empty string defaults the API to US (https://api.mailgun.net)."
   type        = string
   default     = ""
 }

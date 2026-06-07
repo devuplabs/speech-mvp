@@ -47,7 +47,7 @@ export type InviteDispatchResult = {
  *
  * Creates (or reuses) the Firebase user, links it to the seat via
  * `firebase_uid`, generates a "set your password" action link, and emails it.
- * Best-effort: if Firebase or Postmark is not configured, the invited seat is
+ * Best-effort: if Firebase or Mailgun is not configured, the invited seat is
  * left intact and the admin can resend — we never roll back the invite.
  */
 export async function dispatchClinicianInvite(
@@ -91,7 +91,7 @@ export async function dispatchClinicianInvite(
 
   // 3. Generate a password-set code and point it at our own invite-accept
   //    screen, carrying the one-time code, so the in-app set-password flow
-  //    (Auth·16) consumes it directly. We email the link ourselves (Postmark),
+  //    (Auth·16) consumes it directly. We email the link ourselves (Mailgun),
   //    so the path never touches Firebase's hosted action page or any console
   //    "action URL" setting — it's owned entirely by our code + Terraform.
   let actionLink: string;

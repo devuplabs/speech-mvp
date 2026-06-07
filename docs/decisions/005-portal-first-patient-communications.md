@@ -28,3 +28,12 @@
 
 - [`docs/mvp-brief.md`](../mvp-brief.md) — parent summary capability
 - [`docs/architecture-gcp-hipaa.md`](../architecture-gcp-hipaa.md) §4.5 email row (update when ESP chosen)
+
+## Note (2026-06-07)
+
+The repo's **transactional** email provider (clinician invites — **no PHI**) is now
+**Mailgun (Sinch)**, wired in `apps/api/src/services/mailgun.ts` and Terraform. This
+does **not** change the decision above: parent-summary **clinical content** stays
+portal-first. The original rationale ("Postmark will not sign a HIPAA BAA") is kept as
+the historical record; whether **Mailgun/Sinch** offers a suitable **BAA (US) / UK GDPR
+DPA** for any *future* PHI-bearing mail is still to be validated before that path opens.

@@ -112,22 +112,38 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      # Transactional email (Postmark) — only wired when configured.
+      # Transactional email (Mailgun) — each piece only wired when configured.
       dynamic "env" {
-        for_each = var.postmark_from_email != "" ? [1] : []
+        for_each = var.mailgun_from_email != "" ? [1] : []
         content {
-          name  = "POSTMARK_FROM_EMAIL"
-          value = var.postmark_from_email
+          name  = "MAILGUN_FROM_EMAIL"
+          value = var.mailgun_from_email
         }
       }
 
       dynamic "env" {
-        for_each = var.postmark_token_secret_resource_id != "" ? [1] : []
+        for_each = var.mailgun_domain != "" ? [1] : []
         content {
-          name = "POSTMARK_API_TOKEN"
+          name  = "MAILGUN_DOMAIN"
+          value = var.mailgun_domain
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mailgun_base_url != "" ? [1] : []
+        content {
+          name  = "MAILGUN_BASE_URL"
+          value = var.mailgun_base_url
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mailgun_api_key_secret_resource_id != "" ? [1] : []
+        content {
+          name = "MAILGUN_API_KEY"
           value_source {
             secret_key_ref {
-              secret  = var.postmark_token_secret_resource_id
+              secret  = var.mailgun_api_key_secret_resource_id
               version = "latest"
             }
           }

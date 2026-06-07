@@ -1,6 +1,6 @@
 # Sona MVP — working demo
 
-End-to-end **synthetic** flow on live **uk/dev** API (no Postmark, no GPU inference).
+End-to-end **synthetic** flow on live **uk/dev** API (no Mailgun, no GPU inference).
 
 ## Prerequisites
 

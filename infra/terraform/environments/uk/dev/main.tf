@@ -20,11 +20,13 @@ module "stack" {
 
   gcs_bucket_force_destroy = var.gcs_bucket_force_destroy
 
-  # Transactional email (Postmark). Token supplied at apply time via
-  # TF_VAR_postmark_api_token; from-email set per environment. Both empty by
+  # Transactional email (Mailgun). API key supplied at apply time via
+  # TF_VAR_mailgun_api_key; domain/from/region set per environment. All empty by
   # default, which leaves email disabled and creates no secret.
-  postmark_api_token  = var.postmark_api_token
-  postmark_from_email = var.postmark_from_email
+  mailgun_api_key    = var.mailgun_api_key
+  mailgun_domain     = var.mailgun_domain
+  mailgun_from_email = var.mailgun_from_email
+  mailgun_base_url   = var.mailgun_base_url
 
   db_tier                = var.db_tier
   db_edition             = var.db_edition

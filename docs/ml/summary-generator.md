@@ -161,7 +161,7 @@ Clinician opens summary preview
 
 **PDF generation:** On publish, a Cloud Run worker converts the HTML to PDF using headless Chromium (separate `pdf-worker` service). The PDF is stored in GCS (CMEK bucket) and the signed URL is returned to the clinician for optional download. PDF generation is async from the publish call — the portal HTML is immediately available; the PDF arrives within 30 s.
 
-**Email delivery:** `POST /v1/cases/:id/parent-summary/send` (future — requires Postmark BAA/DPA integration per `infra/docs/unblock-postmark-and-inference.md`). Not in 90-day scope; portal link is the v0.2 delivery mechanism.
+**Email delivery:** `POST /v1/cases/:id/parent-summary/send` (future — requires a BAA/DPA email integration; transactional email setup is in `infra/docs/unblock-mailgun-and-inference.md`). Not in 90-day scope; portal link is the v0.2 delivery mechanism.
 
 ---
 
@@ -202,7 +202,7 @@ Clinician opens summary preview
 |----------|-----|----------------|
 | Synchronous draft generation (not async) | Clinician is at the keyboard; streaming first section within 3 s is better UX than a "drafting" spinner | Ties up a Cloud Run connection for ~20 s; must set concurrency limits on the draft endpoint |
 | On-demand draft (not pre-generated at plan save) | Avoids generating summaries for cases that never reach publish; saves GPU time | Clinician waits ~20 s when they open the preview — mitigated by streaming |
-| Portal-first delivery (no email in v0.2) | Postmark DPA not yet executed; portal is simpler and avoids email deliverability issues | Parents used to receiving clinical letters by email may not know to check the portal |
+| Portal-first delivery (no email in v0.2) | PHI-email DPA/BAA not yet executed; portal is simpler and avoids email deliverability issues | Parents used to receiving clinical letters by email may not know to check the portal |
 | PDF async from publish (not blocking) | Headless Chromium can take 10–30 s; blocking publish on PDF would hurt the UX | PDF may arrive 30 s after publish; clinician cannot download immediately |
 | `aiDisclosureFooter` as `z.literal` | Regulatory non-negotiable; enforcement at schema level is more reliable than a UI reminder | The disclosure wording is fixed; any wording change requires a schema version bump and migration |
 | No in-summary PHI from steps 4–5 | Minimisation; avoids clinical language alarming parents | Some clinically relevant context (e.g. hearing test result) is paraphrased rather than quoted — acceptable trade-off for parent-facing communication |

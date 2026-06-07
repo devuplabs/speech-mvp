@@ -65,9 +65,9 @@ On invite, `services/clinician-provisioning.ts#dispatchClinicianInvite`:
 2. links it to the seat (`firebase_uid`),
 3. generates a Firebase **set-password** action link (continue URL →
    `/auth/accept-invite`), and
-4. emails it via Postmark (`services/email.ts#sendClinicianInviteEmail`).
+4. emails it via Mailgun (`services/email.ts#sendClinicianInviteEmail`).
 
-Best-effort: if Firebase/Postmark is unconfigured it returns
+Best-effort: if Firebase/Mailgun is unconfigured it returns
 `{ provisioned/emailSent: false }` without rolling back the seat — admins can
 `POST /v1/practices/:id/clinicians/:userId/resend`. Uses the shared
 `getAdminAuth(env)` (ADC) from `auth/verifier.ts` — no secrets. CSV import

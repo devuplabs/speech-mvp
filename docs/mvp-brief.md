@@ -204,7 +204,7 @@ The detail goes into ADR-001…N. This is the headline:
 | **Environments** | Same architecture; prod = no dev GCP access | [004](decisions/004-unified-environments-access.md) |
 | **Async AI** | Cloud Tasks → worker for prep brief / plan draft | [`architecture-gcp-hipaa.md`](architecture-gcp-hipaa.md) |
 | **PDF** | API/worker (not client-side) | — |
-| **Email** | Postmark or SES with BAA/DPA | — |
+| **Email** | Mailgun (transactional); BAA/DPA vendor required for any PHI mail | — |
 | **Hosting** | Flutter web: Firebase Hosting or GCS+CDN; API: Cloud Run | [`architecture-review-gcp-2026.md`](architecture-review-gcp-2026.md) |
 
 ### What we're explicitly **not** building day one

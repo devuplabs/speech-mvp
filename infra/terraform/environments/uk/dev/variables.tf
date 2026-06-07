@@ -25,15 +25,27 @@ variable "gcs_bucket_force_destroy" {
   default     = false
 }
 
-variable "postmark_api_token" {
-  description = "Postmark server token for transactional email. Supply at apply time via TF_VAR_postmark_api_token (CI secret / local env) — never commit. Empty disables email."
+variable "mailgun_api_key" {
+  description = "Mailgun API key for transactional email. Supply at apply time via TF_VAR_mailgun_api_key (CI secret / local env) — never commit. Empty disables email."
   type        = string
   default     = ""
   sensitive   = true
 }
 
-variable "postmark_from_email" {
-  description = "Verified Postmark sender address for transactional email (e.g. no-reply@yourdomain). Empty disables email."
+variable "mailgun_domain" {
+  description = "Mailgun sending domain (e.g. mg.yourdomain.com). Empty disables email."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_from_email" {
+  description = "Verified Mailgun sender address for transactional email (e.g. no-reply@yourdomain). Empty disables email."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_base_url" {
+  description = "Mailgun API region base, e.g. https://api.eu.mailgun.net for EU. Empty defaults to US."
   type        = string
   default     = ""
 }
