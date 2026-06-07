@@ -57,7 +57,7 @@ The five executive phases map onto the nine product stages as: **Find & enquire*
 1. **"AI drafts, clinician decides"** — every AI artifact wears a DRAFT / clinician-review badge.
 2. **No screen time for children** — all interfaces are adult-facing (parent / carer / clinician).
 3. **UK data residency + audit trail by construction.**
-4. **Augment the clinician, don't automate them** (explicitly welcomed by the design partner).
+4. **Augment people, never replace them — increase human productivity** (explicitly welcomed by the design partner). Sona reduces admin burnout; it does not remove or automate anyone.
 
 ---
 
@@ -75,9 +75,10 @@ The five executive phases map onto the nine product stages as: **Find & enquire*
 | 8 | Client / family summary | Report writing 2–2.5 hrs; ~3-wk lead time dents confidence | Tone/reading-level summary via portal, same-day — DRAFT | UI **Real**; AI draft **Vision** |
 | 9 | Carryover & progress | Assessment ≈ 3-hr session; carryover via ad-hoc email/WhatsApp | Resources control + progress portal + report sub-loop | **Vision** |
 
-**Time saved:** target **≥ 4 productive hours / month** freed (partner-confirmed); faster
-report turnaround builds family confidence; more free time → better care, less burnout,
-more capacity.
+**Productivity gain:** target **≥ 4 productive hours / month given back to each clinician**
+(partner-confirmed); faster report turnaround builds family confidence; more productive
+time → better care, less admin burnout, more capacity. Sona augments the clinician — it
+never replaces them.
 
 ---
 
