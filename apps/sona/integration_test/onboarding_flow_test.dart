@@ -4,30 +4,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:sona/features/auth/onboarding_flow.dart';
 import 'package:sona/services/api_client.dart';
 
-/// Full-flow onboarding test (Auth·15): drives the real wizard screens (01→05)
-/// through one MockClient — admin sign-up → plan/seats → practice config →
-/// invite → live — for both group and single-clinician modes, plus seat-limit
-/// enforcement.
+/// In-process onboarding integration test (Auth·15).
 ///
-/// Runs headless under `flutter test`. A device/CI mirror lives at
-/// `integration_test/onboarding_flow_test.dart`; the external Firebase + API
-/// E2E (invite email → set-password → login) is the Playwright "Auth·15b" task.
+/// Drives the real wizard screens (01→05) through one MockClient — admin
+/// sign-up → plan/seats → practice config → invite → live — for both
+/// group-practice and single-clinician modes, plus seat-limit enforcement.
+///
+/// The full external E2E (real Firebase token + deployed API/web, invite email
+/// → set-password → login) runs in the separate Playwright suite — see the
+/// "Auth·15b" Notion task.
 void main() {
-  Future<_Backend> pumpFlow(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(840, 1700);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  void swallowOverflow() {
     final original = FlutterError.onError;
     FlutterError.onError = (details) {
       if ('${details.exception}'.contains('A RenderFlex overflowed')) return;
       original?.call(details);
     };
     addTearDown(() => FlutterError.onError = original);
+  }
+
+  Future<_Backend> pumpFlow(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(840, 1700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    swallowOverflow();
 
     final backend = _Backend();
     await tester.pumpWidget(MaterialApp(
@@ -59,6 +66,7 @@ void main() {
     await signUp(tester);
     expect(find.text('Choose your plan'), findsOneWidget);
 
+    // Bump to 6 seats, stay in group mode.
     await tester.tap(find.byKey(const ValueKey('seat-increment')));
     await tester.pump();
     expect(find.text('6 seats'), findsOneWidget);
@@ -69,6 +77,7 @@ void main() {
     await tester.tap(find.text('Continue to add clinicians'));
     await tester.pumpAndSettle();
 
+    // Roster starts with the admin only.
     expect(find.text('Add your clinicians'), findsOneWidget);
     expect(find.text('1 of 6'), findsOneWidget);
 
@@ -105,6 +114,7 @@ void main() {
     await tester.tap(find.text('Continue to add clinicians'));
     await tester.pumpAndSettle();
 
+    // 1 seat, occupied by the admin → invites are blocked.
     expect(find.text('1 of 1'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'extra@wsl.co.uk');
     await tester.tap(find.text('+ Invite'));
