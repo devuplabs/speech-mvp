@@ -8,6 +8,13 @@ Two survey versions are generated from one Apps Script, both derived from
 | **Short screener** | `createShortScreener()` | ~20 ★ questions, ~5–8 min | Wide, cold distribution (forums, newsletters, social). Maximise completion + recruit interviews. |
 | **Full survey** | `createFullSurvey()` | Full instrument, ~12–15 min | Engaged respondents — people who said "yes" to the screener, warm intros, SIG members. |
 
+## Live forms
+
+| Version | Published URL |
+|---|---|
+| **Full survey** | <https://forms.gle/JTQKnvXBqUbYy8AFA> |
+| **Short screener** | _(not published yet)_ |
+
 ## Build the forms
 
 1. Open <https://script.google.com> → **New project**.
