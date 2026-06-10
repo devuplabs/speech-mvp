@@ -92,6 +92,7 @@ function createShortScreener() {
 
   _section(form, 'About you');
   _single(form, '1.1 Your main work setting today', SETTINGS, true);
+  _text(form, '1.1a If you chose "Other" above, please add detail (optional)');
   _single(form, '1.2 Share of your work that is private/self-funded vs publicly funded',
     ['100% private', 'Mostly private', '~50/50', 'Mostly public', '100% public'], true);
   _multi(form, '1.3 Client populations you work with', POPULATIONS, true);
@@ -160,6 +161,7 @@ function createFullSurvey() {
 
   _section(form, '1 — About you');
   _single(form, '1.1 Your main work setting today', SETTINGS, true);
+  _text(form, '1.1a If you chose "Other" above, please add detail (optional)');
   _single(form, '1.2 Share of work that is private/self-funded vs publicly funded',
     ['100% private', 'Mostly private', '~50/50', 'Mostly public', '100% public'], true);
   _multi(form, '1.3 Client populations you work with', POPULATIONS, true);

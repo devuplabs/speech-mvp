@@ -76,7 +76,10 @@ result cross-tabbable against these._
 - School- or education-based service
 - Charity / third-sector provider
 - Mix of NHS/public *and* private
-- Other (specify)
+- Other
+
+1.1a If you chose "Other", please add detail. `[short text]` _(optional follow-up
+field — keeps the specify box optional, which Google Forms' native "Other" can't.)_
 
 1.2 ★ Roughly what share of your work is **private/self-funded** vs
 **publicly funded**? `[single]` — 100% private · mostly private · ~50/50 ·
