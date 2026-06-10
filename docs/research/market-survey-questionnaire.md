@@ -14,6 +14,8 @@ us how much of that shape generalises.
 > tagged `[single]`, `[multi]`, `[scale]`, `[number]`, `[short text]`, `[long text]`,
 > `[rank]`. Branching logic is shown inline. Questions marked **★** are the
 > "short-version" core (~6–8 min); the rest are the extended set (~12–15 min).
+> Any **Other (specify)** choice renders as a native "Other …" fill-in box that
+> appears inline when the respondent selects it.
 
 ---
 
@@ -76,10 +78,7 @@ result cross-tabbable against these._
 - School- or education-based service
 - Charity / third-sector provider
 - Mix of NHS/public *and* private
-- Other
-
-1.1a If you chose "Other", please add detail. `[short text]` _(optional follow-up
-field — keeps the specify box optional, which Google Forms' native "Other" can't.)_
+- Other (specify)
 
 1.2 ★ Roughly what share of your work is **private/self-funded** vs
 **publicly funded**? `[single]` — 100% private · mostly private · ~50/50 ·
@@ -122,8 +121,9 @@ Northern Ireland · Republic of Ireland · United States · Australia · Canada 
 1.8 How many **new clients/referrals** do you take on in a typical month?
 `[single]` — 0–2 · 3–5 · 6–10 · 11–20 · 20+
 
-1.9 Which professional bodies / regulators apply to you? `[multi]` — HCPC · RCSLT ·
-ASLTIP · ASHA · Speech Pathology Australia · SAC (Canada) · CORU (Ireland) · Other
+1.9 Which professional bodies / regulators apply to you? `[multi]` — HCPC (UK) ·
+RCSLT (UK) · ASLTIP (UK) · ASHA (US) · Speech Pathology Australia (Australia) ·
+SAC (Canada) · CORU (Ireland) · Other
 
 1.10 What languages do you routinely deliver therapy in, beyond English? `[short text]`
 _(intent: bilingual / EAL / interpreter load is invisible in the current product.)_

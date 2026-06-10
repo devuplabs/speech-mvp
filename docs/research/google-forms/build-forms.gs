@@ -16,6 +16,8 @@
  * NOTES / GOOGLE FORMS LIMITATIONS
  *   - Forms has no point-allocation question. Q2.2 is rendered as a grid
  *     (row = task, column = how much time). Good enough for cross-tabs.
+ *   - Every choice list with an 'Other' option renders a native "Other …" fill-in
+ *     text box, shown only when the respondent selects Other.
  *   - Conditional sub-questions (e.g. 3.3a) are added as OPTIONAL questions
  *     whose title says "(only if ...)". Hard section-branching is implemented
  *     only for the consent/screen-out gate, which is where it matters.
@@ -57,12 +59,21 @@ var FIVE = ['1', '2', '3', '4', '5'];
 
 // ---------- helpers ----------
 function _section(form, title) { return form.addPageBreakItem().setTitle(title); }
+// Any list containing 'Other' is rendered with Google Forms' native "Other …"
+// fill-in box (an inline text field shown only when the respondent picks Other),
+// so we strip the literal 'Other' choice and enable showOtherOption instead.
 function _single(form, title, choices, required) {
-  var it = form.addMultipleChoiceItem().setTitle(title).setChoiceValues(choices);
+  var other = choices.indexOf('Other') !== -1;
+  var vals = choices.filter(function (c) { return c !== 'Other'; });
+  var it = form.addMultipleChoiceItem().setTitle(title).setChoiceValues(vals);
+  if (other) it.showOtherOption(true);
   if (required) it.setRequired(true); return it;
 }
 function _multi(form, title, choices, required) {
-  var it = form.addCheckboxItem().setTitle(title).setChoiceValues(choices);
+  var other = choices.indexOf('Other') !== -1;
+  var vals = choices.filter(function (c) { return c !== 'Other'; });
+  var it = form.addCheckboxItem().setTitle(title).setChoiceValues(vals);
+  if (other) it.showOtherOption(true);
   if (required) it.setRequired(true); return it;
 }
 function _scale(form, title, low, high) {
@@ -92,7 +103,6 @@ function createShortScreener() {
 
   _section(form, 'About you');
   _single(form, '1.1 Your main work setting today', SETTINGS, true);
-  _text(form, '1.1a If you chose "Other" above, please add detail (optional)');
   _single(form, '1.2 Share of your work that is private/self-funded vs publicly funded',
     ['100% private', 'Mostly private', '~50/50', 'Mostly public', '100% public'], true);
   _multi(form, '1.3 Client populations you work with', POPULATIONS, true);
@@ -161,7 +171,6 @@ function createFullSurvey() {
 
   _section(form, '1 — About you');
   _single(form, '1.1 Your main work setting today', SETTINGS, true);
-  _text(form, '1.1a If you chose "Other" above, please add detail (optional)');
   _single(form, '1.2 Share of work that is private/self-funded vs publicly funded',
     ['100% private', 'Mostly private', '~50/50', 'Mostly public', '100% public'], true);
   _multi(form, '1.3 Client populations you work with', POPULATIONS, true);
@@ -171,7 +180,8 @@ function createFullSurvey() {
   _single(form, '1.7 Active clients in a typical week', ['1–5', '6–10', '11–20', '21–40', '40+'], false);
   _single(form, '1.8 New clients/referrals in a typical month', ['0–2', '3–5', '6–10', '11–20', '20+'], false);
   _multi(form, '1.9 Professional bodies / regulators that apply to you',
-    ['HCPC', 'RCSLT', 'ASLTIP', 'ASHA', 'Speech Pathology Australia', 'SAC (Canada)', 'CORU (Ireland)', 'Other'], false);
+    ['HCPC (UK)', 'RCSLT (UK)', 'ASLTIP (UK)', 'ASHA (US)', 'Speech Pathology Australia (Australia)',
+     'SAC (Canada)', 'CORU (Ireland)', 'Other'], false);
   _text(form, '1.10 Languages you routinely deliver therapy in, beyond English');
 
   _section(form, '2 — Where your time goes');

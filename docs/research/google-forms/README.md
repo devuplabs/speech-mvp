@@ -29,6 +29,10 @@ Google Forms can't express everything via the API, so finish these manually:
   response-validation note or just leave it as guidance in the title.
 - **Q2.2 point-allocation.** The script renders it as a time grid (good enough).
   If you want true 100-point allocation, that needs a third-party add-on.
+- **"Other" boxes.** Every question with an "Other" choice is generated with
+  Google Forms' native "Other …" fill-in, so a text box appears inline when a
+  respondent picks it — no extra setup needed. (One exception: Q2.2 is a grid,
+  which can't carry an "Other" fill-in; its "Other" is a plain row.)
 - **Conditional sub-questions** (labelled "(if …)" / "(only if …)") are plain
   optional questions. If you want them hidden until relevant, split them into
   their own sections and branch — only worth it for Q3.3a/3.3b and Q5.3a/5.3b.
