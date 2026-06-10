@@ -13,7 +13,7 @@ Two survey versions are generated from one Apps Script, both derived from
 | Version | Published URL |
 |---|---|
 | **Full survey** | <https://forms.gle/JTQKnvXBqUbYy8AFA> |
-| **Short screener** | _(not published yet)_ |
+| **Short screener** | <https://forms.gle/Ne2Dc1UAGgGa9e9G6> |
 
 ## Build the forms
 
