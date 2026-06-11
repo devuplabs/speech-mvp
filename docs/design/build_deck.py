@@ -33,33 +33,33 @@ L0=100; R0=1820
 # ===================== SLIDE 1 — OVERVIEW =====================
 s=NS()
 TX(s,L0,78,900,34,[("OVERVIEW",26,True,T["mut"],0)])
-TX(s,L0,118,1720,100,[("Sona — Care Journey & Product Overview",80,True,T["teal"],0)])
-TX(s,L0,236,1660,96,[("An AI co-pilot that reduces admin burnout in UK private Speech & Language Therapy (SLT) — giving clinicians more productive time for care across a client's first 30 days.",36,False,T["sec"],0)])
+TX(s,L0,118,1720,100,[("Sona: Care Journey & Product Overview",80,True,T["teal"],0)])
+TX(s,L0,236,1660,96,[("An AI practice partner that reduces admin burnout in UK private Speech & Language Therapy (SLT), giving clinicians more productive time for care across a client's first 30 days.",36,False,T["sec"],0)])
 R(s,L0+2,366,160,6,T["apri"],3)
 TX(s,L0,418,840,40,[("WHAT IS SONA?",32,True,T["teal"],0)])
 TX(s,L0,478,830,420,[
-  ("Sona is an AI co-pilot for UK private Speech & Language Therapy (SLT) practices.",34,False,T["ink"],0),
-  ("It does the repetitive admin alongside the clinician — capturing the enquiry, smart intake, consult prep, the triage decision, the first session plan and the family summary, always as drafts for the clinician to review.",34,False,T["ink"],18),
-  ("Sona augments clinicians — it increases human productivity: less admin burnout, more time for care.",34,False,T["ink"],18)])
+  ("Sona is an AI practice partner for UK private Speech & Language Therapy (SLT).",34,False,T["ink"],0),
+  ("It does the repetitive admin alongside the clinician: intake, consult prep, triage, the first session plan and family summary, all as drafts the clinician reviews.",34,False,T["ink"],18),
+  ("Sona augments clinicians; it increases human productivity: less admin burnout, more time for care.",34,False,T["ink"],18)])
 R(s,968,420,2,486,T["bord"],0)
 TX(s,1016,418,820,40,[("HOW TO READ THIS",32,True,T["teal"],0)])
 TX(s,1016,478,820,40,[("Three views, read left → right:",32,False,T["sec"],0)])
-LINE2(s,1016,540,860,48,"Executive","  —  the journey & the value",40)
-LINE2(s,1016,606,860,48,"Product","  —  the proposed solution",40)
-LINE2(s,1016,672,860,48,"Process flow","  —  the To-Be swimlane",40)
+LINE2(s,1016,540,860,48,"Executive",":  the journey & the value",40)
+LINE2(s,1016,606,860,48,"Product",":  the proposed solution",40)
+LINE2(s,1016,672,860,48,"Process flow",":  the To-Be swimlane",40)
 TX(s,1016,762,820,36,[("WHO'S WHO",26,True,T["teal"],0)])
-TX(s,1016,806,840,90,[("client / parent / carer — the family or adult client\nclinician / SLT — the therapist    ·    practice — the private clinic",28,False,T["sec"],0)])
+TX(s,1016,806,840,90,[("client / parent / carer: the family or adult client\nclinician / SLT: the therapist    ·    practice: the private clinic",28,False,T["sec"],0)])
 R(s,L0,912,1720,140,T["lt"],16)
 TX(s,L0+32,938,600,32,[("ANCHOR PRINCIPLES",24,True,T["teal"],0)])
-for p,x in zip(["AI drafts, clinician decides","No screen time for children","UK data residency + audit","Augment people, never replace"],[132,562,992,1402]):
-    TX(s,x,988,430,40,[(p,26,False,T["dteal"],0)])
-for x in [546,976,1386]: R(s,x,982,1,52,T["bord"],0)
+for p,x in zip(["AI drafts, clinician decides","UK data residency + audit","Augment people, never replace"],[140,713,1287]):
+    TX(s,x,988,520,40,[(p,26,False,T["dteal"],0)])
+for x in [673,1247]: R(s,x,982,1,52,T["bord"],0)
 
 # ===================== SLIDE 2 — EXECUTIVE =====================
 s=NS()
 TX(s,L0,68,900,32,[("EXECUTIVE VIEW",24,True,T["mut"],0)])
 TX(s,L0,104,1640,80,[("The care journey at a glance",72,True,T["teal"],0)])
-TX(s,L0,210,1660,46,[("How a new SLT case feels today, and where Sona reduces admin burnout and adds value — across five phases.",32,False,T["sec"],0)])
+TX(s,L0,210,1660,46,[("How a new SLT case feels today, and where Sona reduces admin burnout and adds value across five phases.",32,False,T["sec"],0)])
 R(s,L0+2,272,150,6,T["apri"],3)
 gap=22; cw=(R0-L0-4*gap)/5; step=cw+gap; xs=[L0+i*step for i in range(5)]; cx=[x+cw/2 for x in xs]
 ph=["1 · Find & enquire","2 · Understand","3 · Meet & decide","4 · Plan & share","5 · Progress together"]
@@ -75,8 +75,8 @@ desc=["unsure where to start","so much to take in","a clear path forward","kept 
 for i in range(5):
     O(s,cx[i]-13,py[i]-13,26,26,PS[i],"FFFFFF")
     TX(s,xs[i],576,cw,32,[(moods[i],30,True,PS[i],0)],'m','c'); TX(s,xs[i],614,cw,28,[(desc[i],22,False,T["sec"],0)],'m','c')
-TX(s,L0,664,900,30,[("TODAY'S PAIN — BY PHASE",24,True,T["mut"],0)])
-pains=["Enquiries slip through the cracks","Chasing forms — everything is manual","Prep is rushed; the free consult under-delivers","Plans hand-built; reports take ~3 weeks","Carryover is ad-hoc (email / WhatsApp)"]
+TX(s,L0,664,900,30,[("TODAY'S PAIN · BY PHASE",24,True,T["mut"],0)])
+pains=["Enquiries slip through the cracks","Chasing forms; everything is manual","Prep is rushed; the free consult under-delivers","Plans hand-built; reports take ~3 weeks","Carryover is ad-hoc (email / WhatsApp)"]
 for i in range(5):
     R(s,xs[i],700,cw,118,T["paincard"],12,T["bord"]); O(s,xs[i]+18,718,11,11,PS[i],None)
     TX(s,xs[i]+18,700,cw-36,118,[(pains[i],26,False,T["painink"],0)],'m','c',True)
@@ -88,7 +88,7 @@ R(s,1012,888,100,6,T["apri"],3); TX(s,1010,902,820,70,[("Same-day",68,True,T["te
 s=NS()
 TX(s,L0,72,900,32,[("PRODUCT VIEW",24,True,T["mut"],0)])
 TX(s,L0,108,1640,80,[("The proposed solution",72,True,T["teal"],0)])
-TX(s,L0,214,1680,46,[("The first 30 days as nine stages grouped into five phases — what Sona does, and the surface that delivers it.",30,False,T["sec"],0)])
+TX(s,L0,214,1680,46,[("The first 30 days as nine stages grouped into five phases: what Sona does, and the surface that delivers it.",30,False,T["sec"],0)])
 lab=176; gx=L0+lab+14; ncol=9; cg=12; cwd=(R0-gx-(ncol-1)*cg)/ncol; st2=cwd+cg; colx=[gx+i*st2 for i in range(ncol)]; spn=[0,1,1,2,2,2,3,3,4]
 stg=["1 · Referral","2 · Smart intake","3 · Intake review","4 · Consult prep","5 · Consultation","6 · Triage","7 · Session plan","8 · Family summary","9 · Carryover"]
 wh=["Capture enquiry + audit trail","Adaptive intake + status + consent","One-screen client overview","AI prep brief (DRAFT)","Schedule consult + calendar / video","Capture triage + rationale","AI session plan (DRAFT)","Tone-adjusted client summary","Resources + progress portal"]
@@ -105,16 +105,16 @@ for i in range(ncol):
     CELL(s,x,yW,cwd,hW,PT[p],wh[i],23,T["ink"],False,'c',10,None,12)
     CELL(s,x,yU,cwd,hU,PT[p],sf[i],22,T["ink"],False,'c',10,None,10)
 TX(s,L0,800,900,30,[("WHERE SONA WINS",24,True,T["mut"],0)])
-opp=["Own the first 30 days as one loop","Trust is the moat — clinician signs every draft","Start paediatric, then generalise","UK data residency + clinical audit"]
+opp=["Own the first 30 days as one loop","Trust is the moat; clinician signs every draft","Start paediatric, then generalise","UK data residency + clinical audit"]
 ow=(R0-L0-3*20)/4; ostep=ow+20
 for i,o in enumerate(opp): CELL(s,L0+i*ostep,836,ow,96,T["hero"],o,24,T["teal"],True,'c',12,None,18)
-TX(s,L0,956,1720,30,[("Colour groups the nine stages into their five phases.   ·   Generalized across SLTs (Pediatric & Adult).",22,False,T["mut"],0)])
+TX(s,L0,956,1720,30,[("Colour groups the nine stages into their five phases.   ·   Generalised across SLTs (Paediatric & Adult).",22,False,T["mut"],0)])
 
 # ===================== SLIDE 4 — PROCESS FLOW =====================
 s=NS()
 TX(s,L0,64,900,32,[("PROCESS FLOW",24,True,T["mut"],0)])
 TX(s,L0,100,1500,80,[("How the journey runs with Sona",70,True,T["teal"],0)])
-TX(s,L0,200,1720,40,[("A swimlane map of the proposed (To-Be) process — the basis for prototypes and screens.",30,False,T["sec"],0)])
+TX(s,L0,200,1720,40,[("A swimlane map of the proposed (To-Be) process: the basis for prototypes and screens.",30,False,T["sec"],0)])
 top=276; lh=180; labW=170; bandX=100+labW; bandW=1820-bandX; ly=[top+i*lh+lh//2 for i in range(4)]
 lanes=[("Client / Parent / Carer","C98A5E"),("Clinician / SLT","2D6A6E"),("Sona  (app & AI)","356985"),("External  (calendar · PMS)","4C8060")]
 for i,(nm,col) in enumerate(lanes):
@@ -205,7 +205,7 @@ for ops in slides:
                 p.space_after=Pt(0); r=p.add_run(); r.text=txt; r.font.size=PTf(size); r.font.bold=bold; r.font.color.rgb=C(color); r.font.name="Inter"
     # footer per slide
     fy=1046
-    tb=sl.shapes.add_textbox(IN(100),IN(fy),IN(900),IN(26)); rp=tb.text_frame.paragraphs[0]; rr=rp.add_run(); rr.text="Sona — Care Journey & Product Overview"; rr.font.size=PTf(20); rr.font.color.rgb=C(T["mut"]); rr.font.name="Inter"
+    tb=sl.shapes.add_textbox(IN(100),IN(fy),IN(900),IN(26)); rp=tb.text_frame.paragraphs[0]; rr=rp.add_run(); rr.text="Sona: Care Journey & Product Overview"; rr.font.size=PTf(20); rr.font.color.rgb=C(T["mut"]); rr.font.name="Inter"
     tb2=sl.shapes.add_textbox(IN(1620),IN(fy),IN(200),IN(26)); rp2=tb2.text_frame.paragraphs[0]; rp2.alignment=PP_ALIGN.RIGHT; rr2=rp2.add_run(); rr2.text=f"{slides.index(ops)+1} / 4"; rr2.font.size=PTf(20); rr2.font.color.rgb=C(T["mut"]); rr2.font.name="Inter"
 prs.save("/tmp/Sona_Care_Journey_Deck.pptx"); print("pptx saved",len(slides))
 
@@ -273,7 +273,7 @@ for idx,ops in enumerate(slides):
             d.text((x,yy),lead,font=fL,fill=rgb(T["teal"])); lw=d.textlength(lead,font=fL); d.text((x+lw,yy),rest,font=fR,fill=rgb(T["ink"]))
         elif k=="text":
             _,x,y,w,h,runs,anchor,align,autofit=op; drawtext(d,x,y,w,h,runs,anchor,align,autofit)
-    drawtext(d,100,1046,900,26,[("Sona — Care Journey & Product Overview",20,False,T["mut"],0)],'t','l',False)
+    drawtext(d,100,1046,900,26,[("Sona: Care Journey & Product Overview",20,False,T["mut"],0)],'t','l',False)
     drawtext(d,1620,1046,200,26,[(f"{idx+1} / 4",20,False,T["mut"],0)],'t','r',False)
     imgs.append(im)
 for i,im in enumerate(imgs): im.save(f"/tmp/n_slide_{i+1}.png")

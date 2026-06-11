@@ -4,7 +4,7 @@
 **Board:** https://www.figma.com/board/n0T7y2Kcrb6s1A6XzqXniw
 **Date:** 7 Jun 2026 · **Data:** synthetic only · **Scope:** generalised across the whole ASLTIP market (~1,800 UK private SLTs).
 
-A care-pathway ("customer journey") map for **Sona** — the AI co-pilot for UK private
+A care-pathway ("customer journey") map for **Sona** — the AI practice partner for UK private
 Speech & Language Therapy — covering the **first ~30 days of a new case**. The board has
 **two tiers at different levels of abstraction** on one canvas:
 
