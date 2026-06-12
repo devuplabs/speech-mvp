@@ -57,6 +57,25 @@ import {
   assertIntakeNotLocked,
 } from "../services/intake-forms.js";
 import { intakeTemplateIdEnum } from "../schemas/intake-template.js";
+import {
+  createCarryoverResourceBody,
+  createProgressEntryBody,
+  updateCarryoverResourceBody,
+} from "../schemas/carryover.js";
+import {
+  addProgressEntry,
+  createCarryoverResource,
+  deleteCarryoverResource,
+  getPortalPayload,
+  listCarryoverResources,
+  listProgressEntries,
+  updateCarryoverResource,
+} from "../services/carryover.js";
+import {
+  createPortalLink,
+  resolvePortalLink,
+  revokePortalLinks,
+} from "../services/portal-links.js";
 import { createPracticeRoutes } from "./practices.js";
 import { getTokenVerifier, AuthError } from "../auth/verifier.js";
 import { resolveCurrentUser } from "../services/practice.js";
@@ -370,6 +389,93 @@ export function createV1Routes(db: Db, env: Env) {
       return c.json({ error: result.error, status: result.status }, 404);
     }
     return c.html(result.html);
+  });
+
+  // ── Stage 9 · Carryover ────────────────────────────────────────────────
+  // Clinician-side resource/progress management plus a token-only family
+  // portal. Same MVP auth posture as the other case routes above (demo).
+
+  const portalRejectionStatus = (error: "not_found" | "expired" | "revoked") =>
+    error === "not_found" ? 404 : 410;
+
+  app.post("/cases/:caseId/carryover/resources", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = createCarryoverResourceBody.parse(await c.req.json());
+    const result = await createCarryoverResource(db, caseId, body);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ resource: result.resource }, 201);
+  });
+
+  app.get("/cases/:caseId/carryover/resources", async (c) => {
+    const caseId = c.req.param("caseId");
+    const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    const resources = await listCarryoverResources(db, caseId);
+    return c.json({ resources });
+  });
+
+  app.patch("/cases/:caseId/carryover/resources/:resourceId", async (c) => {
+    const caseId = c.req.param("caseId");
+    const resourceId = c.req.param("resourceId");
+    const body = updateCarryoverResourceBody.parse(await c.req.json());
+    const result = await updateCarryoverResource(db, caseId, resourceId, body);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ resource: result.resource });
+  });
+
+  app.delete("/cases/:caseId/carryover/resources/:resourceId", async (c) => {
+    const caseId = c.req.param("caseId");
+    const resourceId = c.req.param("resourceId");
+    const result = await deleteCarryoverResource(db, caseId, resourceId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.body(null, 204);
+  });
+
+  app.get("/cases/:caseId/carryover/progress", async (c) => {
+    const caseId = c.req.param("caseId");
+    const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    const entries = await listProgressEntries(db, caseId);
+    return c.json({ entries });
+  });
+
+  app.post("/cases/:caseId/carryover/progress", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = createProgressEntryBody.parse(await c.req.json());
+    const result = await addProgressEntry(db, caseId, "clinician", body);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ entry: result.entry }, 201);
+  });
+
+  app.post("/cases/:caseId/portal-links", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await createPortalLink(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ token: result.token, expiresAt: result.expiresAt }, 201);
+  });
+
+  app.post("/cases/:caseId/portal-links/revoke", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await revokePortalLinks(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.body(null, 204);
+  });
+
+  app.get("/portal/:token", async (c) => {
+    const token = c.req.param("token");
+    const result = await getPortalPayload(db, token);
+    if (!result.ok) return c.json({ error: result.error }, portalRejectionStatus(result.error));
+    return c.json(result.payload);
+  });
+
+  app.post("/portal/:token/progress", async (c) => {
+    const token = c.req.param("token");
+    const body = createProgressEntryBody.parse(await c.req.json());
+    const link = await resolvePortalLink(db, token);
+    if (!link.ok) return c.json({ error: link.error }, portalRejectionStatus(link.error));
+    const result = await addProgressEntry(db, link.caseId, "parent", body);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+    return c.json({ entry: result.entry }, 201);
   });
 
   app.get("/tenants/:tenantId/clinical-reports", async (c) => {
