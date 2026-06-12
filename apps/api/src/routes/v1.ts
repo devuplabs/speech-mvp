@@ -239,6 +239,9 @@ export function createV1Routes(db: Db, env: Env) {
 
     const drafts = await db.select().from(aiDrafts).where(eq(aiDrafts.caseId, caseId));
 
+    // Stage-3 intake review: record that the case detail was opened (IDs only, no PHI).
+    await writeAudit(db, { tenantId: row.tenantId, caseId, actor: "clinician", action: "case.viewed" });
+
     return c.json({ case: row, intake: intake ?? null, drafts });
   });
 
