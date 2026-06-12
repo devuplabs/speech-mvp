@@ -336,6 +336,11 @@ export function createV1Routes(db: Db, env: Env) {
 
     const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
     if (!existing) return c.json({ error: "not_found" }, 404);
+    // Clinical guard: a case cannot be triaged before the parent has
+    // submitted intake (DEV-34 — state-machine hardening).
+    if (existing.status === "intake_pending") {
+      return c.json({ error: "intake_not_submitted" }, 409);
+    }
 
     const [triage] = await db
       .insert(triageRecords)
@@ -370,7 +375,8 @@ export function createV1Routes(db: Db, env: Env) {
 
     const result = await publishParentSummary(db, caseId, body.htmlBody, env);
     if (!result.ok) {
-      const status = result.error === "not_found" ? 404 : 400;
+      const status =
+        result.error === "not_found" ? 404 : result.error === "case_not_ready" ? 409 : 400;
       return c.json({ error: result.error }, status);
     }
 

@@ -20,6 +20,22 @@ function linkExpiresAt(): Date {
   return d;
 }
 
+export type IntakeLinkRejection = "not_found" | "expired";
+
+/**
+ * Pure expiry check for intake links (mirrors resolvePortalLinkState in
+ * portal-links.ts). Revoking an intake link sets `expiresAt = now`, so the
+ * revoked path surfaces as "expired" here by design.
+ */
+export function resolveIntakeLinkState(
+  link: { expiresAt: Date } | null | undefined,
+  now: Date = new Date(),
+): { ok: true } | { ok: false; error: IntakeLinkRejection } {
+  if (!link) return { ok: false, error: "not_found" };
+  if (link.expiresAt <= now) return { ok: false, error: "expired" };
+  return { ok: true };
+}
+
 export function buildIntakeLinkUrl(webBaseUrl: string, token: string): string {
   const base = webBaseUrl.replace(/\/$/, "");
   return `${base}/?t=${encodeURIComponent(token)}`;
@@ -180,9 +196,8 @@ export async function resolveIntakeLinkToken(db: Db, token: string) {
   if (!row) return { ok: false as const, error: "not_found" as const };
 
   const now = new Date();
-  if (row.expiresAt <= now) {
-    return { ok: false as const, error: "expired" as const };
-  }
+  const state = resolveIntakeLinkState(row, now);
+  if (!state.ok) return { ok: false as const, error: state.error };
 
   if (!row.usedAt) {
     await db

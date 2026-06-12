@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { registerPatientBody } from "../schemas/register-patient.js";
-import { buildIntakeLinkUrl } from "../services/register-patient.js";
+import {
+  buildIntakeLinkUrl,
+  resolveIntakeLinkState,
+} from "../services/register-patient.js";
 
 describe("registerPatientBody", () => {
   it("rejects invalid email", () => {
@@ -34,5 +37,37 @@ describe("buildIntakeLinkUrl", () => {
   it("embeds token in parent web URL", () => {
     const url = buildIntakeLinkUrl("http://localhost:8080", "abc123");
     expect(url).toBe("http://localhost:8080/?t=abc123");
+  });
+});
+
+describe("resolveIntakeLinkState", () => {
+  const now = new Date("2026-06-12T10:00:00Z");
+  const future = new Date("2026-06-20T10:00:00Z");
+  const past = new Date("2026-06-01T10:00:00Z");
+
+  it("rejects unknown links (malformed or never issued tokens)", () => {
+    expect(resolveIntakeLinkState(null, now)).toEqual({ ok: false, error: "not_found" });
+    expect(resolveIntakeLinkState(undefined, now)).toEqual({
+      ok: false,
+      error: "not_found",
+    });
+  });
+
+  it("rejects expired links", () => {
+    expect(resolveIntakeLinkState({ expiresAt: past }, now)).toEqual({
+      ok: false,
+      error: "expired",
+    });
+  });
+
+  it("rejects links exactly at expiry (revoke sets expiresAt = now)", () => {
+    expect(resolveIntakeLinkState({ expiresAt: now }, now)).toEqual({
+      ok: false,
+      error: "expired",
+    });
+  });
+
+  it("accepts live links", () => {
+    expect(resolveIntakeLinkState({ expiresAt: future }, now)).toEqual({ ok: true });
   });
 });
