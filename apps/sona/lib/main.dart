@@ -24,13 +24,16 @@ Future<void> main() async {
   }
 
   String? intakeToken;
+  String? portalToken;
   String? inviteCode;
   if (kIsWeb) {
     intakeToken = Uri.base.queryParameters['t'];
+    portalToken = Uri.base.queryParameters['portal'];
     inviteCode = inviteCodeFromUri(Uri.base);
   }
   runApp(SonaApp(
     intakeToken: intakeToken,
+    portalToken: portalToken,
     inviteCode: inviteCode,
     authController: authController,
   ));
@@ -53,6 +56,7 @@ class SonaApp extends StatelessWidget {
     super.key,
     this.apiClient,
     this.intakeToken,
+    this.portalToken,
     this.inviteCode,
     this.authController,
   });
@@ -61,6 +65,10 @@ class SonaApp extends StatelessWidget {
   /// (e.g. one backed by a `MockClient`) without spinning up the real API.
   final SonaApiClient? apiClient;
   final String? intakeToken;
+
+  /// Family-portal magic-link token from the parent web URL `?portal=`
+  /// (Stage 9). Distinct from the single-use intake `?t=` link.
+  final String? portalToken;
 
   /// Firebase reset/invite action code from the inbound web URL (Auth·16).
   final String? inviteCode;
@@ -89,6 +97,7 @@ class SonaApp extends StatelessWidget {
       home: SonaAppShell(
         apiClient: client,
         intakeToken: intakeToken,
+        portalToken: portalToken,
         inviteCode: inviteCode,
         authController: authController,
       ),
