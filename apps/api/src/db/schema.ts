@@ -40,6 +40,22 @@ export const aiDraftKindEnum = pgEnum("ai_draft_kind", [
   "clinical_report",
 ]);
 
+/** Carryover (Stage 9) — home-practice resource categories. */
+export const carryoverResourceCategoryEnum = pgEnum("carryover_resource_category", [
+  "home_practice",
+  "reading",
+  "activity",
+  "other",
+]);
+
+export const progressAuthorEnum = pgEnum("progress_author", ["parent", "clinician"]);
+
+export const progressRatingEnum = pgEnum("progress_rating", [
+  "tried_it",
+  "going_well",
+  "finding_it_hard",
+]);
+
 /**
  * A tenant is a **practice** (Feature 1). `displayName` is the practice name.
  * Multiple clinicians (see `users`) belong to one tenant and share patient
@@ -161,6 +177,50 @@ export const aiDrafts = pgTable("ai_drafts", {
   content: jsonb("content").notNull().default({}),
   modelId: varchar("model_id", { length: 128 }),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Home-practice resources the clinician shares with the family (Stage 9 — Carryover). */
+export const carryoverResources = pgTable("carryover_resources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  url: text("url"),
+  category: carryoverResourceCategoryEnum("category").notNull(),
+  sourceDraftId: uuid("source_draft_id").references(() => aiDrafts.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Home-practice log — parents write via the portal, clinicians via the app. */
+export const progressEntries = pgTable("progress_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id, { onDelete: "cascade" }),
+  author: progressAuthorEnum("author").notNull(),
+  note: text("note").notNull(),
+  rating: progressRatingEnum("rating"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Magic links for the family portal. Unlike `caseIntakeLinks` these are
+ * durable — reusable until expiry (default 90 days) and explicitly revocable;
+ * there is no single-use `usedAt` semantics.
+ */
+export const casePortalLinks = pgTable("case_portal_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  caseId: uuid("case_id")
+    .notNull()
+    .references(() => cases.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
