@@ -8,11 +8,16 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
     super.key,
     required this.summaryHtml,
     required this.onBackClinician,
+    this.onOpenCarryover,
     this.caseDetail,
   });
 
   final String? summaryHtml;
   final VoidCallback onBackClinician;
+
+  /// Stage 9: after publishing, the clinician moves on to curating carryover
+  /// resources + sharing the family portal link.
+  final VoidCallback? onOpenCarryover;
 
   /// `{case: {...}, intake: {...}, drafts: [...]}` — the case the clinician
   /// clicked through to publish. Phone preview shows THAT child's name +
@@ -64,7 +69,10 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
       backgroundColor: SonaColors.background,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final preview = ClinicianShellPreview(onBack: onBackClinician);
+          final preview = ClinicianShellPreview(
+            onBack: onBackClinician,
+            onOpenCarryover: onOpenCarryover,
+          );
           final phone = SizedBox(
             width: 375,
             child: ParentMobileScaffold(
@@ -213,9 +221,14 @@ class ClinicianParentSummaryScreen extends StatelessWidget {
 }
 
 class ClinicianShellPreview extends StatelessWidget {
-  const ClinicianShellPreview({super.key, required this.onBack});
+  const ClinicianShellPreview({
+    super.key,
+    required this.onBack,
+    this.onOpenCarryover,
+  });
 
   final VoidCallback onBack;
+  final VoidCallback? onOpenCarryover;
 
   @override
   Widget build(BuildContext context) {
@@ -236,6 +249,13 @@ class ClinicianShellPreview extends StatelessWidget {
             'Parents open this in the authenticated app — not via email body.',
             style: TextStyle(fontSize: 13, color: SonaColors.textSecondary),
           ),
+          if (onOpenCarryover != null) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onOpenCarryover,
+              child: const Text('Next: carryover & home practice →'),
+            ),
+          ],
         ],
       ),
     );

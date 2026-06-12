@@ -12,6 +12,7 @@ import 'package:sona/features/auth/set_password_screen.dart';
 import 'package:sona/services/auth/auth_controller.dart';
 import 'package:sona/design_system/sona_colors.dart';
 import 'package:sona/design_system/widgets/sona_button.dart';
+import 'package:sona/features/clinician/clinician_carryover_screen.dart';
 import 'package:sona/features/clinician/clinician_parent_summary_screen.dart';
 import 'package:sona/features/clinician/clinician_clients_screen.dart';
 import 'package:sona/features/clinician/clinician_intake_forms_screen.dart';
@@ -60,6 +61,7 @@ enum SonaRoute {
   clinicianPrep,
   clinicianTriage,
   clinicianSummaryPreview,
+  clinicianCarryover,
 }
 
 class SonaAppShell extends StatefulWidget {
@@ -781,6 +783,22 @@ class _SonaAppShellState extends State<SonaAppShell> {
     });
   }
 
+  /// Stage 9: case-scoped carryover screen (resources, portal link, progress).
+  /// Reached from the prep screen and the post-publish summary preview — not
+  /// from the sidebar, which only carries practice-wide destinations.
+  Future<void> _openClinicianCarryover() async {
+    if (_state.caseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Open a case first to manage carryover.')),
+      );
+      return;
+    }
+    _go(SonaRoute.clinicianCarryover);
+    if (_state.caseDetail == null) {
+      await _run(_refreshCase, label: 'Load case');
+    }
+  }
+
   void _openClinicianResources() => _go(SonaRoute.clinicianResources);
 
   void _openClinicianBilling() => _go(SonaRoute.clinicianBilling);
@@ -1214,7 +1232,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
         SonaRoute.clinicianSettings ||
         SonaRoute.clinicianPrep ||
         SonaRoute.clinicianTriage ||
-        SonaRoute.clinicianSummaryPreview =>
+        SonaRoute.clinicianSummaryPreview ||
+        SonaRoute.clinicianCarryover =>
           _clinicianBody(),
       },
       bottomNavigationBar: (_route == SonaRoute.launcher ||
@@ -1390,6 +1409,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
           onBackToday: () => _go(SonaRoute.clinicianToday),
           onContinueTriage: () => _go(SonaRoute.clinicianTriage),
           onRefresh: _state.caseId == null ? null : _refreshCase,
+          onOpenCarryover: () => unawaited(_openClinicianCarryover()),
         ),
       SonaRoute.clinicianTriage => ClinicianTriageScreen(
           caseDetail: _state.caseDetail,
@@ -1401,7 +1421,23 @@ class _SonaAppShellState extends State<SonaAppShell> {
           caseDetail: _state.caseDetail,
           summaryHtml: _parentSummaryHtml,
           onBackClinician: () => _go(SonaRoute.clinicianTriage),
+          onOpenCarryover: () => unawaited(_openClinicianCarryover()),
         ),
+      SonaRoute.clinicianCarryover => _state.caseId == null
+          ? const Center(
+              child: Text(
+                'No case selected — open a case from Today first.',
+                style: TextStyle(color: SonaColors.textSecondary),
+              ),
+            )
+          : ClinicianCarryoverScreen(
+              key: ValueKey('carryover-${_state.caseId}'),
+              api: _api,
+              caseId: _state.caseId!,
+              caseDetail: _state.caseDetail,
+              webBaseUrl: _webBaseUrl,
+              onBack: () => _go(SonaRoute.clinicianPrep),
+            ),
       _ => ClinicianTodayScreen(
           state: _state,
           showAvailabilityBanner: _needsAvailabilityConfirm,

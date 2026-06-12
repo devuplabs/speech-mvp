@@ -450,6 +450,125 @@ class SonaApiClient {
     return res.body;
   }
 
+  // ---- Stage 9 · Carryover (clinician side) ----
+
+  /// Shared resources for a case. Returns the rows from
+  /// `GET /v1/cases/:caseId/carryover/resources` (`{resources: [...]}`).
+  Future<List<Map<String, dynamic>>> listCarryoverResources(String caseId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/cases/$caseId/carryover/resources'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['resources'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  /// Creates a carryover resource; `category` is one of
+  /// `home_practice | reading | activity | other`. Returns the created row.
+  Future<Map<String, dynamic>> createCarryoverResource(
+    String caseId, {
+    required String title,
+    required String category,
+    String? description,
+    String? url,
+    String? sourceDraftId,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/carryover/resources'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'title': title,
+        'category': category,
+        'description': description,
+        'url': url,
+        'sourceDraftId': sourceDraftId,
+      }),
+    );
+    _ensureOk(res, expected: 201);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return body['resource'] as Map<String, dynamic>;
+  }
+
+  /// Partial update — only non-null fields are sent. Returns the updated row.
+  Future<Map<String, dynamic>> updateCarryoverResource(
+    String caseId,
+    String resourceId, {
+    String? title,
+    String? category,
+    String? description,
+    String? url,
+  }) async {
+    final res = await _client.patch(
+      _base.replace(path: '/v1/cases/$caseId/carryover/resources/$resourceId'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'title': title,
+        'category': category,
+        'description': description,
+        'url': url,
+      }),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return body['resource'] as Map<String, dynamic>;
+  }
+
+  Future<void> deleteCarryoverResource(String caseId, String resourceId) async {
+    final res = await _client.delete(
+      _base.replace(path: '/v1/cases/$caseId/carryover/resources/$resourceId'),
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
+  /// Home-practice progress log (family + clinician), newest first.
+  /// `GET /v1/cases/:caseId/carryover/progress` → `{entries: [...]}`.
+  Future<List<Map<String, dynamic>>> listCarryoverProgress(String caseId) async {
+    final res = await _client.get(
+      _base.replace(path: '/v1/cases/$caseId/carryover/progress'),
+    );
+    _ensureOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['entries'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  /// Clinician-authored progress note (the API stamps `author: clinician`).
+  Future<Map<String, dynamic>> addCarryoverProgressNote(
+    String caseId, {
+    required String note,
+    String? rating,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/carryover/progress'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({'note': note, 'rating': rating}),
+    );
+    _ensureOk(res, expected: 201);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return body['entry'] as Map<String, dynamic>;
+  }
+
+  /// Mints a family-portal magic link. Returns `{token, expiresAt}` — the
+  /// caller composes the URL (`<webBaseUrl>/?portal=<token>`).
+  Future<Map<String, dynamic>> createPortalLink(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/portal-links'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, expected: 201);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Revokes all active portal links for the case.
+  Future<void> revokePortalLinks(String caseId) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/cases/$caseId/portal-links/revoke'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    _ensureOk(res, allowedStatuses: {204});
+  }
+
   void _ensureOk(
     http.Response res, {
     int? expected,

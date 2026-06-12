@@ -20,6 +20,7 @@ class ClinicianPrepScreen extends StatelessWidget {
     required this.onBackToday,
     this.caseDetail,
     this.onRefresh,
+    this.onOpenCarryover,
   });
 
   /// Shape: `{case: {...}, intake: {...} | null, drafts: [{kind, content, ...}]}`.
@@ -27,6 +28,9 @@ class ClinicianPrepScreen extends StatelessWidget {
   final VoidCallback onContinueTriage;
   final VoidCallback onBackToday;
   final Future<void> Function()? onRefresh;
+
+  /// Stage 9: case-scoped carryover (resources + family portal + progress).
+  final VoidCallback? onOpenCarryover;
 
   Map<String, dynamic>? get _case =>
       caseDetail?['case'] as Map<String, dynamic>?;
@@ -166,6 +170,13 @@ class ClinicianPrepScreen extends StatelessWidget {
                       onPressed: caseDetail == null ? null : onContinueTriage,
                       child: const Text('Mark consult complete → Triage'),
                     ),
+                    if (onOpenCarryover != null) ...[
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: caseDetail == null ? null : onOpenCarryover,
+                        child: const Text('Carryover & home practice'),
+                      ),
+                    ],
                   ],
                 );
                 if (stack) {
