@@ -3,6 +3,7 @@ import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
 import { aiDrafts, cases } from "../db/schema.js";
 import { writeAudit } from "./audit.js";
+import { logger } from "../logger.js";
 import { buildIntakeContextForLlm, generateParentSummaryHtmlLlm } from "../llm/generate-drafts.js";
 import { draftClinicalReportStub } from "./clinical-report.js";
 import { loadIntakeAnswers } from "./intake-context.js";
@@ -80,7 +81,7 @@ export async function publishParentSummary(
   try {
     await draftClinicalReportStub(db, caseId, env);
   } catch (err) {
-    console.warn("clinical report stub failed after publish:", err);
+    logger.warn("clinical_report.stub_failed_after_publish", { caseId, err });
   }
 
   return {

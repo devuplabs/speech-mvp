@@ -1,5 +1,6 @@
 import { CloudTasksClient } from "@google-cloud/tasks";
 import type { Env } from "../config.js";
+import { logger } from "../logger.js";
 
 const client = new CloudTasksClient();
 
@@ -8,7 +9,7 @@ export async function enqueueLlmPrep(
   payload: { caseId: string },
 ): Promise<string | null> {
   if (!env.GCP_PROJECT_ID) {
-    console.warn("GCP_PROJECT_ID unset; skipping Cloud Tasks enqueue (local dev)");
+    logger.warn("cloud_tasks.enqueue_skipped_no_project_id");
     return null;
   }
 
@@ -44,7 +45,11 @@ export async function enqueueLlmPrep(
     });
     return task.name ?? null;
   } catch (err) {
-    console.warn("Cloud Tasks createTask failed:", err);
+    logger.warn("cloud_tasks.create_task_failed", {
+      caseId: payload.caseId,
+      queue: env.LLM_CLOUD_TASKS_QUEUE,
+      err,
+    });
     return null;
   }
 }

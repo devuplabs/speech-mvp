@@ -50,8 +50,9 @@ export async function chatCompletion(
   });
 
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { ok: false, reason: `LLM HTTP ${res.status}: ${text.slice(0, 200)}` };
+    // Deliberately drop the response body: inference error bodies can echo
+    // the prompt, which contains intake context (PHI). Status only.
+    return { ok: false, reason: `LLM HTTP ${res.status}` };
   }
 
   const data = (await res.json()) as {

@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
+import { logger } from "../logger.js";
 import {
   aiDrafts,
   cases,
@@ -301,7 +302,7 @@ export function createV1Routes(db: Db, env: Env) {
     try {
       await enqueueLlmPrep(env, { caseId });
     } catch (err) {
-      console.warn("enqueueLlmPrep failed (stub prep still runs):", err);
+      logger.warn("llm_prep.enqueue_failed_stub_prep_still_runs", { caseId, err });
     }
     await draftPrepBrief(db, caseId, env);
 

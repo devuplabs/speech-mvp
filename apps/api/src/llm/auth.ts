@@ -1,4 +1,5 @@
 import type { Env } from "../config.js";
+import { logger } from "../logger.js";
 
 /** Bearer token for OpenAI-compatible inference (vLLM private or Vertex endpoint). */
 export async function resolveLlmAuthorization(env: Env): Promise<string | undefined> {
@@ -20,7 +21,7 @@ export async function resolveLlmAuthorization(env: Env): Promise<string | undefi
     const token = await client.getAccessToken();
     if (token.token) return `Bearer ${token.token}`;
   } catch (err) {
-    console.warn("LLM Google ADC auth failed:", err);
+    logger.warn("llm.adc_auth_failed", { err });
   }
   return undefined;
 }
