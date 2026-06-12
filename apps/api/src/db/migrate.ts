@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { logger } from "../logger.js";
 
 const migrationsDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -29,7 +30,7 @@ export async function runMigrations(connectionString: string): Promise<void> {
         [migrationId],
       );
       if (existing.rowCount && existing.rowCount > 0) {
-        console.log(`migration ${migrationId} already applied`);
+        logger.info("migration.already_applied", { migrationId });
         continue;
       }
 
@@ -43,7 +44,7 @@ export async function runMigrations(connectionString: string): Promise<void> {
           migrationId,
         ]);
         await client.query("COMMIT");
-        console.log(`migration ${migrationId} applied`);
+        logger.info("migration.applied", { migrationId });
       } catch (err) {
         await client.query("ROLLBACK");
         throw err;

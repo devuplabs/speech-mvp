@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Env } from "../config.js";
+import { logger } from "../logger.js";
 import { chatCompletion, isLlmConfigured, parseJsonFromLlm } from "./chat.js";
 import { buildIntakeContextForLlm } from "./intake-context.js";
 
@@ -57,7 +58,7 @@ export async function generatePrepBriefLlm(
     ],
   });
   if (!res.ok) {
-    console.warn("prep brief LLM:", res.reason);
+    logger.warn("llm.generation_failed", { kind: "prep_brief", reason: res.reason });
     return null;
   }
   const parsed = parseJsonFromLlm<unknown>(res.content);
@@ -96,7 +97,7 @@ export async function generateSessionPlanLlm(
     ],
   });
   if (!res.ok) {
-    console.warn("session plan LLM:", res.reason);
+    logger.warn("llm.generation_failed", { kind: "session_plan", reason: res.reason });
     return null;
   }
   const parsed = parseJsonFromLlm<unknown>(res.content);
@@ -135,7 +136,7 @@ export async function generateClinicalReportLlm(
     ],
   });
   if (!res.ok) {
-    console.warn("clinical report LLM:", res.reason);
+    logger.warn("llm.generation_failed", { kind: "clinical_report", reason: res.reason });
     return null;
   }
   const parsed = parseJsonFromLlm<unknown>(res.content);
@@ -177,7 +178,7 @@ export async function generateParentSummaryHtmlLlm(
     ],
   });
   if (!res.ok) {
-    console.warn("parent summary LLM:", res.reason);
+    logger.warn("llm.generation_failed", { kind: "parent_summary", reason: res.reason });
     return null;
   }
   const parsed = parseJsonFromLlm<unknown>(res.content);

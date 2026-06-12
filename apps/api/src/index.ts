@@ -9,6 +9,7 @@ import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { SelfHostedLlmClient } from "./llm/client.js";
+import { logger, requestLogging, type RequestLogVariables } from "./logger.js";
 import { createTaskRoutes } from "./routes/tasks.js";
 import { createV1Routes } from "./routes/v1.js";
 import { createV1DisabledRoutes } from "./v1-disabled.js";
@@ -17,7 +18,7 @@ const env = loadEnv();
 const llm = new SelfHostedLlmClient(env);
 const databaseUrl = buildDatabaseUrl(env);
 
-const app = new Hono();
+const app = new Hono<{ Variables: RequestLogVariables }>();
 
 const AUTH_ERROR_STATUS: Record<AuthErrorCode, 401 | 403 | 503> = {
   no_token: 401,
@@ -40,9 +41,16 @@ app.onError((err, c) => {
   if (err instanceof AuthError) {
     return c.json({ error: err.code }, AUTH_ERROR_STATUS[err.code]);
   }
-  console.error(err);
+  logger.error("unhandled_error", {
+    err,
+    requestId: c.get("requestId"),
+    method: c.req.method,
+    route: c.req.routePath,
+  });
   return c.json({ error: "internal_error" }, 500);
 });
+
+app.use("*", requestLogging());
 
 app.use(
   "*",
@@ -108,14 +116,14 @@ if (databaseUrl) {
     app.route("/internal/tasks", createTaskRoutes(db, env));
   }
 } else {
-  console.warn("DATABASE_URL / DB_* not set — API data routes disabled");
+  logger.warn("database_not_configured_data_routes_disabled");
   if (env.SONA_MODE === "api") {
     app.route("/v1", createV1DisabledRoutes(env));
   }
 }
 
 serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-  console.log(`sona-${env.SONA_MODE} listening on http://localhost:${info.port}`);
+  logger.info("listening", { mode: env.SONA_MODE, port: info.port });
 });
 
 process.on("SIGTERM", () => {
@@ -123,5 +131,5 @@ process.on("SIGTERM", () => {
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("unhandledRejection", reason);
+  logger.error("unhandled_rejection", { err: reason });
 });
