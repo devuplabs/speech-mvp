@@ -151,7 +151,7 @@ See [`docs/decisions/001-data-residency-jurisdiction-stacks.md`](decisions/001-d
 | Concern | Choice |
 |---------|--------|
 | **Queues** | **Cloud Tasks** for HTTP-push retries (simplest); **Pub/Sub** if multiple subscribers or fan-out. Both are common choices under Google’s **BAA** when used for PHI-adjacent workflows — **confirm current eligible list** before production. |
-| **Email** | **SendGrid / Postmark / SES** — **only** vendors with **BAA** (US) and appropriate **UK GDPR DPA** (UK); send via **regional** configuration; **no PHI in provider dashboards** (templates + variables only). |
+| **Email** | **Mailgun (Sinch)** — **notification-only** transactional mail (clinician invites; "your report is ready" alerts). **No PHI / clinical content is ever sent by email**, by design and regardless of any BAA/DPA — clinical content is rendered only in the authenticated portal (ADR-005). Email bodies carry status + a sign-in link only. A provider BAA/DPA is still preferred for metadata (recipient address, timing). |
 | **Observability** | **Cloud Logging / Cloud Monitoring / Error Reporting**; **PII redaction** in log pipelines; **Sentry** (or similar) only with **server-side scrubbing** and BAA. |
 
 ### 4.6 LLM — self-hosted air-gap (ADR-003)

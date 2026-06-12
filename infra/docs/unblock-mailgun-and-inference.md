@@ -1,4 +1,4 @@
-# Unblock: Postmark + Phase 2 inference (this week)
+# Unblock: Mailgun email + Phase 2 inference (this week)
 
 Monal co-design and DPIA sign-off are **deferred to next week**. This runbook covers the two items you can unblock now.
 
@@ -6,62 +6,65 @@ Monal co-design and DPIA sign-off are **deferred to next week**. This runbook co
 **Region:** `europe-west2` · GPU zone: `europe-west2-b`  
 **Models bucket:** `project-a625d19b-de99-48e9-9a9-sona-models-uk-dev`
 
-Work **Postmark first** (same day), then **GPU/inference** (quota + upload can run in parallel).
+Work **Mailgun first** (same day), then **GPU/inference** (quota + upload can run in parallel).
+
+> **Email is notification-only and never carries PHI** (design rule — ADR-005), regardless of any Mailgun BAA/DPA. Today that's the **clinician invite** (set-password link); clinical content (parent summaries) is rendered only in the authenticated portal. A BAA/DPA is preferred for email **metadata** but is never a gate to emailing clinical content — that simply doesn't happen.
 
 ---
 
-## A — Postmark (parent emails)
+## A — Mailgun (transactional email)
 
-### A1. Postmark account
+> Canonical setup, rotation, and troubleshooting live in the integration runbook:
+> [`docs/integrations/mailgun.md`](../../docs/integrations/mailgun.md). The steps below
+> are the time-boxed "do it this week" checklist.
 
-1. [Postmark](https://postmarkapp.com) → create **Server** (e.g. `Sona uk-dev`).
-2. Copy the **Server API token** (keep offline until A4).
+### A1. Mailgun account + sending domain
 
-### A2. Verify sending domain
+1. [Mailgun](https://www.mailgun.com) (Sinch) → add a **sending domain** (e.g. `mg.yourdomain.com`).
+2. Choose the **region** that matches your data-residency needs — **EU** (`api.eu.mailgun.net`) for UK/EU.
+3. Add the DNS records Mailgun shows (SPF/TXT, DKIM, and the tracking CNAME); wait for the domain to go **Verified / Active**.
+4. Copy the **API key** (Sending API key) — keep it offline until A3.
 
-1. **Sender Signatures** → **Add Domain**.
-2. Add DNS: DKIM, Return-Path, SPF as shown.
-3. Wait for **Verified** in Postmark.
-
-### A3. Terraform secret shell (if not applied yet)
-
-Merge infra changes and run approved **sona-terraform-dev-apply** (or local apply). This creates Secret Manager secret `sona-postmark-api-token` (empty until you add a version).
-
-### A4. Store token (never Notion / chat)
-
-```powershell
-$PROJECT = "project-a625d19b-de99-48e9-9a9"
-$token = Read-Host "Postmark server API token"
-$token | gcloud secrets versions add sona-postmark-api-token `
-  --project=$PROJECT `
-  --data-file=-
-```
-
-If the secret does not exist yet, use `gcloud secrets create` instead (see previous session notes).
-
-### A5. Set From address
+### A2. Set domain / from / region in tfvars
 
 In `infra/terraform/environments/uk/dev/terraform.tfvars` (gitignored):
 
 ```hcl
-postmark_from_email = "noreply@YOUR-VERIFIED-DOMAIN"
+mailgun_domain     = "mg.YOUR-VERIFIED-DOMAIN"
+mailgun_from_email = "no-reply@YOUR-VERIFIED-DOMAIN"
+mailgun_base_url   = "https://api.eu.mailgun.net" # omit for US
 ```
 
-Re-apply Terraform (or approve apply trigger) so Cloud Run gets `POSTMARK_FROM_EMAIL` + `POSTMARK_API_TOKEN` from Secret Manager.
+### A3. Supply the API key at apply (never Notion / chat / git)
 
-### A6. Deploy API + smoke test
+The key is passed as a **sensitive Terraform variable** at apply time; Terraform then
+creates the Secret Manager secret `sona-mailgun-api-key-dev`, stores the value, grants
+the runtime service account access, and wires `MAILGUN_API_KEY` into the API service.
+
+```powershell
+$env:TF_VAR_mailgun_api_key = Read-Host "Mailgun API key" -AsSecureString | ConvertFrom-SecureString -AsPlainText
+# then run the approved sona-terraform-dev-apply (or local: terraform apply)
+```
+
+For the CI apply trigger, store the key as a Cloud Build / Secret Manager secret and
+expose it as `TF_VAR_mailgun_api_key` for the apply step — do not put it in a committed
+tfvars file.
+
+With `mailgun_api_key` empty, no secret is created and email stays disabled (the app
+still works; invites just don't send).
+
+### A4. Deploy API + smoke test
 
 Push `apps/api/**` to `main` → **sona-api-dev-deploy** runs automatically.
 
 ```powershell
 $API = "https://sona-api-dev-3rhenudy6a-nw.a.run.app"
 curl "$API/health"   # email: "configured"
-
-# After a case exists with parentEmail:
-curl -X POST "$API/v1/cases/CASE_ID/parent-summary/send" -H "Content-Type: application/json" -d "{}"
 ```
 
-Reply here with: domain verified ✓, secret version added ✓, **From address** (not the token).
+Then create a practice and invite a clinician (or hit the invite endpoint); the invited
+address should receive the set-password email. Reply here with: domain verified ✓,
+apply done ✓, **From address** (not the key).
 
 ---
 
@@ -129,9 +132,9 @@ Reply when: quota approved ✓, weights in GCS ✓, vLLM image pushed ✓ — we
 
 | Step | You | Us |
 |------|-----|-----|
-| Postmark domain verified | ☐ | |
-| Secret `sona-postmark-api-token` version added | ☐ | |
-| `postmark_from_email` in tfvars + apply | ☐ | Deploy API route |
+| Mailgun domain verified | ☐ | |
+| `TF_VAR_mailgun_api_key` set + apply | ☐ | Creates `sona-mailgun-api-key-dev` |
+| `mailgun_domain` / `mailgun_from_email` in tfvars + apply | ☐ | Deploy API route |
 | L4 quota requested/approved | ☐ | |
 | vLLM image mirrored | ☐ | |
 | Gemma weights in GCS | ☐ | |

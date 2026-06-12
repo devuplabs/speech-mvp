@@ -1,5 +1,17 @@
 import type { Env } from "../config.js";
-import { sendPostmarkEmail } from "./postmark.js";
+import { sendMailgunEmail } from "./mailgun.js";
+
+/**
+ * Transactional email (Mailgun).
+ *
+ * DESIGN RULE — email is **notification-only** and never carries PHI / clinical
+ * content, regardless of any provider BAA/DPA. Clinical content (e.g. parent
+ * summaries) is rendered only in the authenticated portal (see ADR-005). An
+ * email may say "a report is ready" with a sign-in link — never the report
+ * itself. The only sender here today is the clinician invite (a set-password
+ * link — no PHI); any future notification email must follow the same pattern
+ * and ship behind its own ADR.
+ */
 
 export type EmailConfig = {
   configured: boolean;
@@ -7,10 +19,11 @@ export type EmailConfig = {
 };
 
 export function getEmailConfig(env: Env): EmailConfig {
-  const token = env.POSTMARK_API_TOKEN?.trim();
-  const from = env.POSTMARK_FROM_EMAIL?.trim();
+  const apiKey = env.MAILGUN_API_KEY?.trim();
+  const domain = env.MAILGUN_DOMAIN?.trim();
+  const from = env.MAILGUN_FROM_EMAIL?.trim();
   return {
-    configured: Boolean(token && from),
+    configured: Boolean(apiKey && domain && from),
     from: from || undefined,
   };
 }
@@ -64,41 +77,22 @@ export async function sendClinicianInviteEmail(
   env: Env,
   input: ClinicianInviteEmailInput,
 ): Promise<{ ok: true; messageId: string } | { ok: false; error: string }> {
-  const token = env.POSTMARK_API_TOKEN?.trim();
-  const from = env.POSTMARK_FROM_EMAIL?.trim();
-  if (!token || !from) {
-    return { ok: false, error: "postmark_not_configured" };
+  const apiKey = env.MAILGUN_API_KEY?.trim();
+  const domain = env.MAILGUN_DOMAIN?.trim();
+  const from = env.MAILGUN_FROM_EMAIL?.trim();
+  if (!apiKey || !domain || !from) {
+    return { ok: false, error: "email_not_configured" };
   }
 
   const { subject, htmlBody } = renderClinicianInviteEmail(input);
-  const result = await sendPostmarkEmail({
-    token,
+  const result = await sendMailgunEmail({
+    apiKey,
+    domain,
+    baseUrl: env.MAILGUN_BASE_URL,
     from,
     to: input.to,
     subject,
     htmlBody,
-  });
-
-  if (!result.ok) return { ok: false, error: result.error };
-  return { ok: true, messageId: result.messageId };
-}
-
-export async function sendParentSummaryEmail(
-  env: Env,
-  input: { to: string; subject: string; htmlBody: string },
-): Promise<{ ok: true; messageId: string } | { ok: false; error: string }> {
-  const token = env.POSTMARK_API_TOKEN?.trim();
-  const from = env.POSTMARK_FROM_EMAIL?.trim();
-  if (!token || !from) {
-    return { ok: false, error: "postmark_not_configured" };
-  }
-
-  const result = await sendPostmarkEmail({
-    token,
-    from,
-    to: input.to,
-    subject: input.subject,
-    htmlBody: input.htmlBody,
   });
 
   if (!result.ok) return { ok: false, error: result.error };

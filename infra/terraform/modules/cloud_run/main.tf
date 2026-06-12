@@ -103,6 +103,53 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      # Public web origin used to build invite / intake links (Auth·05/16).
+      dynamic "env" {
+        for_each = var.enable_web ? [1] : []
+        content {
+          name  = "SONA_WEB_BASE_URL"
+          value = google_cloud_run_v2_service.web[0].uri
+        }
+      }
+
+      # Transactional email (Mailgun) — each piece only wired when configured.
+      dynamic "env" {
+        for_each = var.mailgun_from_email != "" ? [1] : []
+        content {
+          name  = "MAILGUN_FROM_EMAIL"
+          value = var.mailgun_from_email
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mailgun_domain != "" ? [1] : []
+        content {
+          name  = "MAILGUN_DOMAIN"
+          value = var.mailgun_domain
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mailgun_base_url != "" ? [1] : []
+        content {
+          name  = "MAILGUN_BASE_URL"
+          value = var.mailgun_base_url
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mailgun_api_key_secret_resource_id != "" ? [1] : []
+        content {
+          name = "MAILGUN_API_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = var.mailgun_api_key_secret_resource_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
       env {
         name = "DB_PASSWORD"
         value_source {

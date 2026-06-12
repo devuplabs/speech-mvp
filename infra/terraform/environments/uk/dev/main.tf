@@ -20,6 +20,14 @@ module "stack" {
 
   gcs_bucket_force_destroy = var.gcs_bucket_force_destroy
 
+  # Transactional email (Mailgun). API key supplied at apply time via
+  # TF_VAR_mailgun_api_key; domain/from/region set per environment. All empty by
+  # default, which leaves email disabled and creates no secret.
+  mailgun_api_key    = var.mailgun_api_key
+  mailgun_domain     = var.mailgun_domain
+  mailgun_from_email = var.mailgun_from_email
+  mailgun_base_url   = var.mailgun_base_url
+
   db_tier                = var.db_tier
   db_edition             = var.db_edition
   db_disk_size_gb        = var.db_disk_size_gb

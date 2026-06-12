@@ -28,11 +28,14 @@ const envSchema = z.object({
   LLM_CLOUD_TASKS_QUEUE: z.string().default("sona-llm-dev"),
   RUNTIME_SERVICE_ACCOUNT: z.string().optional(),
   WORKER_SERVICE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  POSTMARK_API_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  POSTMARK_FROM_EMAIL: z.preprocess(
+  MAILGUN_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  MAILGUN_DOMAIN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  MAILGUN_FROM_EMAIL: z.preprocess(
     emptyToUndefined,
     z.string().email().optional(),
   ),
+  // Mailgun API region base, e.g. https://api.eu.mailgun.net for EU. Defaults to US.
+  MAILGUN_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   RUN_MIGRATIONS_ON_START: z
     .enum(["true", "false"])
     .default("true")

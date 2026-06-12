@@ -160,3 +160,28 @@ variable "cloud_run_allow_unauthenticated" {
   type        = bool
   default     = true
 }
+
+variable "mailgun_api_key" {
+  description = "Mailgun API key for transactional email (clinician invites). Supply at apply time (e.g. TF_VAR_mailgun_api_key) — never commit. Empty string disables email and creates no secret."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "mailgun_domain" {
+  description = "Mailgun sending domain (e.g. mg.yourdomain.com). Empty string disables email."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_from_email" {
+  description = "Verified Mailgun sender address for transactional email. Empty string disables email."
+  type        = string
+  default     = ""
+}
+
+variable "mailgun_base_url" {
+  description = "Mailgun API region base, e.g. https://api.eu.mailgun.net for EU. Empty defaults to US."
+  type        = string
+  default     = ""
+}
