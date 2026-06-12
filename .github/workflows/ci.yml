@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API typecheck + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  flutter:
+    name: Flutter analyze + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/sona
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # Info-level lint hints are expected; only warnings+ fail the build.
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+
+  e2e-smoke:
+    name: E2E smoke (API + web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sona_app
+          POSTGRES_PASSWORD: sona_dev_pass
+          POSTGRES_DB: sona
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sona_app:sona_dev_pass@127.0.0.1:5432/sona
+      SONA_API_URL: http://localhost:8081
+      SONA_WEB_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            e2e/package-lock.json
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: apps/api
+      - name: Install e2e dependencies
+        run: npm ci && npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Build Flutter web
+        run: |
+          flutter pub get
+          flutter build web --release --dart-define=SONA_API_BASE_URL=http://localhost:8081
+        working-directory: apps/sona
+
+      - name: Start API
+        run: |
+          export PORT=8081 NODE_ENV=development CORS_ALLOW_LOCALHOST=true RUN_MIGRATIONS_ON_START=true
+          nohup npx tsx src/index.ts > /tmp/sona-api.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8081/health && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8081/health
+        working-directory: apps/api
+
+      - name: Serve Flutter web
+        run: |
+          nohup python3 -m http.server 8080 --directory apps/sona/build/web > /tmp/sona-web.log 2>&1 &
+          for i in $(seq 1 15); do
+            curl -fsS http://localhost:8080 > /dev/null && break
+            sleep 2
+          done
+
+      # parent-intake-full.spec.ts is excluded until its date-picker flake is
+      # fixed (tracked in Linear DEV-36).
+      - name: Run Playwright smoke + API specs
+        run: |
+          npx playwright test \
+            tests/parent-intake-smoke.spec.ts \
+            tests/api-bootstrap.spec.ts \
+            tests/intake-api-full.spec.ts \
+            tests/questionnaire-api.spec.ts \
+            tests/clinical-report-api.spec.ts \
+            tests/register-patient-api.spec.ts \
+            tests/booking-api.spec.ts \
+            tests/personas-parity.spec.ts
+        working-directory: e2e
+
+      - name: Upload service logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-logs
+          path: /tmp/sona-*.log
+          if-no-files-found: ignore
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          if-no-files-found: ignore

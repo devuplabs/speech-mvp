@@ -37,6 +37,16 @@ PostgreSQL 16 is required locally for the API data routes.
 - The LLM inference service (`INFERENCE_OPENAI_BASE_URL`) is not available locally — the API gracefully degrades and uses stub drafts.
 - Migrations run automatically on API start when `RUN_MIGRATIONS_ON_START=true`.
 
+### Continuous integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and on pushes to `main`:
+
+1. **api** — `npm run typecheck` + `npm test` (Vitest) in `apps/api` on Node 22.
+2. **flutter** — `flutter analyze --no-fatal-infos` + `flutter test` in `apps/sona` (Flutter 3.44.0, pinned).
+3. **e2e-smoke** — Postgres 16 service container, API booted via `tsx` with `RUN_MIGRATIONS_ON_START=true`, Flutter web release build served statically, then the Playwright smoke + API specs. `parent-intake-full.spec.ts` is excluded until its date-picker flake is fixed (Linear DEV-36).
+
+Keep these green: a PR that breaks any of the three jobs should not merge. Cloud Build (`infra/ci/`) handles deploys; GitHub Actions handles test gating.
+
 ### Lint, typecheck & tests
 
 - **API typecheck**: `cd apps/api && npx tsc --noEmit`
