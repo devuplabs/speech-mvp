@@ -1,6 +1,6 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { carryoverResources, cases, progressEntries, tenants } from "../db/schema.js";
+import { carryoverResources, cases, progressEntries, tenants, users } from "../db/schema.js";
 import type {
   CreateCarryoverResourceBody,
   CreateProgressEntryBody,
@@ -182,6 +182,27 @@ export async function addProgressEntry(
  * the published parent summary (null until published), shared resources and
  * the progress log. Records `portal.viewed` in the audit trail.
  */
+/**
+ * Best-effort reviewing-clinician name for the family-facing "reviewed by your
+ * clinician" line. The MVP has no per-case clinician assignment (no FHIR
+ * Practitioner link yet — see the FHIR ADR backlog), so we surface a real name
+ * only when it is unambiguous: a practice with exactly one active member. We
+ * never fabricate a name (and never expose HCPC, which has no field yet);
+ * otherwise we return null and the portal falls back to "your clinician".
+ */
+export async function resolveReviewingClinicianName(
+  db: Db,
+  tenantId: string,
+): Promise<string | null> {
+  const roster = await db
+    .select({ fullName: users.fullName })
+    .from(users)
+    .where(and(eq(users.tenantId, tenantId), ne(users.status, "disabled")));
+  const named = roster.filter((u) => u.fullName && u.fullName.trim().length > 0);
+  if (named.length === 1) return named[0]!.fullName!.trim();
+  return null;
+}
+
 export async function getPortalPayload(db: Db, token: string) {
   const link = await resolvePortalLink(db, token);
   if (!link.ok) return link;
@@ -193,6 +214,10 @@ export async function getPortalPayload(db: Db, token: string) {
   const summary = await getPublishedParentSummary(db, link.caseId);
   const resources = await listCarryoverResources(db, link.caseId);
   const progress = await listProgressEntries(db, link.caseId);
+  const reviewingClinicianName = await resolveReviewingClinicianName(
+    db,
+    caseRow.tenantId,
+  );
 
   await writeAudit(db, {
     tenantId: caseRow.tenantId,
@@ -210,6 +235,7 @@ export async function getPortalPayload(db: Db, token: string) {
         status: caseRow.status,
       },
       practiceName: tenant?.displayName ?? null,
+      reviewingClinicianName,
       summary: summary.ok ? { html: summary.html } : null,
       resources,
       progress,

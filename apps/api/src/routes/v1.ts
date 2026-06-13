@@ -388,7 +388,10 @@ export function createV1Routes(db: Db, env: Env) {
     return c.json({
       case: result.case,
       viewPath: result.viewPath,
-      message: "Published to portal (no email). Parent opens case ID in demo app.",
+      familyNotified: result.familyNotified,
+      message: result.familyNotified
+        ? "Published to portal and family notified by email."
+        : "Published to portal (no family email on file).",
     });
   });
 

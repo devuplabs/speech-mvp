@@ -16,6 +16,34 @@ export function portalLinkExpiresAt(now: Date = new Date()): Date {
   return d;
 }
 
+/** Family portal magic-link URL for a token (mirrors the intake `?t=` pattern). */
+export function buildPortalUrl(webBaseUrl: string, token: string): string {
+  const base = webBaseUrl.replace(/\/$/, "");
+  return `${base}/?portal=${encodeURIComponent(token)}`;
+}
+
+/**
+ * Return a still-active portal token for a case, minting one only when none
+ * exists — so re-publishing a summary reuses the same family link rather than
+ * invalidating the one the family may already have bookmarked.
+ */
+export async function getOrCreatePortalToken(
+  db: Db,
+  caseId: string,
+  now: Date = new Date(),
+): Promise<{ ok: true; token: string } | { ok: false; error: "not_found" }> {
+  const active = await db
+    .select()
+    .from(casePortalLinks)
+    .where(and(eq(casePortalLinks.caseId, caseId), isNull(casePortalLinks.revokedAt)));
+  const live = active.find((row) => row.expiresAt > now);
+  if (live) return { ok: true, token: live.token };
+
+  const created = await createPortalLink(db, caseId);
+  if (!created.ok) return { ok: false, error: "not_found" };
+  return { ok: true, token: created.token };
+}
+
 export type PortalLinkRejection = "not_found" | "revoked" | "expired";
 
 /**
