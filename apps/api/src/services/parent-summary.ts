@@ -8,6 +8,23 @@ import { buildIntakeContextForLlm, generateParentSummaryHtmlLlm } from "../llm/g
 import { draftClinicalReportStub } from "./clinical-report.js";
 import { loadIntakeAnswers } from "./intake-context.js";
 
+/**
+ * A parent summary may only be published once the clinician has triaged the
+ * case (DEV-34 — state-machine hardening). `summary_sent` stays eligible so a
+ * clinician can re-publish an amended summary.
+ */
+const SUMMARY_PUBLISHABLE_STATUSES = new Set([
+  "triaged",
+  "plan_drafting",
+  "plan_ready",
+  "summary_sent",
+]);
+
+/** Pure status guard so the rule is unit-testable without a database. */
+export function canPublishParentSummary(status: string): boolean {
+  return SUMMARY_PUBLISHABLE_STATUSES.has(status);
+}
+
 export function defaultParentSummaryHtml(childName?: string | null): string {
   const who = childName ? ` for ${childName}` : "";
   return `<!DOCTYPE html><html><body>
@@ -25,7 +42,10 @@ export async function publishParentSummary(
   env?: Env,
 ) {
   const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
-  if (!existing) return { ok: false as const, error: "not_found" };
+  if (!existing) return { ok: false as const, error: "not_found" as const };
+  if (!canPublishParentSummary(existing.status)) {
+    return { ok: false as const, error: "case_not_ready" as const };
+  }
 
   let html = htmlBody;
   let summaryModelId = "clinician-published";
