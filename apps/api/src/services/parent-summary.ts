@@ -11,13 +11,16 @@ import { loadIntakeAnswers } from "./intake-context.js";
 /**
  * A parent summary may only be published once the clinician has triaged the
  * case (DEV-34 — state-machine hardening). `summary_sent` stays eligible so a
- * clinician can re-publish an amended summary.
+ * clinician can re-publish an amended summary; `carryover` stays eligible too
+ * (DEV-10) so re-publishing an amended summary still works after the case has
+ * moved into the carryover stage.
  */
 const SUMMARY_PUBLISHABLE_STATUSES = new Set([
   "triaged",
   "plan_drafting",
   "plan_ready",
   "summary_sent",
+  "carryover",
 ]);
 
 /** Pure status guard so the rule is unit-testable without a database. */
@@ -114,7 +117,9 @@ export async function publishParentSummary(
 export async function getPublishedParentSummary(db: Db, caseId: string) {
   const [row] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!row) return { ok: false as const, error: "not_found" };
-  if (row.status !== "summary_sent") {
+  // A published summary remains viewable once the case advances into carryover
+  // (DEV-10) — the portal still renders it alongside shared resources.
+  if (row.status !== "summary_sent" && row.status !== "carryover") {
     return { ok: false as const, error: "not_published", status: row.status };
   }
 

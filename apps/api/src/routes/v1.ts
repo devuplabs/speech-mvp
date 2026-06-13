@@ -340,7 +340,9 @@ export function createV1Routes(db: Db, env: Env) {
     const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
     if (!existing) return c.json({ error: "not_found" }, 404);
     // Clinical guard: a case cannot be triaged before the parent has
-    // submitted intake (DEV-34 — state-machine hardening).
+    // submitted intake (DEV-34 — state-machine hardening). Triage is permitted
+    // from any post-submission status — including `consult_booked` — because a
+    // consult is optional (DEV-10); only `intake_pending` is blocked.
     if (existing.status === "intake_pending") {
       return c.json({ error: "intake_not_submitted" }, 409);
     }

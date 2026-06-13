@@ -4,6 +4,24 @@ import { cases } from "../db/schema.js";
 import { getAvailabilitySlots, slotIsAvailable } from "./availability.js";
 import { writeAudit } from "./audit.js";
 
+/**
+ * Statuses from which booking a consult advances the case to `consult_booked`
+ * (Stage 5). Booking is optional, so we only advance a case that is sitting in
+ * the prep window. A case that has already moved on (triaged and beyond) must
+ * never be rewound by a (re-)booking, and a case still at `intake_pending`
+ * (e.g. a consult booked during initial registration) must not skip intake.
+ */
+const CONSULT_BOOKING_ADVANCE_FROM = new Set(["prep_drafting", "prep_ready"]);
+
+/**
+ * Pure transition rule: given the case's current status, returns the status it
+ * should hold after a consult is booked. Returns `null` when booking should not
+ * change the status (so callers can skip the update). Unit-testable without a DB.
+ */
+export function statusAfterConsultBooked(currentStatus: string): "consult_booked" | null {
+  return CONSULT_BOOKING_ADVANCE_FROM.has(currentStatus) ? "consult_booked" : null;
+}
+
 export async function bookConsult(
   db: Db,
   caseId: string,
@@ -47,9 +65,15 @@ export async function bookConsult(
 
   if (collision) return { ok: false as const, error: "slot_taken" as const };
 
+  const nextStatus = statusAfterConsultBooked(existing.status);
+
   const [updated] = await db
     .update(cases)
-    .set({ consultAt: start, updatedAt: new Date() })
+    .set({
+      consultAt: start,
+      ...(nextStatus ? { status: nextStatus } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(cases.id, caseId))
     .returning();
 
@@ -58,7 +82,11 @@ export async function bookConsult(
     caseId,
     actor: "clinician",
     action: "consult.booked",
-    metadata: { start: startIso, durationMinutes },
+    metadata: {
+      start: startIso,
+      durationMinutes,
+      ...(nextStatus ? { statusFrom: existing.status, statusTo: nextStatus } : {}),
+    },
   });
 
   return {
