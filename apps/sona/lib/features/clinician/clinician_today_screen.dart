@@ -8,13 +8,13 @@ class ClinicianTodayScreen extends StatelessWidget {
   const ClinicianTodayScreen({
     super.key,
     required this.state,
-    required this.onOpenPrep,
+    required this.onOpenReview,
     required this.onRefresh,
     this.showAvailabilityBanner = false,
   });
 
   final SonaAppState state;
-  final ValueChanged<String> onOpenPrep;
+  final ValueChanged<String> onOpenReview;
   final Future<void> Function() onRefresh;
   final bool showAvailabilityBanner;
 
@@ -214,7 +214,7 @@ class ClinicianTodayScreen extends StatelessWidget {
                 name,
                 apiStatus.replaceAll('_', ' '),
                 status,
-                () => onOpenPrep(id),
+                () => onOpenReview(id),
                 highlight: id == activeId,
               );
             }),
@@ -249,7 +249,7 @@ class ClinicianTodayScreen extends StatelessWidget {
         final name = (c['childDisplayName'] as String?) ?? 'Child';
         final at = DateTime.tryParse(c['consultAt'] as String? ?? '');
         final time = at != null ? '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}' : '—';
-        children.add(_sideCard('Up next', name, 'Consult $time', () => onOpenPrep(id)));
+        children.add(_sideCard('Up next', name, 'Consult $time', () => onOpenReview(id)));
         children.add(const SizedBox(height: 16));
       }
     } else if (cases.isNotEmpty) {
@@ -259,7 +259,7 @@ class ClinicianTodayScreen extends StatelessWidget {
       );
       final id = primary['id'] as String;
       final name = (primary['childDisplayName'] as String?) ?? 'Child';
-      children.add(_sideCard('Up next', name, 'No consult booked', () => onOpenPrep(id)));
+      children.add(_sideCard('Up next', name, 'No consult booked', () => onOpenReview(id)));
       children.add(const SizedBox(height: 16));
     }
     if (cases.isEmpty && children.isEmpty) return const SizedBox.shrink();
@@ -269,7 +269,7 @@ class ClinicianTodayScreen extends StatelessWidget {
         orElse: () => cases.first,
       );
       final name = (primary['childDisplayName'] as String?) ?? 'Child';
-      children.add(_sideCard('Recent activity', 'Intake · $name', 'Latest', () => onOpenPrep(primary['id'] as String)));
+      children.add(_sideCard('Recent activity', 'Intake · $name', 'Latest', () => onOpenReview(primary['id'] as String)));
     }
     return Column(children: children);
   }

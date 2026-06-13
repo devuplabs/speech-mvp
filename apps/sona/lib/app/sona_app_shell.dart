@@ -99,6 +99,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
   SonaRoute _route = SonaRoute.launcher;
   ClinicianRoute _clinicianNav = ClinicianRoute.today;
 
+  /// Where Back from the intake-review overview returns to (Today, Clients,
+  /// or Intake forms — whichever entry point opened it).
+  SonaRoute _intakeReviewReturnRoute = SonaRoute.clinicianIntakeForms;
+
   /// Email resolved from the invite/reset action code, used to sign in once the
   /// new password is set (Auth·16).
   String? _inviteEmail;
@@ -846,8 +850,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
     await _run(_loadIntakeForms, label: 'Load intake forms');
   }
 
-  Future<void> _openIntakeReview(String caseId) async {
+  /// Stage 3 · Intake review. Loads the full case detail and lands on the
+  /// one-screen client overview. [from] is remembered so Back returns to the
+  /// screen the clinician came from (Today, Clients, or Intake forms).
+  Future<void> _openIntakeReview(String caseId, {SonaRoute? from}) async {
     _selectClinicianCase(caseId);
+    if (from != null) _intakeReviewReturnRoute = from;
     await _run(() async {
       final detail = await _api.getCase(caseId);
       _syncTenantFromCaseDetail(detail);
@@ -860,8 +868,43 @@ class _SonaAppShellState extends State<SonaAppShell> {
         }
         _state.intakeLocked = intake['locked'] as bool? ?? false;
       }
-      setState(() => _route = SonaRoute.clinicianIntakeReview);
+      // Pending intakes surface the magic-link status + resend/revoke actions,
+      // which come from the intake-submissions list — load it if not yet there.
+      final caseStatus =
+          (detail['case'] as Map<String, dynamic>?)?['status'] as String?;
+      if (caseStatus == 'intake_pending' &&
+          !_intakeFormItems.any((i) => i['caseId'] == caseId)) {
+        try {
+          await _loadIntakeForms();
+        } catch (_) {
+          // Link status is a nice-to-have; the overview still renders.
+        }
+      }
+      setState(() {
+        _state.caseDetail = detail;
+        _route = SonaRoute.clinicianIntakeReview;
+      });
     }, label: 'Load intake');
+  }
+
+  /// Magic-link status for [caseId] from the intake-submissions list, when loaded.
+  String? _intakeLinkStatusFor(String? caseId) {
+    if (caseId == null) return null;
+    for (final item in _intakeFormItems) {
+      if (item['caseId'] == caseId) return item['status'] as String?;
+    }
+    return null;
+  }
+
+  void _backFromIntakeReview() {
+    switch (_intakeReviewReturnRoute) {
+      case SonaRoute.clinicianToday:
+        unawaited(_openClinicianToday());
+      case SonaRoute.clinicianClients:
+        unawaited(_openClinicianClients());
+      default:
+        unawaited(_openClinicianIntakeForms());
+    }
   }
 
   Future<String?> _resendIntakeLink(String caseId) async {
@@ -1329,11 +1372,9 @@ class _SonaAppShellState extends State<SonaAppShell> {
       SonaRoute.clinicianClients => ClinicianClientsScreen(
           state: _state,
           onRefresh: _loadClinicianDashboard,
-          onOpenCase: (caseId) {
-            _selectClinicianCase(caseId);
-            _refreshCase();
-            _go(SonaRoute.clinicianPrep);
-          },
+          onOpenCase: (caseId) => unawaited(
+            _openIntakeReview(caseId, from: SonaRoute.clinicianClients),
+          ),
           onRegisterPatient: _registerPatient,
           fetchSlots: _state.tenantId == null
               ? null
@@ -1342,14 +1383,36 @@ class _SonaAppShellState extends State<SonaAppShell> {
       SonaRoute.clinicianIntakeForms => ClinicianIntakeFormsScreen(
           items: _intakeFormItems,
           onRefresh: _loadIntakeForms,
-          onOpenReview: (caseId) => unawaited(_openIntakeReview(caseId)),
+          onOpenReview: (caseId) => unawaited(
+            _openIntakeReview(caseId, from: SonaRoute.clinicianIntakeForms),
+          ),
           onResendLink: _resendIntakeLink,
           onRevokeLink: _revokeIntakeLink,
           onLock: _lockIntake,
         ),
       SonaRoute.clinicianIntakeReview => ClinicianIntakeReviewScreen(
-          state: _state,
-          onBack: () => _go(SonaRoute.clinicianIntakeForms),
+          caseDetail: _state.caseDetail,
+          linkStatus: _intakeLinkStatusFor(_state.caseId),
+          onBack: _backFromIntakeReview,
+          onRefresh: _state.caseId == null
+              ? null
+              : () => _openIntakeReview(_state.caseId!),
+          onOpenPrep: _state.caseDetail == null
+              ? null
+              : () => _go(SonaRoute.clinicianPrep),
+          onResendLink: _state.caseId == null
+              ? null
+              : () async {
+                  final caseId = _state.caseId!;
+                  final url = await _resendIntakeLink(caseId);
+                  if (url != null && mounted) {
+                    await showIntakeLinkCopiedSnackBar(context, url: url);
+                  }
+                  return url;
+                },
+          onRevokeLink: _state.caseId == null
+              ? null
+              : () => _revokeIntakeLink(_state.caseId!),
         ),
       SonaRoute.clinicianReports => ClinicianReportsScreen(
           items: _clinicalReportItems,
@@ -1405,11 +1468,9 @@ class _SonaAppShellState extends State<SonaAppShell> {
       _ => ClinicianTodayScreen(
           state: _state,
           showAvailabilityBanner: _needsAvailabilityConfirm,
-          onOpenPrep: (caseId) {
-            _selectClinicianCase(caseId);
-            _refreshCase();
-            _go(SonaRoute.clinicianPrep);
-          },
+          onOpenReview: (caseId) => unawaited(
+            _openIntakeReview(caseId, from: SonaRoute.clinicianToday),
+          ),
           onRefresh: _loadClinicianDashboard,
         ),
     };
@@ -1420,8 +1481,13 @@ class _SonaAppShellState extends State<SonaAppShell> {
 
     final navRoute = switch (_route) {
       SonaRoute.clinicianClients => ClinicianRoute.clients,
-      SonaRoute.clinicianIntakeForms || SonaRoute.clinicianIntakeReview =>
-        ClinicianRoute.intakeForms,
+      SonaRoute.clinicianIntakeForms => ClinicianRoute.intakeForms,
+      // Highlight the entry point the review was opened from.
+      SonaRoute.clinicianIntakeReview => switch (_intakeReviewReturnRoute) {
+          SonaRoute.clinicianToday => ClinicianRoute.today,
+          SonaRoute.clinicianClients => ClinicianRoute.clients,
+          _ => ClinicianRoute.intakeForms,
+        },
       SonaRoute.clinicianReports => ClinicianRoute.reports,
       SonaRoute.clinicianResources => ClinicianRoute.resources,
       SonaRoute.clinicianBilling => ClinicianRoute.billing,
