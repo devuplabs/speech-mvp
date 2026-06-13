@@ -1,6 +1,20 @@
 # Dependabot config — DEV-31 (security hardening: dependency audit).
-# Version updates only. GitHub secret scanning / push protection and Dependabot
-# *security alerts* are repo-admin toggles (see docs/security/hardening-checklist.md).
+#
+# Hardened after the 2026-06-13 incident where auto-opened MAJOR bumps
+# (zod 4, typescript 6, vitest 4, @types/node 25) merged while CI was red
+# (branch protection was not yet enabled) and broke `main`.
+#
+# Policy:
+#   - MAJOR updates are IGNORED here. Majors are breaking by definition and
+#     must be adopted deliberately (code migration + review), tracked as their
+#     own Linear issue — never as an unattended auto-bump.
+#   - minor + patch updates are GROUPED into a single PR per ecosystem per week,
+#     so we get one reviewable security/maintenance PR instead of a flood
+#     (the flood also caused concurrent terraform-plan state-lock contention).
+#
+# GitHub secret scanning / push protection and Dependabot *security alerts* are
+# repo-admin toggles (see docs/security/hardening-checklist.md), as is branch
+# protection requiring the CI checks before merge (Linear DEV-47).
 version: 2
 updates:
   # API service (Node / npm)
@@ -12,6 +26,15 @@ updates:
     labels:
       - dependencies
       - api
+    groups:
+      api-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   # End-to-end test harness (Node / npm)
   - package-ecosystem: npm
@@ -22,6 +45,15 @@ updates:
     labels:
       - dependencies
       - e2e
+    groups:
+      e2e-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   # Flutter app (Dart / pub)
   - package-ecosystem: pub
@@ -32,6 +64,15 @@ updates:
     labels:
       - dependencies
       - flutter
+    groups:
+      flutter-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   # GitHub Actions workflows
   - package-ecosystem: github-actions
@@ -41,3 +82,7 @@ updates:
     labels:
       - dependencies
       - ci
+    groups:
+      actions-all:
+        patterns:
+          - "*"

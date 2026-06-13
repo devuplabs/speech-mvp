@@ -43,8 +43,8 @@ dependencies:
   # via --dart-define from the firebase_auth Terraform module outputs.
   # Run `flutter pub get` (or `flutter pub upgrade --major-versions`) if these
   # need to move with the current SDK.
-  firebase_core: ^4.10.0
-  firebase_auth: ^6.5.2
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
 
 dev_dependencies:
   flutter_test:
