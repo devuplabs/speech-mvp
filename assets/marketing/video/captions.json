@@ -3,7 +3,7 @@
   "width": 1920,
   "height": 1080,
   "slides": [
-    { "png": "deck/slides/01-cold-open.png",      "seconds": 6,  "caption": "What if the Tuesday-afternoon admin block came back as therapy time?" },
+    { "png": "deck/slides/01-cold-open.png",      "seconds": 6,  "caption": "Sona — the AI practice partner that gives clinicians their admin time back." },
     { "png": "deck/slides/02-meet-aria.png",      "seconds": 8,  "caption": "Meet Aria — 4 years old. Nursery SENCO referral, North London." },
     { "png": "deck/slides/03-todays-inbox.png",   "seconds": 8,  "caption": "Today the case starts as six scattered fragments. 5 to 10 minutes just to assemble." },
     { "png": "deck/slides/04-parent-journey.png", "seconds": 9,  "caption": "Sona's parent intake — 8 steps, one phone, about 15 minutes. Already built." },
