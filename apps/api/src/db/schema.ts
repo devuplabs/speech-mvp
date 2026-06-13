@@ -118,6 +118,15 @@ export const cases = pgTable("cases", {
   childDisplayName: varchar("child_display_name", { length: 128 }),
   referralSource: varchar("referral_source", { length: 32 }),
   consultAt: timestamp("consult_at", { withTimezone: true }),
+  /**
+   * Legal/retention hold (DEV-24). When true the case is under a clinical-record
+   * retention duty (e.g. HCPC record-keeping standards, an open complaint or
+   * litigation) and right-to-erasure requests MUST be refused with a clear
+   * error rather than silently honoured. See docs/compliance/dsar-runbook.md.
+   */
+  legalHold: boolean("legal_hold").notNull().default(false),
+  /** Free-text reason a hold was placed (no PHI) — surfaced to the admin on refusal. */
+  legalHoldReason: varchar("legal_hold_reason", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

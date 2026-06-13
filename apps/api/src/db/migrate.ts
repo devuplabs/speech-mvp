@@ -11,7 +11,7 @@ const migrationsDir = path.join(
 
 const MIGRATION_IDS = ["0000_init", "0001_register_patient", "0002_booking", "0003_questionnaire",
   "0004_clinical_report", "0005_practice_and_users", "0006_carryover",
-  "0007_journey_statuses",
+  "0007_journey_statuses", "0008_legal_hold",
 ] as const;
 
 export async function runMigrations(connectionString: string): Promise<void> {
