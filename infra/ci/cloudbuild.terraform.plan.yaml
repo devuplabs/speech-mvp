@@ -51,4 +51,7 @@ steps:
         } > ci.auto.tfvars
         terraform init -input=false -backend-config=backend.ci.hcl
         terraform validate
-        terraform plan -input=false -no-color
+        # -lock=false: plan is read-only and does not need the GCS state lock.
+        # Taking the lock made concurrent PR plans (e.g. a batch of Dependabot
+        # PRs) collide on the shared dev state and fail. Apply still locks.
+        terraform plan -input=false -no-color -lock=false
