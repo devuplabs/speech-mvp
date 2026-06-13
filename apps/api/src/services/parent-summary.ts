@@ -115,6 +115,8 @@ export async function publishParentSummary(
     const llm = await generateParentSummaryHtmlLlm(env, {
       childDisplayName: existing.childDisplayName ?? "Child",
       intakeContext: buildIntakeContextForLlm(answers),
+      mainConcern: answers.mainConcern as string | undefined,
+      difficulties: answers.difficulties as string[] | undefined,
     });
     if (llm) {
       html = llm.html;
