@@ -36,6 +36,8 @@ export async function draftPrepBrief(db: Db, caseId: string, env?: Env) {
     const llm = await generatePrepBriefLlm(env, {
       childDisplayName: childName,
       intakeContext,
+      mainConcern: answers.mainConcern as string | undefined,
+      difficulties: answers.difficulties as string[] | undefined,
     });
     if (llm) {
       stubContent = llm.content;

@@ -37,6 +37,8 @@ export async function draftSessionPlanStub(db: Db, caseId: string, env?: Env) {
       childDisplayName: childName,
       intakeContext,
       triageOutcome: triage?.outcome ?? "short_block",
+      mainConcern: answers.mainConcern as string | undefined,
+      difficulties: answers.difficulties as string[] | undefined,
     });
     if (llm) {
       content = llm.content;

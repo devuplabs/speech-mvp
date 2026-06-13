@@ -1,0 +1,168 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`few-shot prompt snapshots > parent_summary prompt — Case A 1`] = `
+"Write a warm parent-facing summary for Case A after intake. Reading level: Year 8. No medical jargon.
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Articulation errors; French immersion school.
+Care model: paediatric
+Summary tone: Parent summary PHIPA-aware.
+
+Example 2:
+Concern: Hard to understand; substitutes sounds.
+Care model: paediatric
+Summary tone: Explain assessment plan in warm parent-friendly tone; home listening games.
+
+Example 3:
+Concern: Speech unclear; school buying SLT sessions via SLA.
+Care model: paediatric
+Summary tone: Summary to parents and SENCO.
+
+Intake:
+Child: Case A
+Main concern: Hard to understand, substitutes sounds
+Difficulties: Speech sounds
+
+Return JSON: {"html":"<p>...</p>"} with simple HTML paragraphs only. Include a line that the summary was drafted with AI assistance and reviewed by the clinician."
+`;
+
+exports[`few-shot prompt snapshots > parent_summary prompt — Case B 1`] = `
+"Write a warm parent-facing summary for Case B after intake. Reading level: Year 8. No medical jargon.
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Word-finding difficulty 8 weeks post-stroke.
+Care model: adult
+Summary tone: Carer-accessible summary with communication strategies.
+
+Example 2:
+Concern: Aphasia after CVA; spouse manages care.
+Care model: adult
+Summary tone: Caregiver-accessible patient portal summary.
+
+Example 3:
+Concern: Inconsistent speech errors; difficulty initiating words.
+Care model: adult
+Summary tone: Carer-inclusive summary with pacing strategies.
+
+Intake:
+Child: Case B
+Main concern: general developmental check
+
+Return JSON: {"html":"<p>...</p>"} with simple HTML paragraphs only. Include a line that the summary was drafted with AI assistance and reviewed by the clinician."
+`;
+
+exports[`few-shot prompt snapshots > prep_brief prompt — Case A 1`] = `
+"Child: Case A
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Articulation errors; French immersion school.
+Care model: paediatric
+Prep focus: 6yo CA articulation; bilingual school context.
+
+Example 2:
+Concern: Hard to understand; substitutes sounds.
+Care model: paediatric
+Prep focus: 4yo with phonological delay; check stimulability and home practice capacity.
+
+Example 3:
+Concern: Speech unclear; school buying SLT sessions via SLA.
+Care model: paediatric
+Prep focus: 8yo school SLA; bounded session block.
+
+Intake:
+Child: Case A
+Main concern: Hard to understand, substitutes sounds
+Difficulties: Speech sounds
+
+Return JSON: {"probeAreas":["..."]} with 4-6 specific prep probes for the first consult."
+`;
+
+exports[`few-shot prompt snapshots > prep_brief prompt — Case B 1`] = `
+"Child: Case B
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Word-finding difficulty 8 weeks post-stroke.
+Care model: adult
+Prep focus: 67yo expressive aphasia; carer-mediated history.
+
+Example 2:
+Concern: Aphasia after CVA; spouse manages care.
+Care model: adult
+Prep focus: 71yo US aphasia; Medicare auth limits.
+
+Example 3:
+Concern: Inconsistent speech errors; difficulty initiating words.
+Care model: adult
+Prep focus: 34yo AOS post-TBI; review error consistency.
+
+Intake:
+Child: Case B
+Main concern: general developmental check
+
+Return JSON: {"probeAreas":["..."]} with 4-6 specific prep probes for the first consult."
+`;
+
+exports[`few-shot prompt snapshots > session_plan prompt — Case A 1`] = `
+"Child: Case A
+Triage outcome: short_block
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Articulation errors; French immersion school.
+Care model: paediatric
+Triage: short_block
+Plan focus: Speech sound assessment.
+
+Example 2:
+Concern: Hard to understand; substitutes sounds.
+Care model: paediatric
+Triage: short_block
+Plan focus: Initial assessment of speech sound inventory and phonological processes.
+
+Example 3:
+Concern: Speech unclear; school buying SLT sessions via SLA.
+Care model: paediatric
+Triage: strategy_only
+Plan focus: Screening and strategy programme within SLA cap.
+
+Intake:
+Child: Case A
+Main concern: Hard to understand, substitutes sounds
+Difficulties: Speech sounds
+
+Return JSON: {"sections":{"goals":[],"activities":[],"homePractice":[],"materials":[]}} for a first SLT session plan."
+`;
+
+exports[`few-shot prompt snapshots > session_plan prompt — Case B 1`] = `
+"Child: Case B
+Triage outcome: short_block
+
+Reference examples (similar cases, for tone and focus only — do not copy details):
+Example 1:
+Concern: Word-finding difficulty 8 weeks post-stroke.
+Care model: adult
+Triage: full_assessment
+Plan focus: Aphasia assessment with partner present.
+
+Example 2:
+Concern: Aphasia after CVA; spouse manages care.
+Care model: adult
+Triage: full_assessment
+Plan focus: Aphasia assessment and spouse training.
+
+Example 3:
+Concern: Inconsistent speech errors; difficulty initiating words.
+Care model: adult
+Triage: full_assessment
+Plan focus: Apraxia assessment and motor programming trials.
+
+Intake:
+Child: Case B
+Main concern: general developmental check
+
+Return JSON: {"sections":{"goals":[],"activities":[],"homePractice":[],"materials":[]}} for a first SLT session plan."
+`;

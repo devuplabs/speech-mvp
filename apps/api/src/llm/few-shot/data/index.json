@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-05-31T21:59:07Z",
+  "specialties": {
+    "aac": 2,
+    "aphasia": 2,
+    "apraxia": 1,
+    "cleft_craniofacial": 1,
+    "dysarthria": 2,
+    "dysphagia": 2,
+    "feeding": 3,
+    "fluency": 7,
+    "gender_affirming_voice": 1,
+    "head_neck_cancer": 1,
+    "hearing_impairment": 1,
+    "language": 14,
+    "neurodegenerative": 1,
+    "other": 3,
+    "social_communication": 3,
+    "speech_sounds": 4,
+    "tbi": 1,
+    "voice": 5
+  },
+  "total": 54
+}

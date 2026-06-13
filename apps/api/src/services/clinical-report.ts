@@ -113,6 +113,8 @@ export async function draftClinicalReportStub(db: Db, caseId: string, env?: Env)
       childDisplayName: childName,
       intakeContext,
       triageOutcome: triage?.outcome,
+      mainConcern: answers.mainConcern as string | undefined,
+      difficulties: answers.difficulties as string[] | undefined,
     });
     if (llm) {
       content = llm.content as ClinicalReportContent;
