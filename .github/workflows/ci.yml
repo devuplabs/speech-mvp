@@ -144,12 +144,15 @@ jobs:
             sleep 2
           done
 
-      # parent-intake-full.spec.ts is excluded until its date-picker flake is
-      # fixed (tracked in Linear DEV-36).
+      # parent-intake-full.spec.ts (full browser intake-through-submit flow) is
+      # now stable headless and included here: its date-picker flake was fixed in
+      # DEV-36 (SonaDateField is keyboard-editable, taps are retried until they
+      # take effect). Proven with 10/10 consecutive local headless runs.
       - name: Run Playwright smoke + API specs
         run: |
           npx playwright test \
             tests/parent-intake-smoke.spec.ts \
+            tests/parent-intake-full.spec.ts \
             tests/api-bootstrap.spec.ts \
             tests/intake-api-full.spec.ts \
             tests/questionnaire-api.spec.ts \

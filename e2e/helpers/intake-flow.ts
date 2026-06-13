@@ -8,6 +8,34 @@ export async function enableFlutterAccessibility(page: Page) {
   }
 }
 
+/**
+ * Wait for Flutter's semantics tree to be wired up.
+ *
+ * Flutter web only emits Semantics DOM nodes after the engine has rendered its
+ * first frame AND accessibility has been enabled. Gesture handlers (the thing
+ * that turns a click into an actual tap) are attached as part of that same
+ * pipeline. If a test clicks a button before the semantics tree exists, the tap
+ * lands on the GlassPane and is silently swallowed — the historical root cause
+ * of the "date-picker"/Get-started flake (the click never fired its API call,
+ * so the test sat in a 90s waitForResponse until timeout).
+ *
+ * We therefore wait for at least one `flt-semantics` node to exist before
+ * trusting any role-based interaction.
+ */
+async function waitForSemanticsTree(page: Page) {
+  await enableFlutterAccessibility(page);
+  await expect
+    .poll(
+      async () => {
+        // Re-arm the accessibility placeholder if Flutter re-rendered it.
+        await enableFlutterAccessibility(page);
+        return page.locator("flt-semantics").count();
+      },
+      { timeout: 90_000, intervals: [250, 500, 1000] },
+    )
+    .toBeGreaterThan(0);
+}
+
 /** Wait for WASM load + semantics tree (launcher or welcome). */
 export async function waitForFlutterApp(page: Page) {
   await page.goto("/", { waitUntil: "domcontentloaded", timeout: 120_000 });
@@ -15,10 +43,42 @@ export async function waitForFlutterApp(page: Page) {
     .getByText("Loading Sona")
     .waitFor({ state: "hidden", timeout: 120_000 })
     .catch(() => {});
-  await enableFlutterAccessibility(page);
+  await waitForSemanticsTree(page);
   await expect(
     page.getByRole("button", { name: "Parent intake (mobile)" }),
   ).toBeVisible({ timeout: 90_000 });
+}
+
+/**
+ * Click a Flutter-web button by accessible name, retrying until it produces a
+ * side effect (default: the button disappears, meaning the tap was consumed and
+ * the app navigated). Flutter web occasionally swallows the first tap on a
+ * freshly-rendered button while its gesture handler is still attaching; a plain
+ * `.click()` then silently no-ops. Retrying the tap (and re-confirming focus via
+ * a fresh locator each attempt) makes the interaction deterministic.
+ */
+export async function clickFlutterButtonUntil(
+  page: Page,
+  name: string,
+  confirmed: () => Promise<boolean>,
+  { attempts = 6, between = 1_000 }: { attempts?: number; between?: number } = {},
+) {
+  const button = page.getByRole("button", { name, exact: true });
+  await expect(button).toBeVisible({ timeout: 30_000 });
+  for (let i = 0; i < attempts; i++) {
+    if (await confirmed()) return;
+    await button.click({ timeout: 10_000 }).catch(() => {});
+    try {
+      await expect.poll(confirmed, { timeout: between }).toBe(true);
+      return;
+    } catch {
+      // Tap was swallowed; loop and retry.
+    }
+  }
+  if (await confirmed()) return;
+  throw new Error(
+    `Button "${name}" did not take effect after ${attempts} tap attempts`,
+  );
 }
 
 export async function expectStep(page: Page, step: number) {
@@ -134,8 +194,31 @@ export async function clickContinueAndDiagnose(
 }
 
 /**
+ * Fill a date field by typing the value directly.
+ *
+ * `SonaDateField` is keyboard-editable (DEV-36): the date is entered as text via
+ * the same shared-input path as every other field, so we reuse {@link
+ * fillLabeledField}. This deliberately avoids the Material date-picker dialog,
+ * whose calendar grid renders unreliably in headless Flutter web's
+ * accessibility tree and was the source of the full-intake spec flake.
+ *
+ * The label match tolerates the field's "DD / MM / YYYY" placeholder suffix.
+ */
+export async function fillDateField(
+  page: Page,
+  label: string | RegExp,
+  value: string,
+) {
+  await fillLabeledField(page, label, value);
+}
+
+/**
  * Pick a day inside the Flutter Material date picker.
  * Day buttons render as visible text like "21, Thursday, May 21, 2026, Today".
+ *
+ * @deprecated Prefer {@link fillDateField} (keyboard entry). The Material
+ * date-picker dialog renders unreliably in headless Flutter web; this is kept
+ * only for tests that explicitly exercise the calendar-icon path.
  */
 export async function pickDateInOpenDialog(page: Page) {
   const ok = page.getByRole("button", { name: /^OK$/i });
@@ -218,7 +301,17 @@ export async function assertNoApiErrorOnScreen(page: Page) {
 
 export async function openParentIntake(page: Page) {
   await waitForFlutterApp(page);
-  await page.getByRole("button", { name: "Parent intake (mobile)" }).click();
+  // The launcher tap can be swallowed while Flutter is still attaching gesture
+  // handlers; retry until the welcome screen's "Get started" button appears.
+  await clickFlutterButtonUntil(
+    page,
+    "Parent intake (mobile)",
+    () =>
+      page
+        .getByRole("button", { name: "Get started" })
+        .isVisible()
+        .catch(() => false),
+  );
   await expect(page.getByRole("button", { name: "Get started" })).toBeVisible({
     timeout: 30_000,
   });
@@ -233,6 +326,8 @@ export async function getStartedCaptureCase(page: Page): Promise<{
   caseId: string;
   apiBaseUrl: string;
 }> {
+  let bootstrapSeen = false;
+  let createSeen = false;
   const bootstrapResp = page.waitForResponse(
     (r) =>
       r.url().includes("/v1/demo/bootstrap") &&
@@ -241,6 +336,7 @@ export async function getStartedCaptureCase(page: Page): Promise<{
       r.status() < 300,
     { timeout: 90_000 },
   );
+  bootstrapResp.then(() => (bootstrapSeen = true)).catch(() => {});
   const createCaseResp = page.waitForResponse(
     (r) =>
       r.url().includes("/v1/cases") &&
@@ -248,8 +344,17 @@ export async function getStartedCaptureCase(page: Page): Promise<{
       r.status() === 201,
     { timeout: 90_000 },
   );
+  createCaseResp.then(() => (createSeen = true)).catch(() => {});
 
-  await page.getByRole("button", { name: "Get started" }).click();
+  // Retry the Get-started tap until the bootstrap call actually fires. A single
+  // swallowed tap (Flutter web GlassPane) used to leave the test stuck in the
+  // 90s waitForResponse — this was the real cause of the historical flake.
+  await clickFlutterButtonUntil(
+    page,
+    "Get started",
+    async () => bootstrapSeen || createSeen,
+    { attempts: 6, between: 5_000 },
+  );
 
   const boot = await bootstrapResp;
   await assertNoApiErrorOnScreen(page);

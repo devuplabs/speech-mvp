@@ -33,7 +33,7 @@ PostgreSQL 16 is required locally for the API data routes.
 
 - The API's `tsx watch` does NOT auto-load `.env` files. You must `export` env vars in the shell or use a wrapper. The `.env` file at `apps/api/.env` is for reference only.
 - Flutter web first load takes 30–60 seconds (WASM compilation). Playwright test timeouts are set to 300s for this reason.
-- The full parent-intake E2E test (`parent-intake-full.spec.ts`) may time out on the date picker step in headless mode due to Flutter web accessibility tree rendering delays. The smoke test (`parent-intake-smoke.spec.ts`) and API tests are reliable.
+- The full parent-intake browser E2E (`parent-intake-full.spec.ts`) is reliable headless and runs in CI (DEV-36). The old date-picker flake is fixed: `SonaDateField` is now keyboard-editable, so the spec types the date straight into the field instead of tapping through the Material date-picker dialog (whose calendar grid rendered unreliably in the headless accessibility tree). Get-started/launcher taps are also retried until they take effect, since Flutter web occasionally swallows the first tap on a freshly-rendered button. See `e2e/README.md` → "Date-picker E2E strategy".
 - The LLM inference service (`INFERENCE_OPENAI_BASE_URL`) is not available locally — the API gracefully degrades and uses stub drafts.
 - Migrations run automatically on API start when `RUN_MIGRATIONS_ON_START=true`.
 
@@ -43,7 +43,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every PR and on pushes to `m
 
 1. **api** — `npm run typecheck` + `npm test` (Vitest) in `apps/api` on Node 22.
 2. **flutter** — `flutter analyze --no-fatal-infos` + `flutter test` in `apps/sona` (Flutter 3.44.0, pinned).
-3. **e2e-smoke** — Postgres 16 service container, API booted via `tsx` with `RUN_MIGRATIONS_ON_START=true`, Flutter web release build served statically, then the Playwright smoke + API specs. `parent-intake-full.spec.ts` is excluded until its date-picker flake is fixed (Linear DEV-36).
+3. **e2e-smoke** — Postgres 16 service container, API booted via `tsx` with `RUN_MIGRATIONS_ON_START=true`, Flutter web release build served statically, then the Playwright smoke + API specs. This includes `parent-intake-full.spec.ts` (the full browser intake-through-submit flow) now that its date-picker flake is fixed (Linear DEV-36).
 
 Keep these green: a PR that breaks any of the three jobs should not merge. Cloud Build (`infra/ci/`) handles deploys; GitHub Actions handles test gating.
 
