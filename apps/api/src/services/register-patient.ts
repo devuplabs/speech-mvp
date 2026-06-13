@@ -193,11 +193,28 @@ export async function resolveIntakeLinkToken(db: Db, token: string) {
     .where(eq(caseIntakeLinks.token, token))
     .limit(1);
 
-  if (!row) return { ok: false as const, error: "not_found" as const };
+  if (!row) {
+    // Failed-resolve audit event (DEV-31). No tenant/case context exists for an
+    // unknown token; never store the token itself (it is the secret).
+    await writeAudit(db, {
+      actor: "parent",
+      action: "intake_link.resolve_failed",
+      metadata: { reason: "not_found" },
+    });
+    return { ok: false as const, error: "not_found" as const };
+  }
 
   const now = new Date();
   const state = resolveIntakeLinkState(row, now);
-  if (!state.ok) return { ok: false as const, error: state.error };
+  if (!state.ok) {
+    await writeAudit(db, {
+      caseId: row.caseId,
+      actor: "parent",
+      action: "intake_link.resolve_failed",
+      metadata: { reason: state.error },
+    });
+    return { ok: false as const, error: state.error };
+  }
 
   if (!row.usedAt) {
     await db

@@ -47,6 +47,20 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  /**
+   * Per-IP rate limit for unauthenticated magic-link token endpoints
+   * (GET /v1/intake-links/:token, GET /v1/portal/:token,
+   * POST /v1/portal/:token/progress). Fixed window. In-memory (single
+   * instance) — see docs/security/hardening-checklist.md for the prod story.
+   */
+  RATE_LIMIT_TOKEN_MAX: z.coerce.number().int().positive().default(30),
+  /** Rate-limit window in milliseconds (default 60s). */
+  RATE_LIMIT_TOKEN_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  /** Set to "false" to disable rate limiting entirely (e.g. for load tests). */
+  RATE_LIMIT_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 export type Env = z.infer<typeof envSchema>;

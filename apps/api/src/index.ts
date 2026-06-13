@@ -10,6 +10,7 @@ import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
 import { SelfHostedLlmClient } from "./llm/client.js";
 import { logger, requestLogging, type RequestLogVariables } from "./logger.js";
+import { securityHeaders } from "./security-headers.js";
 import { createTaskRoutes } from "./routes/tasks.js";
 import { createV1Routes } from "./routes/v1.js";
 import { createV1DisabledRoutes } from "./v1-disabled.js";
@@ -51,6 +52,12 @@ app.onError((err, c) => {
 });
 
 app.use("*", requestLogging());
+
+// App-wide security response headers (HSTS in prod, nosniff, frame-ancestors,
+// Referrer-Policy, an API-appropriate CSP). Registered after requestLogging so
+// the request id is still set, and before cors() — it does not touch the
+// Access-Control-* headers that cors() owns.
+app.use("*", securityHeaders(env));
 
 app.use(
   "*",

@@ -91,10 +91,27 @@ export async function resolvePortalLink(db: Db, token: string) {
     .from(casePortalLinks)
     .where(eq(casePortalLinks.token, token))
     .limit(1);
-  if (!row) return { ok: false as const, error: "not_found" as const };
+  if (!row) {
+    // Failed-resolve audit event (DEV-31). Unknown token: no case context, and
+    // the token is the secret so it is never stored.
+    await writeAudit(db, {
+      actor: "parent",
+      action: "portal_link.resolve_failed",
+      metadata: { reason: "not_found" },
+    });
+    return { ok: false as const, error: "not_found" as const };
+  }
 
   const state = resolvePortalLinkState(row);
-  if (!state.ok) return { ok: false as const, error: state.error };
+  if (!state.ok) {
+    await writeAudit(db, {
+      caseId: row.caseId,
+      actor: "parent",
+      action: "portal_link.resolve_failed",
+      metadata: { reason: state.error },
+    });
+    return { ok: false as const, error: state.error };
+  }
 
   return { ok: true as const, caseId: row.caseId, expiresAt: row.expiresAt.toISOString() };
 }

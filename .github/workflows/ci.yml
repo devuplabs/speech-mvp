@@ -28,6 +28,29 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  npm-audit:
+    name: npm audit (high/critical)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Fail the build on high/critical advisories in *runtime* dependencies
+      # (--omit=dev). These are what ship to Cloud Run, so they are the gate
+      # that matters. Dev-toolchain advisories (test runner / bundler) do not
+      # reach production and are surfaced/updated by Dependabot instead, so we
+      # keep them out of the blocking gate to avoid churny red builds on
+      # major-version test-tooling bumps. Run per workspace so a finding clearly
+      # points at the affected lockfile. DEV-31.
+      - name: Audit apps/api (runtime deps)
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: apps/api
+      - name: Audit e2e (runtime deps)
+        run: npm audit --omit=dev --audit-level=high
+        working-directory: e2e
+
   flutter:
     name: Flutter analyze + tests
     runs-on: ubuntu-latest
@@ -99,7 +122,12 @@ jobs:
 
       - name: Start API
         run: |
+          # Raise the token rate limit well above what the smoke suite issues so
+          # the limiter stays wired (real middleware path) without false 429s
+          # from many specs sharing one CI IP. The 429 behaviour itself is
+          # covered deterministically by the rate-limit unit test (DEV-31).
           export PORT=8081 NODE_ENV=development CORS_ALLOW_LOCALHOST=true RUN_MIGRATIONS_ON_START=true
+          export RATE_LIMIT_TOKEN_MAX=1000
           nohup npx tsx src/index.ts > /tmp/sona-api.log 2>&1 &
           for i in $(seq 1 30); do
             curl -fsS http://localhost:8081/health && break
