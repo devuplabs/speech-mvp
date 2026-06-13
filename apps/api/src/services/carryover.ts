@@ -12,6 +12,24 @@ import { resolvePortalLink } from "./portal-links.js";
 
 export type ProgressAuthor = "parent" | "clinician";
 
+/**
+ * Pure transition rule for the carryover stage (Stage 9 — DEV-10).
+ *
+ * Trigger choice: we advance to `carryover` when the **first home-practice
+ * resource is shared**, not when a portal link is created. A portal link can be
+ * minted before any home-practice content exists (it is just an access grant),
+ * so resource creation is the clearer, content-bearing signal that the family
+ * has actually entered the carryover loop. We only advance from `summary_sent`
+ * so the case must have had its summary published first, and a re-published /
+ * already-carryover case is never rewound.
+ *
+ * Returns the status the case should hold after a resource is created, or `null`
+ * when no status change is warranted. Unit-testable without a database.
+ */
+export function statusAfterCarryoverResource(currentStatus: string): "carryover" | null {
+  return currentStatus === "summary_sent" ? "carryover" : null;
+}
+
 export async function createCarryoverResource(
   db: Db,
   caseId: string,
@@ -39,6 +57,23 @@ export async function createCarryoverResource(
     action: "carryover.resource_created",
     metadata: { resourceId: row.id, category: row.category },
   });
+
+  // Advance to the carryover stage when the first resource is shared for a case
+  // whose summary has been sent (see statusAfterCarryoverResource).
+  const nextStatus = statusAfterCarryoverResource(caseRow.status);
+  if (nextStatus) {
+    await db
+      .update(cases)
+      .set({ status: nextStatus, updatedAt: new Date() })
+      .where(eq(cases.id, caseId));
+    await writeAudit(db, {
+      tenantId: caseRow.tenantId,
+      caseId,
+      actor: "clinician",
+      action: "case.carryover_started",
+      metadata: { statusFrom: caseRow.status, statusTo: nextStatus, resourceId: row.id },
+    });
+  }
 
   return { ok: true as const, resource: row };
 }

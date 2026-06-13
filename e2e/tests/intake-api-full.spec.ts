@@ -53,8 +53,21 @@ test.describe("API full intake flow", () => {
     );
     expect(row).toBeDefined();
     expect(row!.childDisplayName).toBe(childName);
-    // Submitted intakes appear on Today; worker may advance status past intake_submitted.
+    // Submitted intakes appear on Today; worker may advance status past
+    // intake_submitted. The status must be one of the known journey statuses —
+    // including the DEV-10 additions consult_booked / carryover.
     expect(row!.status).not.toBe("intake_pending");
+    expect([
+      "intake_submitted",
+      "prep_drafting",
+      "prep_ready",
+      "consult_booked",
+      "triaged",
+      "plan_drafting",
+      "plan_ready",
+      "summary_sent",
+      "carryover",
+    ]).toContain(row!.status);
   });
 
   test("create case accepts nullish parentEmail (Flutter may send null)", async ({

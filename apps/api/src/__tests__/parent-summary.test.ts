@@ -25,6 +25,14 @@ describe("canPublishParentSummary", () => {
     expect(canPublishParentSummary("summary_sent")).toBe(true);
   });
 
+  it("allows re-publishing once the case has moved into carryover (DEV-10)", () => {
+    expect(canPublishParentSummary("carryover")).toBe(true);
+  });
+
+  it("still blocks publishing once a consult is booked but before triage", () => {
+    expect(canPublishParentSummary("consult_booked")).toBe(false);
+  });
+
   it("rejects unknown statuses", () => {
     expect(canPublishParentSummary("archived")).toBe(false);
     expect(canPublishParentSummary("")).toBe(false);

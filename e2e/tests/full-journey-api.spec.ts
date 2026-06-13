@@ -217,7 +217,9 @@ test.describe("full clinical journey (API)", () => {
       progress: unknown[];
     };
     expect(payload.case.id).toBe(caseId);
-    expect(payload.case.status).toBe("summary_sent");
+    // Creating the first carryover resource (above) advances the case from
+    // summary_sent → carryover (DEV-10 journey-status model).
+    expect(payload.case.status).toBe("carryover");
     expect(payload.case.childDisplayName).toBe(childName);
     expect(payload.summary?.html).toContain("Full journey summary E2E");
     expect(payload.resources).toHaveLength(1);
@@ -240,9 +242,9 @@ test.describe("full clinical journey (API)", () => {
       entries.some((e) => e.author === "parent" && e.rating === "going_well"),
     ).toBe(true);
 
-    // ── Final state: the journey ends at summary_sent with all drafts ───
+    // ── Final state: the journey ends at carryover with all drafts ──────
     const final = await getCase(request, caseId);
-    expect(final.case.status).toBe("summary_sent");
+    expect(final.case.status).toBe("carryover");
     expect(final.drafts.map((d) => d.kind).sort()).toEqual([
       "clinical_report",
       "parent_summary",

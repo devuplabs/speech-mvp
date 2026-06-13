@@ -27,10 +27,14 @@ export const caseStatusEnum = pgEnum("case_status", [
   "intake_submitted",
   "prep_drafting",
   "prep_ready",
+  // Stage 5 — a free consult has been booked (between prep and triage).
+  "consult_booked",
   "triaged",
   "plan_drafting",
   "plan_ready",
   "summary_sent",
+  // Stage 9 — carryover: home-practice resources shared after the summary.
+  "carryover",
 ]);
 
 export const aiDraftKindEnum = pgEnum("ai_draft_kind", [
