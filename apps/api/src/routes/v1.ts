@@ -77,6 +77,7 @@ import {
   revokePortalLinks,
 } from "../services/portal-links.js";
 import { createPracticeRoutes } from "./practices.js";
+import { createTokenRateLimiter } from "../rate-limit.js";
 import { getTokenVerifier, AuthError } from "../auth/verifier.js";
 import { resolveCurrentUser } from "../services/practice.js";
 
@@ -103,6 +104,16 @@ const publishParentSummaryBody = z.object({
 
 export function createV1Routes(db: Db, env: Env) {
   const app = new Hono();
+
+  // Per-IP rate limiting for the unauthenticated magic-link token endpoints
+  // (DEV-31). One shared limiter instance covers the intake-link GET, the
+  // portal GET and the portal progress POST. Toggle/limits via env.
+  const tokenRateLimit = createTokenRateLimiter(env);
+  if (env.RATE_LIMIT_ENABLED) {
+    app.use("/intake-links/:token", tokenRateLimit.middleware);
+    app.use("/portal/:token", tokenRateLimit.middleware);
+    app.use("/portal/:token/progress", tokenRateLimit.middleware);
+  }
 
   // Practice onboarding & auth-gated admin API (Feature 3).
   app.route("/practices", createPracticeRoutes(db, env));
