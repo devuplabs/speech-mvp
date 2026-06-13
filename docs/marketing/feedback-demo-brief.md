@@ -202,7 +202,7 @@ A clinician should look at the deck cold and understand the value in 3 minutes. 
 - **Captions on every video clip** explaining what's happening and what time is saved.
 - **No tech jargon** in clinician-facing copy. Plain English.
 - **Every numeric claim traces to a `docs/ml/*` line.** Cite in slide notes.
-- **No "AI magic" language.** Sona is "AI-assisted, clinician-reviewed." Always paired.
+- **No "AI magic" language.** Sona is the **"AI practice partner"**: AI drafts; the clinician decides. Augment, never replace. (Canonical positioning per `docs/design/Sona_Care_Journey_Deck.pdf`; supersedes the earlier "AI co-pilot" / "AI-assisted" framing.)
 
 ---
 

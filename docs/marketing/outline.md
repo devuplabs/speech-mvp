@@ -11,7 +11,7 @@
 
 | # | Slide | One-liner | Source / asset |
 |---|-------|-----------|----------------|
-| 1 | **Cold open** | "What if Tuesday afternoon's admin block came back as therapy time?" | Plain title card; brand teal background. |
+| 1 | **Cold open** | "What if Tuesday afternoon's admin block came back as therapy time?" — strapline introduces Sona as the **AI practice partner** for private SLT. | Plain title card; brand teal background. |
 | 2 | **Meet Aria** | 4-year-old, North London nursery, "drops final consonants and some sounds replaced." Nursery SENCO referral. | Persona `aria_speech_sounds_4yo` — illustrative iconography, no photo. |
 | 3 | **Today this is your inbox** | A referral fragment, a phone call, a half-finished form, an email — chaos baseline. | Static visual; no real PHI. |
 | 4 | **Parent journey: 8 steps, one phone, ~15 minutes** | Animated walk-through of the real parent intake (Aria). | Real Playwright captures from `apps/sona` parent flow (3–4 stills). |
@@ -25,6 +25,23 @@
 | 12 | **Ask** | "We're booking 30-minute feedback sessions this week. What would make Sona switchable for you?" | Plain CTA card. |
 
 A bonus credit card (off-numbering) covers music & data licensing.
+
+---
+
+## Positioning & phrasing (synced to `docs/design/Sona_Care_Journey_Deck.pdf`)
+
+The marketing visuals use the canonical positioning from the Care Journey deck:
+
+- **Sona is the "AI practice partner"** for private speech & language therapy
+  (supersedes the earlier "AI co-pilot" / "AI-assisted" framing).
+- **Anchor principles** (used as the cold-open chips and the slide-10 footer):
+  1. "AI drafts; the clinician decides."
+  2. "Augment people, never replace them."
+  3. "UK data residency + audit."
+- AI artefacts remain labelled **"DRAFT — clinician must review"**, which is the
+  product-schema expression of principle 1 — already consistent, left unchanged.
+- No banned tech jargon in clinician-facing copy (the slide-10 "0 PHI" card no
+  longer mentions "LLM").
 
 ---
 
