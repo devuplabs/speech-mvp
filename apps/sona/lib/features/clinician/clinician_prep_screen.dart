@@ -201,9 +201,21 @@ class ClinicianPrepScreen extends StatelessWidget {
     );
   }
 
+  /// Draft generation can fail server-side; the case row then carries a
+  /// `prep_failed` status (or the draft itself flags `reviewStatus: failed`).
+  /// Surfaced so the clinician knows to retry rather than wait indefinitely.
+  bool get _prepFailed {
+    final status = _case?['status'] as String?;
+    if (status == 'prep_failed') return true;
+    return _prepBrief?['reviewStatus'] == 'failed';
+  }
+
   String _countdownBanner() {
     if (caseDetail == null) {
       return 'No case loaded — pick one from Today to load the prep brief.';
+    }
+    if (_prepFailed) {
+      return 'Prep draft failed to generate · refresh to retry.';
     }
     if (_prepBrief == null) {
       return 'Prep brief still drafting · refresh to update.';
@@ -284,6 +296,10 @@ class ClinicianPrepScreen extends StatelessWidget {
   Widget _prepBriefCard() {
     final brief = _prepBrief;
     final probes = (brief?['probeAreas'] as List?)?.cast<String>() ?? const [];
+    // The AI draft carries a review marker (e.g. "DRAFT — clinician must
+    // review"); surface it verbatim so the clinician never treats an
+    // unreviewed draft as final.
+    final draftLabel = (brief?['label'] as String?)?.trim();
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -302,6 +318,17 @@ class ClinicianPrepScreen extends StatelessWidget {
               AiDraftBadge(compact: true),
             ],
           ),
+          if (draftLabel != null && draftLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              draftLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: SonaColors.warningText,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (probes.isEmpty)
             const Text(
