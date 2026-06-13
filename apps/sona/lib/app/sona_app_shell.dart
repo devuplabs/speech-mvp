@@ -24,6 +24,7 @@ import 'package:sona/features/clinician/clinician_shell.dart';
 import 'package:sona/features/clinician/clinician_today_screen.dart';
 import 'package:sona/features/clinician/clinician_triage_screen.dart';
 import 'package:sona/features/parent/intake/parent_intake_step_screen.dart';
+import 'package:sona/features/parent/parent_portal_screen.dart';
 import 'package:sona/features/parent/parent_review_screen.dart';
 import 'package:sona/features/parent/parent_summary_screen.dart';
 import 'package:sona/features/parent/parent_welcome_screen.dart';
@@ -49,6 +50,7 @@ enum SonaRoute {
   parentIntake,
   parentReview,
   parentSummary,
+  parentPortal,
   clinicianToday,
   clinicianClients,
   clinicianIntakeForms,
@@ -67,6 +69,7 @@ class SonaAppShell extends StatefulWidget {
     super.key,
     this.apiClient,
     this.intakeToken,
+    this.portalToken,
     this.inviteCode,
     this.authController,
   });
@@ -77,6 +80,11 @@ class SonaAppShell extends StatefulWidget {
 
   /// Magic-link token from parent web URL `?t=`.
   final String? intakeToken;
+
+  /// Family-portal magic-link token from parent web URL `?portal=` (Stage 9).
+  /// Routes straight to the portal screen, which resolves the token itself
+  /// (including the expired/revoked/unknown states).
+  final String? portalToken;
 
   /// Firebase reset/invite action code from the web URL; routes a fresh visitor
   /// straight to the set-password screen when present (Auth·16).
@@ -196,6 +204,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_openFromIntakeToken(token));
       });
+    }
+    // A family-portal link lands directly on the portal screen; it owns the
+    // token resolution (loading / expired / revoked / unknown states).
+    final portal = widget.portalToken;
+    if (portal != null && portal.isNotEmpty) {
+      _route = SonaRoute.parentPortal;
     }
     // An invite/reset deep link drops the clinician straight on set-password
     // (Auth·16). Needs Firebase; ignored in demo/test builds without auth.
@@ -1247,6 +1261,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
             summaryHtml: _parentSummaryHtml,
             onBack: () => _go(SonaRoute.launcher),
           ),
+        SonaRoute.parentPortal => ParentPortalScreen(
+            api: _api,
+            token: widget.portalToken ?? '',
+          ),
         SonaRoute.clinicianToday ||
         SonaRoute.clinicianClients ||
         SonaRoute.clinicianIntakeForms ||
@@ -1264,7 +1282,9 @@ class _SonaAppShellState extends State<SonaAppShell> {
               _route == SonaRoute.signIn ||
               _route == SonaRoute.setPassword ||
               _route == SonaRoute.onboarding ||
-              _route == SonaRoute.adminHome)
+              _route == SonaRoute.adminHome ||
+              // Token-only family surface — no app chrome for parents/carers.
+              _route == SonaRoute.parentPortal)
           ? null
           : Material(
               elevation: 2,

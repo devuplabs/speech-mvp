@@ -285,6 +285,31 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  /// Family portal payload (Stage 9) — token-only, no account. Returns
+  /// `{ case, practiceName, summary, resources, progress, expiresAt }`.
+  /// Throws [SonaApiException] with 404 (unknown) or 410 (expired/revoked).
+  Future<Map<String, dynamic>> fetchPortalPayload(String token) async {
+    final res = await _client.get(_base.replace(path: '/v1/portal/$token'));
+    _ensureOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  /// Parent check-in via the portal magic link (author is always `parent`
+  /// server-side). [rating] is one of `tried_it|going_well|finding_it_hard`.
+  Future<Map<String, dynamic>> submitPortalProgress(
+    String token, {
+    required String note,
+    String? rating,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/portal/$token/progress'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({'note': note, 'rating': rating}),
+    );
+    _ensureOk(res, expected: 201);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
 
   Future<List<Map<String, dynamic>>> fetchAvailabilitySlots(
     String tenantId, {
