@@ -162,6 +162,7 @@ jobs:
             tests/magic-link-negative-api.spec.ts \
             tests/state-machine-negative-api.spec.ts \
             tests/full-journey-api.spec.ts \
+            tests/dsar-erasure-api.spec.ts \
             tests/personas-parity.spec.ts
         working-directory: e2e
 

@@ -31,6 +31,11 @@ import {
 } from "../services/clinical-report.js";
 
 import { writeAudit } from "../services/audit.js";
+import {
+  buildDsarExport,
+  confirmErasure,
+  requestErasure,
+} from "../services/dsar.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
 import { registerPatientBody } from "../schemas/register-patient.js";
 import {
@@ -100,6 +105,15 @@ const triageBody = z.object({
 
 const publishParentSummaryBody = z.object({
   htmlBody: z.string().min(1).max(100_000).optional(),
+});
+
+const erasureConfirmBody = z.object({
+  token: z.string().min(1).max(256),
+});
+
+const legalHoldBody = z.object({
+  hold: z.boolean(),
+  reason: z.string().trim().max(255).optional(),
 });
 
 export function createV1Routes(db: Db, env: Env) {
@@ -542,6 +556,97 @@ export function createV1Routes(db: Db, env: Env) {
     });
   });
 
+
+  // ── DSAR (UK GDPR Art. 15) + right-to-erasure (Art. 17) — DEV-24 ─────────
+  //
+  // Auth posture: these are case-scoped data-subject-rights operations and
+  // SHOULD be admin/clinician-gated. The MVP case routes above are
+  // unauthenticated-by-design (same posture as triage/carryover); to stay
+  // consistent these match that posture for now.
+  // TODO(DEV-31/auth): require an authenticated admin (export: admin/clinician;
+  // erasure: admin-only) once the case API moves behind the token verifier.
+  // The export is heavily audited so access is at least attributable.
+
+  // Place / lift a retention (legal) hold on a case. Documented mechanism so a
+  // case under HCPC clinical-record-retention duty (or open complaint /
+  // litigation) refuses erasure rather than silently honouring it.
+  // TODO(DEV-31/auth): admin-only once the case API is authenticated.
+  app.post("/cases/:caseId/legal-hold", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = legalHoldBody.parse(await c.req.json());
+    const [existing] = await db.select().from(cases).where(eq(cases.id, caseId));
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    const [updated] = await db
+      .update(cases)
+      .set({
+        legalHold: body.hold,
+        legalHoldReason: body.hold ? (body.reason ?? null) : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(cases.id, caseId))
+      .returning({ id: cases.id, legalHold: cases.legalHold });
+    await writeAudit(db, {
+      tenantId: existing.tenantId,
+      caseId,
+      actor: "admin",
+      action: body.hold ? "legal_hold.placed" : "legal_hold.lifted",
+      metadata: { reason: body.hold ? (body.reason ?? null) : null },
+    });
+    return c.json({ caseId, legalHold: updated!.legalHold });
+  });
+
+  app.get("/cases/:caseId/dsar-export", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await buildDsarExport(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+
+    await writeAudit(db, {
+      tenantId: result.export.meta.tenantId,
+      caseId,
+      actor: "admin",
+      action: "dsar.exported",
+      metadata: { sections: Object.keys(result.export.sections).length },
+    });
+
+    return c.json(result.export, 200, {
+      "Content-Disposition": `attachment; filename="dsar-export-${caseId}.json"`,
+    });
+  });
+
+  app.post("/cases/:caseId/erasure/request", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await requestErasure(db, caseId);
+    if (!result.ok) {
+      if (result.error === "not_found") return c.json({ error: result.error }, 404);
+      // legal_hold — refuse clearly (409 Conflict) with the reason.
+      return c.json({ error: result.error, reason: result.reason }, 409);
+    }
+    return c.json({ token: result.token, expiresAt: result.expiresAt }, 201);
+  });
+
+  app.post("/cases/:caseId/erasure/confirm", async (c) => {
+    const caseId = c.req.param("caseId");
+    const body = erasureConfirmBody.parse(await c.req.json());
+    const result = await confirmErasure(db, caseId, body.token);
+    if (!result.ok) {
+      const status =
+        result.error === "not_found"
+          ? 404
+          : result.error === "legal_hold"
+            ? 409
+            : 400;
+      return c.json(
+        result.error === "legal_hold"
+          ? { error: result.error, reason: result.reason }
+          : { error: result.error },
+        status,
+      );
+    }
+    return c.json(
+      { ok: true, deleted: result.deleted, auditRetained: result.auditRetained },
+      200,
+    );
+  });
 
   app.get("/clinicians/me/availability", async (c) => {
     const tenantId = c.req.query("tenantId");
