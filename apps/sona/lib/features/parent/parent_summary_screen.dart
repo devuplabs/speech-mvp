@@ -6,6 +6,15 @@ import 'package:sona/design_system/widgets/sona_page_title.dart';
 import 'package:sona/design_system/widgets/trust_row.dart';
 
 /// Parent portal view — frame 07 in Figma.
+///
+/// DEV-9 redundancy decision: this is the older standalone, in-app demo summary
+/// view (static copy, no live data, no magic-link auth). The **canonical family
+/// summary delivery is now the authenticated family portal** ([ParentPortalScreen])
+/// that the "your summary is ready" email links to — that surface renders the
+/// live published summary, the "AI-assisted · reviewed by your clinician" line,
+/// resources and check-ins. This screen is retained only as the demo-app
+/// `SonaRoute.parentSummary` walkthrough card and is NOT part of the real
+/// receive/view flow; it should not gain new clinical wiring. Prefer the portal.
 class ParentSummaryScreen extends StatelessWidget {
   const ParentSummaryScreen({
     super.key,

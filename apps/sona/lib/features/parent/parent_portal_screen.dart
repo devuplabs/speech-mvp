@@ -256,6 +256,8 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
     final childName = caseMap['childDisplayName'] as String?;
     final practiceName = payload['practiceName'] as String?;
     final summary = payload['summary'] as Map<String, dynamic>?;
+    final reviewingClinicianName =
+        payload['reviewingClinicianName'] as String?;
     final resources = (payload['resources'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
     final progress = (payload['progress'] as List<dynamic>? ?? [])
@@ -279,7 +281,7 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
           style: SonaTypography.body,
         ),
         const SizedBox(height: 24),
-        _summarySection(summary),
+        _summarySection(summary, reviewingClinicianName),
         const SizedBox(height: 24),
         _resourcesSection(resources),
         const SizedBox(height: 24),
@@ -340,8 +342,15 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
 
   // ── Summary ─────────────────────────────────────────────────────────────
 
-  Widget _summarySection(Map<String, dynamic>? summary) {
+  Widget _summarySection(
+    Map<String, dynamic>? summary,
+    String? reviewingClinicianName,
+  ) {
     final html = summary?['html'] as String?;
+    final reviewedBy =
+        reviewingClinicianName != null && reviewingClinicianName.trim().isNotEmpty
+            ? 'AI-assisted · reviewed by ${reviewingClinicianName.trim()}'
+            : 'AI-assisted · reviewed by your clinician';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -378,9 +387,9 @@ class _ParentPortalScreenState extends State<ParentPortalScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Reviewed by your clinician before it was shared with you.',
-            style: TextStyle(fontSize: 12, color: SonaColors.textMuted),
+          Text(
+            reviewedBy,
+            style: const TextStyle(fontSize: 12, color: SonaColors.textMuted),
           ),
         ],
       ],

@@ -65,6 +65,74 @@ export function renderClinicianInviteEmail(input: ClinicianInviteEmailInput): {
   return { subject, htmlBody };
 }
 
+// ── Family summary-ready notification ────────────────────────────────────
+//
+// PHI-SAFE BY CONSTRUCTION: this email carries the practice name and a portal
+// link only — never the child's name, intake answers, the summary itself, or
+// any clinical content (see ADR-005 and the DESIGN RULE above). The portal
+// token is part of the link the family clicks but is deliberately NOT logged by
+// any caller. The clinical summary is rendered only inside the authenticated
+// family portal that the link opens.
+
+export type FamilySummaryEmailInput = {
+  to: string;
+  practiceName: string;
+  /** Family portal magic link (carries the token in its query string). */
+  portalUrl: string;
+};
+
+/** Builds the family "summary ready" email. Pure — safe to unit test. */
+export function renderFamilySummaryReadyEmail(input: FamilySummaryEmailInput): {
+  subject: string;
+  htmlBody: string;
+} {
+  const subject = `Your summary from ${input.practiceName} is ready`;
+  const htmlBody = `
+    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:0 auto;color:#142433">
+      <p style="font-size:18px;font-weight:700;color:#2D6A6E">Sona</p>
+      <h1 style="font-size:22px;margin:16px 0 8px">Your summary is ready</h1>
+      <p style="font-size:15px;line-height:1.5">
+        Your clinician at <strong>${escapeHtml(input.practiceName)}</strong> has shared a summary
+        and next steps with your family. Open your private family portal to read it.
+      </p>
+      <p style="margin:24px 0">
+        <a href="${input.portalUrl}"
+           style="background:#2D6A6E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;display:inline-block">
+          Open your family portal
+        </a>
+      </p>
+      <p style="font-size:13px;color:#8597A4">If the button doesn't work, copy this link into your browser:<br>${escapeHtml(input.portalUrl)}</p>
+      <p style="font-size:12px;color:#8597A4;margin-top:24px">For your privacy, the summary is shown only inside the portal — never in email.</p>
+    </div>`.trim();
+  return { subject, htmlBody };
+}
+
+export async function sendFamilySummaryReadyEmail(
+  env: Env,
+  input: FamilySummaryEmailInput,
+): Promise<{ ok: true; messageId: string } | { ok: false; error: string }> {
+  const apiKey = env.MAILGUN_API_KEY?.trim();
+  const domain = env.MAILGUN_DOMAIN?.trim();
+  const from = env.MAILGUN_FROM_EMAIL?.trim();
+  if (!apiKey || !domain || !from) {
+    return { ok: false, error: "email_not_configured" };
+  }
+
+  const { subject, htmlBody } = renderFamilySummaryReadyEmail(input);
+  const result = await sendMailgunEmail({
+    apiKey,
+    domain,
+    baseUrl: env.MAILGUN_BASE_URL,
+    from,
+    to: input.to,
+    subject,
+    htmlBody,
+  });
+
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, messageId: result.messageId };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

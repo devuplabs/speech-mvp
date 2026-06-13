@@ -1,12 +1,70 @@
 import { and, eq } from "drizzle-orm";
 import type { Env } from "../config.js";
 import type { Db } from "../db/client.js";
-import { aiDrafts, cases } from "../db/schema.js";
+import { aiDrafts, cases, tenants } from "../db/schema.js";
 import { writeAudit } from "./audit.js";
 import { logger } from "../logger.js";
 import { buildIntakeContextForLlm, generateParentSummaryHtmlLlm } from "../llm/generate-drafts.js";
 import { draftClinicalReportStub } from "./clinical-report.js";
 import { loadIntakeAnswers } from "./intake-context.js";
+import { sendFamilySummaryReadyEmail } from "./email.js";
+import { buildPortalUrl, getOrCreatePortalToken } from "./portal-links.js";
+
+/**
+ * Resolve the public web base URL the family link should point at. Inlined here
+ * (rather than imported from a route module) so this service stays self-contained
+ * and we avoid touching `index.ts`/route wiring owned by other work in flight.
+ */
+function resolveWebBaseUrl(env: Env): string {
+  return (
+    env.SONA_WEB_BASE_URL ??
+    (env.NODE_ENV === "development"
+      ? "http://localhost:8080"
+      : "https://sona-web-dev-3rhenudy6a-nw.a.run.app")
+  );
+}
+
+/**
+ * Best-effort family notification on publish.
+ *
+ * PHI policy: the email is notification-only — practice name + portal link, no
+ * child name or clinical content (ADR-005). We never log the token. A send
+ * failure (or unconfigured Mailgun) must NOT fail the publish: the summary is
+ * already in the portal, so we log and continue, mirroring the clinician-invite
+ * dispatch. Re-publishing re-sends (and reuses the existing active portal link
+ * via `getOrCreatePortalToken`) so an amended summary always pings the family.
+ */
+async function notifyFamilyOfSummary(
+  db: Db,
+  caseId: string,
+  parentEmail: string,
+  tenantId: string,
+  env: Env,
+): Promise<boolean> {
+  const [tenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
+  const practiceName = tenant?.displayName ?? "your speech & language practice";
+
+  const tokenResult = await getOrCreatePortalToken(db, caseId);
+  if (!tokenResult.ok) {
+    logger.warn("parent_summary.portal_link_failed", { caseId });
+    return false;
+  }
+
+  const portalUrl = buildPortalUrl(resolveWebBaseUrl(env), tokenResult.token);
+  const sent = await sendFamilySummaryReadyEmail(env, {
+    to: parentEmail,
+    practiceName,
+    portalUrl,
+  });
+
+  // Never log the recipient address, token or URL — only the safe outcome.
+  if (!sent.ok) {
+    logger.warn("parent_summary.notify_failed", { caseId, reason: sent.error });
+    return false;
+  }
+  logger.info("parent_summary.notify_sent", { caseId });
+  return true;
+}
 
 /**
  * A parent summary may only be published once the clinician has triaged the
@@ -107,10 +165,29 @@ export async function publishParentSummary(
     logger.warn("clinical_report.stub_failed_after_publish", { caseId, err });
   }
 
+  // Close the loop: notify the family their summary is ready (best-effort).
+  // Only when we have a parent email and an env to build the link / send mail.
+  let notified = false;
+  if (existing.parentEmail && env) {
+    try {
+      notified = await notifyFamilyOfSummary(
+        db,
+        caseId,
+        existing.parentEmail,
+        existing.tenantId,
+        env,
+      );
+    } catch (err) {
+      // Defensive: notification must never fail the publish.
+      logger.warn("parent_summary.notify_failed", { caseId, err });
+    }
+  }
+
   return {
     ok: true as const,
     case: updated,
     viewPath: `/v1/cases/${caseId}/parent-summary`,
+    familyNotified: notified,
   };
 }
 

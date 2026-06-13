@@ -18,6 +18,7 @@ void main() {
     Map<String, dynamic>? summary,
     List<Map<String, dynamic>>? resources,
     List<Map<String, dynamic>>? progress,
+    String? reviewingClinicianName,
   }) {
     final now = DateTime.now();
     return {
@@ -27,6 +28,7 @@ void main() {
         'status': 'summary_sent',
       },
       'practiceName': 'Speech Sanctuary',
+      'reviewingClinicianName': reviewingClinicianName,
       'summary': summary,
       'resources': resources ?? [],
       'progress': progress ?? [],
@@ -131,8 +133,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('AI-drafted · clinician-reviewed'), findsOneWidget);
+    // No reviewing clinician name in this payload → generic AI-assisted line.
     expect(
-      find.text('Reviewed by your clinician before it was shared with you.'),
+      find.text('AI-assisted · reviewed by your clinician'),
       findsOneWidget,
     );
 
@@ -154,6 +157,33 @@ void main() {
     expect(find.text('3 days ago'), findsOneWidget);
     // Parent rating badge (the rating pill in the form is a separate widget).
     expect(find.text('Going well'), findsNWidgets(2));
+  });
+
+  testWidgets(
+      'reviewing clinician name is surfaced in the AI-assisted review line',
+      (tester) async {
+    final api = SonaApiClient(
+      client: MockClient((req) async {
+        if (req.method == 'GET' && req.url.path == '/v1/portal/$token') {
+          return json(fullPayload(
+            summary: defaultSummary,
+            reviewingClinicianName: 'Dr. Sarah Whitfield',
+          ));
+        }
+        return http.Response('{"error":"not_found"}', 404);
+      }),
+    );
+
+    await pumpPortal(tester, api);
+
+    expect(
+      find.text('AI-assisted · reviewed by Dr. Sarah Whitfield'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('AI-assisted · reviewed by your clinician'),
+      findsNothing,
+    );
   });
 
   testWidgets('null summary shows the placeholder copy', (tester) async {
