@@ -35,6 +35,9 @@ const ALLOWED_FIELDS: ReadonlySet<string> = new Set([
   "mode",
   "port",
   "jurisdiction",
+  // Non-PHI numeric metric (e.g. audit-retention purge counts). Never an id or
+  // any subject data — just a row count.
+  "count",
 ]);
 
 export type LogFields = Record<string, unknown> & { err?: unknown };

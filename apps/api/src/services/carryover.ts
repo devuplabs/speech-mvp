@@ -6,7 +6,7 @@ import type {
   CreateProgressEntryBody,
   UpdateCarryoverResourceBody,
 } from "../schemas/carryover.js";
-import { writeAudit } from "./audit.js";
+import { writeAudit, writeViewAudit } from "./audit.js";
 import { getPublishedParentSummary } from "./parent-summary.js";
 import { resolvePortalLink } from "./portal-links.js";
 
@@ -219,7 +219,10 @@ export async function getPortalPayload(db: Db, token: string) {
     caseRow.tenantId,
   );
 
-  await writeAudit(db, {
+  // Read-access audit (DEV-6 + DEV-25): the portal renders PHI. De-duped per
+  // (actor, caseId, action) per 5-min window so a family refreshing the portal
+  // doesn't flood the trail; one heartbeat per window preserves the signal.
+  await writeViewAudit(db, {
     tenantId: caseRow.tenantId,
     caseId: caseRow.id,
     actor: "parent",

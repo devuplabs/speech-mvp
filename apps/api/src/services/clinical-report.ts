@@ -192,5 +192,7 @@ export async function renderClinicalReportPdfForCase(db: Db, caseId: string) {
     disclaimer: result.content.disclaimer,
   } satisfies ClinicalReportPdfInput);
 
-  return { ok: true as const, pdf, content: result.content };
+  // Surface tenantId so the route can audit the PHI download (DEV-25) without
+  // re-querying the case row the service already loaded.
+  return { ok: true as const, pdf, content: result.content, tenantId: result.case.tenantId };
 }
