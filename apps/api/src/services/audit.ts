@@ -1,6 +1,7 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { auditLog } from "../db/schema.js";
+import { logger } from "../logger.js";
 
 export async function writeAudit(
   db: Db,
@@ -85,22 +86,37 @@ export async function writeViewAudit(
   if (input.caseId) filters.push(eq(auditLog.caseId, input.caseId));
   else if (input.tenantId) filters.push(eq(auditLog.tenantId, input.tenantId));
 
-  if (scoped) {
-    const [recent] = await db
-      .select({ id: auditLog.id })
-      .from(auditLog)
-      .where(and(...filters))
-      .orderBy(desc(auditLog.createdAt))
-      .limit(1);
-    if (recent) return false;
-  }
+  // Best-effort: a read-access audit must NEVER break the request that triggered
+  // it. A bad/foreign id (e.g. a guessed tenant in an isolation probe) would hit
+  // the audit_log → tenants FK; we log and continue rather than 500 the GET.
+  // Callers should still avoid auditing access to resources that don't exist
+  // (e.g. only audit a list view when it actually disclosed rows).
+  try {
+    if (scoped) {
+      const [recent] = await db
+        .select({ id: auditLog.id })
+        .from(auditLog)
+        .where(and(...filters))
+        .orderBy(desc(auditLog.createdAt))
+        .limit(1);
+      if (recent) return false;
+    }
 
-  await writeAudit(db, {
-    tenantId: input.tenantId,
-    caseId: input.caseId,
-    actor: input.actor,
-    action: input.action,
-    metadata: input.metadata ?? {},
-  });
-  return true;
+    await writeAudit(db, {
+      tenantId: input.tenantId,
+      caseId: input.caseId,
+      actor: input.actor,
+      action: input.action,
+      metadata: input.metadata ?? {},
+    });
+    return true;
+  } catch (err) {
+    logger.warn("audit.view_write_failed", {
+      action: input.action,
+      caseId: input.caseId,
+      tenantId: input.tenantId,
+      err,
+    });
+    return false;
+  }
 }

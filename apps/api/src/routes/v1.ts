@@ -173,14 +173,19 @@ export function createV1Routes(db: Db, env: Env) {
     const tenantId = c.req.param("tenantId");
     const items = await listTenantIntakeForms(db, tenantId);
     // Read-access audit (DEV-25): the intake index lists PHI-bearing cases.
-    // Tenant-scoped view (no single caseId) — de-duped per (tenant, actor,
+    // Only audit when the view actually disclosed rows — an empty result means
+    // either no submissions or a non-existent/foreign tenant (e.g. an isolation
+    // probe), where there is no PHI access to record and the tenant FK would not
+    // resolve. Tenant-scoped (no single caseId), de-duped per (tenant, actor,
     // action) per window. Counts only, never PHI.
-    await writeViewAudit(db, {
-      tenantId,
-      actor: "clinician",
-      action: "intake.viewed",
-      metadata: { count: items.length },
-    });
+    if (items.length > 0) {
+      await writeViewAudit(db, {
+        tenantId,
+        actor: "clinician",
+        action: "intake.viewed",
+        metadata: { count: items.length },
+      });
+    }
     return c.json({ items });
   });
 
