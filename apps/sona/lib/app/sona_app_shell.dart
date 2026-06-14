@@ -1023,7 +1023,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Submit intake');
   }
 
-  Future<void> _publishSummary() async {
+  Future<void> _publishSummary(String outcome, String reason) async {
     final id = _state.caseId;
     if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1031,8 +1031,14 @@ class _SonaAppShellState extends State<SonaAppShell> {
       );
       return;
     }
+    // Persist the clinician's decision so the rest of the journey reflects it.
+    _state.triageOutcome = outcome;
     await _run(() async {
-      await _api.recordTriage(id, outcome: _state.triageOutcome, reason: 'MVP demo');
+      await _api.recordTriage(
+        id,
+        outcome: outcome,
+        reason: reason.isEmpty ? null : reason,
+      );
       await _api.publishParentSummary(id);
       final html = await _api.fetchParentSummaryHtml(id);
       setState(() {
@@ -1498,7 +1504,8 @@ class _SonaAppShellState extends State<SonaAppShell> {
           caseDetail: _state.caseDetail,
           busy: _busy,
           onBackPrep: () => _go(SonaRoute.clinicianPrep),
-          onPublishSummary: _publishSummary,
+          onPublishSummary: (outcome, reason) =>
+              unawaited(_publishSummary(outcome, reason)),
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(
           caseDetail: _state.caseDetail,
