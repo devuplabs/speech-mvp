@@ -110,6 +110,15 @@ jobs:
       - name: Install API dependencies
         run: npm ci
         working-directory: apps/api
+
+      # DEV-25: run the DB-backed API integration suite against the Postgres
+      # service. The unit `api` job above runs without a DB, so these audit-log
+      # append-only / DSAR-scrub / retention tests only execute here.
+      - name: API DB integration tests
+        run: npm test
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://sona_app:sona_dev_pass@127.0.0.1:5432/sona
       - name: Install e2e dependencies
         run: npm ci && npx playwright install --with-deps chromium
         working-directory: e2e
@@ -166,6 +175,7 @@ jobs:
             tests/state-machine-negative-api.spec.ts \
             tests/full-journey-api.spec.ts \
             tests/dsar-erasure-api.spec.ts \
+            tests/audit-log-api.spec.ts \
             tests/personas-parity.spec.ts
         working-directory: e2e
 

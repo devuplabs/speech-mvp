@@ -30,8 +30,10 @@ import {
   renderClinicalReportPdfForCase,
 } from "../services/clinical-report.js";
 
-import { writeAudit } from "../services/audit.js";
+import { writeAudit, writeViewAudit } from "../services/audit.js";
+import { purgeExpiredAuditRows } from "../services/audit-retention.js";
 import {
+  buildCaseAuditExport,
   buildDsarExport,
   confirmErasure,
   requestErasure,
@@ -170,6 +172,15 @@ export function createV1Routes(db: Db, env: Env) {
   app.get("/tenants/:tenantId/intake-submissions", async (c) => {
     const tenantId = c.req.param("tenantId");
     const items = await listTenantIntakeForms(db, tenantId);
+    // Read-access audit (DEV-25): the intake index lists PHI-bearing cases.
+    // Tenant-scoped view (no single caseId) — de-duped per (tenant, actor,
+    // action) per window. Counts only, never PHI.
+    await writeViewAudit(db, {
+      tenantId,
+      actor: "clinician",
+      action: "intake.viewed",
+      metadata: { count: items.length },
+    });
     return c.json({ items });
   });
 
@@ -264,8 +275,10 @@ export function createV1Routes(db: Db, env: Env) {
 
     const drafts = await db.select().from(aiDrafts).where(eq(aiDrafts.caseId, caseId));
 
-    // Stage-3 intake review: record that the case detail was opened (IDs only, no PHI).
-    await writeAudit(db, { tenantId: row.tenantId, caseId, actor: "clinician", action: "case.viewed" });
+    // Stage-3 intake review: record that the case detail was opened (IDs only,
+    // no PHI). De-duped per (actor, caseId, action) per 5-min window (DEV-25) so
+    // repeated opens/refreshes don't flood the trail.
+    await writeViewAudit(db, { tenantId: row.tenantId, caseId, actor: "clinician", action: "case.viewed" });
 
     return c.json({ case: row, intake: intake ?? null, drafts });
   });
@@ -427,6 +440,14 @@ export function createV1Routes(db: Db, env: Env) {
       if (result.error === "not_found") return c.json({ error: result.error }, 404);
       return c.json({ error: result.error, status: result.status }, 404);
     }
+    // Read-access audit (DEV-25): a published parent summary is PHI. IDs only.
+    // The service already loaded the case row, so reuse its tenantId.
+    await writeViewAudit(db, {
+      tenantId: result.case.tenantId,
+      caseId,
+      actor: "parent",
+      action: "parent_summary.viewed",
+    });
     return c.html(result.html);
   });
 
@@ -537,6 +558,14 @@ export function createV1Routes(db: Db, env: Env) {
     const caseId = c.req.param("caseId");
     const result = await getClinicalReportDraft(db, caseId);
     if (!result.ok) return c.json({ error: result.error }, 404);
+    // Read-access audit (DEV-25): the clinical report is PHI. IDs only.
+    // The service already loaded the case row, so reuse its tenantId.
+    await writeViewAudit(db, {
+      tenantId: result.case.tenantId,
+      caseId,
+      actor: "clinician",
+      action: "clinical_report.viewed",
+    });
     return c.json({
       caseId,
       content: result.content,
@@ -549,6 +578,15 @@ export function createV1Routes(db: Db, env: Env) {
     const caseId = c.req.param("caseId");
     const result = await renderClinicalReportPdfForCase(db, caseId);
     if (!result.ok) return c.json({ error: result.error }, 404);
+    // Read-access audit (DEV-25): downloading the report PDF exfiltrates PHI.
+    // Distinct action from the JSON view so an export/download is visible in the
+    // trail. De-duped per (actor, caseId) per window like the other views.
+    await writeViewAudit(db, {
+      tenantId: result.tenantId,
+      caseId,
+      actor: "clinician",
+      action: "clinical_report.downloaded",
+    });
     const name = (result.content.childDisplayName || "child").replace(/[^a-zA-Z0-9_-]+/g, "_");
     return c.body(Buffer.from(result.pdf), 200, {
       "Content-Type": "application/pdf",
@@ -593,6 +631,29 @@ export function createV1Routes(db: Db, env: Env) {
       metadata: { reason: body.hold ? (body.reason ?? null) : null },
     });
     return c.json({ caseId, legalHold: updated!.legalHold });
+  });
+
+  // Admin export of a case's audit history (DEV-25). Returns the full audit
+  // trail for the case (who did/viewed what, when) for DPO/access-audit use.
+  // Aligned with the DSAR export's `auditLog` section (same source) but
+  // audit-only and oldest-first. The export is itself audited.
+  // TODO(DEV-31/auth): admin-only once the case API is authenticated.
+  app.get("/cases/:caseId/audit-log", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await buildCaseAuditExport(db, caseId);
+    if (!result.ok) return c.json({ error: result.error }, 404);
+
+    await writeAudit(db, {
+      tenantId: result.export.meta.tenantId,
+      caseId,
+      actor: "admin",
+      action: "audit_log.exported",
+      metadata: { entryCount: result.export.meta.entryCount },
+    });
+
+    return c.json(result.export, 200, {
+      "Content-Disposition": `attachment; filename="audit-log-${caseId}.json"`,
+    });
   });
 
   app.get("/cases/:caseId/dsar-export", async (c) => {
@@ -646,6 +707,26 @@ export function createV1Routes(db: Db, env: Env) {
       { ok: true, deleted: result.deleted, auditRetained: result.auditRetained },
       200,
     );
+  });
+
+  // Audit-log retention purge (DEV-25). Deletes audit rows older than 7 years
+  // via the append-only escape hatch. Defaults to a dry run (count only); pass
+  // `?apply=true` to actually delete. Intended for Cloud Scheduler; the purge is
+  // itself audited. See docs/compliance/audit-retention.md.
+  // TODO(DEV-31/auth): require the scheduler service identity (admin) before
+  // this is reachable outside the demo/dev environment.
+  app.post("/admin/audit-log/retention-purge", async (c) => {
+    const apply = c.req.query("apply") === "true";
+    const result = await purgeExpiredAuditRows(db, { dryRun: !apply });
+    if (apply) {
+      // Tenant-less, PHI-free maintenance event (counts + cutoff only).
+      await writeAudit(db, {
+        actor: "system",
+        action: "audit_log.retention_purged",
+        metadata: { deleted: result.deleted, cutoff: result.cutoff },
+      });
+    }
+    return c.json(result);
   });
 
   app.get("/clinicians/me/availability", async (c) => {

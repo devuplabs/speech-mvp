@@ -88,6 +88,69 @@ export async function buildDsarExport(
   };
 }
 
+// ── Admin audit-history export (DEV-25) ────────────────────────────────────
+
+export type CaseAuditExport = {
+  meta: {
+    kind: "case_audit_export";
+    caseId: string;
+    tenantId: string;
+    generatedAt: string;
+    entryCount: number;
+  };
+  /** Audit rows for the case, oldest first. Metadata is IDs/counts only. */
+  entries: {
+    id: string;
+    actor: string;
+    action: string;
+    metadata: unknown;
+    createdAt: Date;
+  }[];
+};
+
+/**
+ * Build the audit trail for one case (DEV-25 — admin "who accessed this record"
+ * view). Reuses the same `auditLog` source as the DSAR export's `auditLog`
+ * section so the two stay aligned; this endpoint is the audit-only, oldest-first
+ * projection an admin/DPO uses to answer access questions. Returns `not_found`
+ * if the case does not exist. The caller audits the export itself.
+ */
+export async function buildCaseAuditExport(
+  db: Db,
+  caseId: string,
+): Promise<
+  { ok: false; error: "not_found" } | { ok: true; export: CaseAuditExport }
+> {
+  const [caseRow] = await db.select().from(cases).where(eq(cases.id, caseId));
+  if (!caseRow) return { ok: false, error: "not_found" };
+
+  const rows = await db
+    .select()
+    .from(auditLog)
+    .where(eq(auditLog.caseId, caseId))
+    .orderBy(auditLog.createdAt);
+
+  return {
+    ok: true,
+    export: {
+      meta: {
+        kind: "case_audit_export",
+        caseId,
+        tenantId: caseRow.tenantId,
+        generatedAt: new Date().toISOString(),
+        entryCount: rows.length,
+      },
+      entries: rows.map((r) => ({
+        id: r.id,
+        actor: r.actor,
+        action: r.action,
+        metadata: r.metadata,
+        createdAt: r.createdAt,
+      })),
+    },
+  };
+}
+
 // ── Erasure (Art. 17) ─────────────────────────────────────────────────────
 
 const ERASURE_TOKEN_TTL_MINUTES = 60;
@@ -218,7 +281,13 @@ export async function confirmErasure(
     deleted[entry.key] = await deleteCaseRows(db, entry, caseId);
   }
 
-  // Retain the audit trail but scrub any PHI from metadata of prior rows.
+  // Retain the audit trail but scrub any PHI from metadata of prior rows. This
+  // runs in its own transaction (it must, to open the append-only escape hatch
+  // — see scrubCaseAuditMetadata). As before this function, confirmErasure is
+  // not one big transaction; it is **idempotent on retry** instead: deletes are
+  // by-key (re-running deletes nothing), the scrub re-applies cleanly, and a
+  // re-run after a mid-way crash completes the erasure. The scrub is ordered
+  // before the case-row delete so the case_id FK can be detached first.
   const auditRetained = await scrubCaseAuditMetadata(db, caseId);
 
   // Finally hard-delete the case row (the cascade would also remove children;
@@ -322,20 +391,30 @@ const AUDIT_METADATA_SAFE_KEYS = new Set([
 
 async function scrubCaseAuditMetadata(db: Db, caseId: string): Promise<number> {
   const rows = await db.select().from(auditLog).where(eq(auditLog.caseId, caseId));
+  if (rows.length === 0) return 0;
+
   let scrubbed = 0;
-  for (const row of rows) {
-    const meta = (row.metadata ?? {}) as Record<string, unknown>;
-    const safe: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(meta)) {
-      if (AUDIT_METADATA_SAFE_KEYS.has(k)) safe[k] = v;
+  // `audit_log` is append-only (DEV-25): a DB trigger blocks UPDATE/DELETE
+  // unless the transaction opts in via `SET LOCAL sona.audit_scrub = 'on'`.
+  // DSAR PHI-scrub is the sanctioned exception, so we run the scrub inside one
+  // transaction that flips the flag. `SET LOCAL` is transaction-scoped, so the
+  // escape hatch cannot leak onto a pooled connection after we commit.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SET LOCAL sona.audit_scrub = 'on'`);
+    for (const row of rows) {
+      const meta = (row.metadata ?? {}) as Record<string, unknown>;
+      const safe: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(meta)) {
+        if (AUDIT_METADATA_SAFE_KEYS.has(k)) safe[k] = v;
+      }
+      safe.phiScrubbed = true;
+      safe.erasedCaseId = caseId;
+      await tx
+        .update(auditLog)
+        .set({ metadata: safe, caseId: null })
+        .where(eq(auditLog.id, row.id));
+      scrubbed += 1;
     }
-    safe.phiScrubbed = true;
-    safe.erasedCaseId = caseId;
-    await db
-      .update(auditLog)
-      .set({ metadata: safe, caseId: null })
-      .where(eq(auditLog.id, row.id));
-    scrubbed += 1;
-  }
+  });
   return scrubbed;
 }
