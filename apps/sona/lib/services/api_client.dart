@@ -455,11 +455,24 @@ class SonaApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> publishParentSummary(String caseId) async {
+  /// Publish the parent-facing summary to the portal and notify the family.
+  ///
+  /// When [htmlBody] is provided the clinician's reviewed/edited copy is stored
+  /// and delivered verbatim (Stage 8 · DEV-50). When omitted the server falls
+  /// back to its own draft/stub. An empty/whitespace [htmlBody] is treated as
+  /// "no body" so we never send an empty document the server would reject.
+  Future<Map<String, dynamic>> publishParentSummary(
+    String caseId, {
+    String? htmlBody,
+  }) async {
+    final trimmed = htmlBody?.trim();
+    final payload = (trimmed != null && trimmed.isNotEmpty)
+        ? {'htmlBody': htmlBody}
+        : <String, dynamic>{};
     final res = await _client.post(
       _base.replace(path: '/v1/cases/$caseId/parent-summary/publish'),
       headers: {'Content-Type': 'application/json'},
-      body: '{}',
+      body: jsonEncode(payload),
     );
     _ensureOk(res);
     return jsonDecode(res.body) as Map<String, dynamic>;

@@ -169,7 +169,7 @@ void main() {
       button = tester.widget<FilledButton>(find.byType(FilledButton).first);
       expect(button.onPressed, isNotNull);
 
-      await tester.tap(find.text('Publish parent summary'));
+      await tester.tap(find.text('Review parent summary →'));
       await tester.pump();
       expect(published, 1);
     });
@@ -199,7 +199,7 @@ void main() {
       button = tester.widget<FilledButton>(find.byType(FilledButton).first);
       expect(button.onPressed, isNotNull);
 
-      await tester.tap(find.text('Publish parent summary'));
+      await tester.tap(find.text('Review parent summary →'));
       await tester.pump();
       expect(sentOutcome, 'refer_out');
       expect(sentReason, 'Outside our scope of practice');
@@ -222,7 +222,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Publish parent summary'));
+      await tester.tap(find.text('Review parent summary →'));
       await tester.pump();
       expect(sentOutcome, 'short_block');
       expect(sentReason, 'Six-session block for /r/');
@@ -233,7 +233,7 @@ void main() {
       var published = 0;
       await _pump(tester, onPublishSummary: (_, _) => published++, busy: true);
 
-      expect(find.text('Publishing…'), findsOneWidget);
+      expect(find.text('Recording…'), findsOneWidget);
       final button =
           tester.widget<FilledButton>(find.byType(FilledButton).first);
       expect(button.onPressed, isNull,
@@ -288,7 +288,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Publish parent summary'));
+        await tester.tap(find.text('Review parent summary →'));
         await tester.pumpAndSettle();
 
         final body = jsonDecode(fake.lastTriage!.body) as Map<String, dynamic>;
@@ -307,7 +307,7 @@ void main() {
       });
 
       // Button disabled → tapping is a no-op, nothing reaches the backend.
-      await tester.tap(find.text('Publish parent summary'));
+      await tester.tap(find.text('Review parent summary →'));
       await tester.pumpAndSettle();
       expect(fake.lastTriage, isNull);
     });
@@ -328,7 +328,7 @@ void main() {
 
       await tester.tap(find.text(_outcomeLabels['strategy_only']!));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Publish parent summary'));
+      await tester.tap(find.text('Review parent summary →'));
       await tester.pumpAndSettle();
 
       expect(caught, isA<SonaApiException>());
