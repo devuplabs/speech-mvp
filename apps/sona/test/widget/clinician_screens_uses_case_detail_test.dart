@@ -190,7 +190,7 @@ void main() {
       home: Scaffold(
         body: ClinicianTriageScreen(
           caseDetail: _jadenDetail(),
-          onPublishSummary: () {},
+          onPublishSummary: (_, _) {},
           onBackPrep: () {},
         ),
       ),

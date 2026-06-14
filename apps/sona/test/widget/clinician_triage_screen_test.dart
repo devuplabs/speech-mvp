@@ -87,10 +87,18 @@ class _FakeBackend {
   }
 }
 
+/// Clinician-facing label for each outcome value (mirrors [kTriageOutcomes]).
+const _outcomeLabels = <String, String>{
+  'strategy_only': 'Strategies only',
+  'short_block': 'Short therapy block',
+  'full_assessment': 'Full assessment',
+  'refer_out': 'Refer onward',
+};
+
 Future<void> _pump(
   WidgetTester tester, {
   Map<String, dynamic>? detail,
-  VoidCallback? onPublishSummary,
+  void Function(String outcome, String reason)? onPublishSummary,
   bool busy = false,
 }) async {
   tester.view.physicalSize = const Size(1440, 1200);
@@ -109,7 +117,7 @@ Future<void> _pump(
     home: Scaffold(
       body: ClinicianTriageScreen(
         caseDetail: detail ?? _caseDetail(),
-        onPublishSummary: onPublishSummary ?? () {},
+        onPublishSummary: onPublishSummary ?? (_, _) {},
         onBackPrep: () {},
         busy: busy,
       ),
@@ -120,18 +128,20 @@ Future<void> _pump(
 
 void main() {
   group('triage screen UI', () {
-    testWidgets('renders the triage outcome card, chips and clinician notes',
+    testWidgets(
+        'renders the triage outcome card, all four outcomes and rationale field',
         (tester) async {
       await _pump(tester);
 
       expect(find.text('Triage & session plan'), findsOneWidget);
       expect(find.text('Triage outcome'), findsOneWidget);
-      // Outcome chips are selectable options on the triage card.
-      expect(find.text('Speech sound disorder'), findsOneWidget);
-      expect(find.text('Refer onward'), findsOneWidget);
-      // Internal reason / notes field.
+      // All four canonical outcomes are offered as selectable cards.
+      for (final label in _outcomeLabels.values) {
+        expect(find.text(label), findsOneWidget);
+      }
+      // Clinical rationale field.
       expect(
-        find.widgetWithText(TextField, 'Clinician notes (internal)'),
+        find.widgetWithText(TextField, 'Clinical rationale'),
         findsOneWidget,
       );
     });
@@ -143,20 +153,85 @@ void main() {
       expect(find.textContaining('Aria'), findsNothing);
     });
 
-    testWidgets('publish parent summary fires the callback when not busy',
+    testWidgets('publish is disabled until an outcome is chosen',
         (tester) async {
       var published = 0;
-      await _pump(tester, onPublishSummary: () => published++);
+      await _pump(tester, onPublishSummary: (_, _) => published++);
+
+      // No outcome selected → button is disabled.
+      var button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(button.onPressed, isNull,
+          reason: 'Cannot publish before a triage outcome is chosen');
+
+      // Selecting an outcome (one that does not require a rationale) enables it.
+      await tester.tap(find.text(_outcomeLabels['strategy_only']!));
+      await tester.pumpAndSettle();
+      button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(button.onPressed, isNotNull);
 
       await tester.tap(find.text('Publish parent summary'));
       await tester.pump();
       expect(published, 1);
     });
 
+    testWidgets(
+        'publish stays disabled when the chosen outcome requires a rationale '
+        'until one is entered', (tester) async {
+      String? sentOutcome;
+      String? sentReason;
+      await _pump(tester, onPublishSummary: (o, r) {
+        sentOutcome = o;
+        sentReason = r;
+      });
+
+      // refer_out requires a rationale.
+      await tester.tap(find.text(_outcomeLabels['refer_out']!));
+      await tester.pumpAndSettle();
+      var button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(button.onPressed, isNull,
+          reason: 'refer_out must capture a written rationale');
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Clinical rationale (required)'),
+        'Outside our scope of practice',
+      );
+      await tester.pumpAndSettle();
+      button = tester.widget<FilledButton>(find.byType(FilledButton).first);
+      expect(button.onPressed, isNotNull);
+
+      await tester.tap(find.text('Publish parent summary'));
+      await tester.pump();
+      expect(sentOutcome, 'refer_out');
+      expect(sentReason, 'Outside our scope of practice');
+    });
+
+    testWidgets('publish reports the selected outcome and trimmed rationale',
+        (tester) async {
+      String? sentOutcome;
+      String? sentReason;
+      await _pump(tester, onPublishSummary: (o, r) {
+        sentOutcome = o;
+        sentReason = r;
+      });
+
+      await tester.tap(find.text(_outcomeLabels['short_block']!));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Clinical rationale'),
+        '  Six-session block for /r/  ',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Publish parent summary'));
+      await tester.pump();
+      expect(sentOutcome, 'short_block');
+      expect(sentReason, 'Six-session block for /r/');
+    });
+
     testWidgets('publish is disabled while a publish is in flight',
         (tester) async {
       var published = 0;
-      await _pump(tester, onPublishSummary: () => published++, busy: true);
+      await _pump(tester, onPublishSummary: (_, _) => published++, busy: true);
 
       expect(find.text('Publishing…'), findsOneWidget);
       final button =
@@ -191,6 +266,73 @@ void main() {
         throwsA(isA<SonaApiException>()
             .having((e) => e.statusCode, 'statusCode', 500)),
       );
+    });
+  });
+
+  group('triage screen → API (end to end through the callback)', () {
+    for (final outcome in _outcomes) {
+      testWidgets('selecting "$outcome" + rationale POSTs exactly those values',
+          (tester) async {
+        final fake = _FakeBackend();
+        final api = fake.client();
+
+        await _pump(tester, onPublishSummary: (o, r) async {
+          await api.recordTriage('case-jaden', outcome: o, reason: r);
+        });
+
+        await tester.tap(find.text(_outcomeLabels[outcome]!));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(TextField),
+          'Rationale for $outcome',
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Publish parent summary'));
+        await tester.pumpAndSettle();
+
+        final body = jsonDecode(fake.lastTriage!.body) as Map<String, dynamic>;
+        expect(body['outcome'], outcome);
+        expect(body['reason'], 'Rationale for $outcome');
+      });
+    }
+
+    testWidgets('no API call is made when no outcome is selected',
+        (tester) async {
+      final fake = _FakeBackend();
+      final api = fake.client();
+
+      await _pump(tester, onPublishSummary: (o, r) async {
+        await api.recordTriage('case-jaden', outcome: o, reason: r);
+      });
+
+      // Button disabled → tapping is a no-op, nothing reaches the backend.
+      await tester.tap(find.text('Publish parent summary'));
+      await tester.pumpAndSettle();
+      expect(fake.lastTriage, isNull);
+    });
+
+    testWidgets('surfaces the failure when the triage POST errors',
+        (tester) async {
+      final fake = _FakeBackend(failStatus: 500);
+      final api = fake.client();
+      Object? caught;
+
+      await _pump(tester, onPublishSummary: (o, r) async {
+        try {
+          await api.recordTriage('case-jaden', outcome: o, reason: r);
+        } catch (e) {
+          caught = e;
+        }
+      });
+
+      await tester.tap(find.text(_outcomeLabels['strategy_only']!));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Publish parent summary'));
+      await tester.pumpAndSettle();
+
+      expect(caught, isA<SonaApiException>());
+      expect((caught as SonaApiException).statusCode, 500);
     });
   });
 }
