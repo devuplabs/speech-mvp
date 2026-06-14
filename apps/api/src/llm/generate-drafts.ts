@@ -4,6 +4,7 @@ import { logger } from "../logger.js";
 import { chatCompletion, isLlmConfigured, parseJsonFromLlm } from "./chat.js";
 import { buildIntakeContextForLlm } from "./intake-context.js";
 import { buildFewShotBlock, selectFewShotExamples } from "./few-shot.js";
+import { CHILD_PLACEHOLDER, reinsertChildName } from "./redact.js";
 
 /**
  * Concern signals used to pick a matching few-shot specialty bucket. Both are
@@ -72,7 +73,7 @@ export async function generatePrepBriefLlm(
       {
         role: "user",
         content:
-          `Child: ${params.childDisplayName}\n\n${fewShot}Intake:\n${params.intakeContext}\n\n` +
+          `Child: ${CHILD_PLACEHOLDER}\n\n${fewShot}Intake:\n${params.intakeContext}\n\n` +
           `Return JSON: {"probeAreas":["..."]} with 4-6 specific prep probes for the first consult.`,
       },
     ],
@@ -87,7 +88,9 @@ export async function generatePrepBriefLlm(
   return {
     content: {
       label: "DRAFT — clinician must review",
-      probeAreas: brief.data.probeAreas,
+      // Re-insert the real name in our own layer: the prompt only ever saw the
+      // [CHILD] placeholder (DEV-53).
+      probeAreas: reinsertChildName(brief.data.probeAreas, params.childDisplayName),
       source: "llm",
     },
     modelId: env.LLM_MODEL ?? "gemma-3-27b-it",
@@ -122,7 +125,7 @@ export async function generateSessionPlanLlm(
       {
         role: "user",
         content:
-          `Child: ${params.childDisplayName}\nTriage outcome: ${params.triageOutcome}\n\n` +
+          `Child: ${CHILD_PLACEHOLDER}\nTriage outcome: ${params.triageOutcome}\n\n` +
           `${fewShot}Intake:\n${params.intakeContext}\n\n` +
           `Return JSON: {"sections":{"goals":[],"activities":[],"homePractice":[],"materials":[]}} ` +
           `for a first SLT session plan.`,
@@ -139,7 +142,7 @@ export async function generateSessionPlanLlm(
   return {
     content: {
       label: "DRAFT — clinician must review",
-      sections: plan.data.sections,
+      sections: reinsertChildName(plan.data.sections, params.childDisplayName),
       source: "llm",
     },
     modelId: env.LLM_MODEL ?? "gemma-3-27b-it",
@@ -174,7 +177,7 @@ export async function generateClinicalReportLlm(
       {
         role: "user",
         content:
-          `Draft a clinical report for ${params.childDisplayName}. ` +
+          `Draft a clinical report for ${CHILD_PLACEHOLDER}. ` +
           `Triage: ${params.triageOutcome ?? "not recorded"}.\n\n${fewShot}Intake:\n${params.intakeContext}\n\n` +
           `Return JSON: {"title":"Clinical report","sections":[{"heading":"...","body":"..."}]}. ` +
           `Include referral & presentation, assessment summary, and recommendations.`,
@@ -191,9 +194,9 @@ export async function generateClinicalReportLlm(
   return {
     content: {
       label: "DRAFT — clinician must review",
-      title: report.data.title,
+      title: reinsertChildName(report.data.title, params.childDisplayName),
       childDisplayName: params.childDisplayName,
-      sections: report.data.sections,
+      sections: reinsertChildName(report.data.sections, params.childDisplayName),
       disclaimer: "AI-drafted · clinician-reviewed. Not for distribution until signed.",
       source: "llm",
       generatedAt: new Date().toISOString(),
@@ -225,7 +228,8 @@ export async function generateParentSummaryHtmlLlm(
       {
         role: "user",
         content:
-          `Write a warm parent-facing summary for ${params.childDisplayName} after intake. ` +
+          `Write a warm parent-facing summary for ${CHILD_PLACEHOLDER} after intake. ` +
+          `Use the token ${CHILD_PLACEHOLDER} wherever you refer to the child by name. ` +
           `Reading level: Year 8. No medical jargon.\n\n${fewShot}Intake:\n${params.intakeContext}\n\n` +
           `Return JSON: {"html":"<p>...</p>"} with simple HTML paragraphs only. ` +
           `Include a line that the summary was drafted with AI assistance and reviewed by the clinician.`,
@@ -239,7 +243,12 @@ export async function generateParentSummaryHtmlLlm(
   const parsed = parseJsonFromLlm<unknown>(res.content);
   const summary = parentSummarySchema.safeParse(parsed);
   if (!summary.success) return null;
-  return { html: summary.data.html, modelId: env.LLM_MODEL ?? "gemma-3-27b-it" };
+  // The prompt addressed the child as [CHILD]; re-insert the real name here in
+  // our own layer so the family-facing summary reads naturally (DEV-53).
+  return {
+    html: reinsertChildName(summary.data.html, params.childDisplayName),
+    modelId: env.LLM_MODEL ?? "gemma-3-27b-it",
+  };
 }
 
 export { buildIntakeContextForLlm };

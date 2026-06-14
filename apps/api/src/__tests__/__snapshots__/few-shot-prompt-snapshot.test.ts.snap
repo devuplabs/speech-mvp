@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`few-shot prompt snapshots > parent_summary prompt — Case A 1`] = `
-"Write a warm parent-facing summary for Case A after intake. Reading level: Year 8. No medical jargon.
+"Write a warm parent-facing summary for [CHILD] after intake. Use the token [CHILD] wherever you refer to the child by name. Reading level: Year 8. No medical jargon.
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
 Example 1:
@@ -20,7 +20,7 @@ Care model: paediatric
 Summary tone: Summary to parents and SENCO.
 
 Intake:
-Child: Case A
+Child: [CHILD]
 Main concern: Hard to understand, substitutes sounds
 Difficulties: Speech sounds
 
@@ -28,7 +28,7 @@ Return JSON: {"html":"<p>...</p>"} with simple HTML paragraphs only. Include a l
 `;
 
 exports[`few-shot prompt snapshots > parent_summary prompt — Case B 1`] = `
-"Write a warm parent-facing summary for Case B after intake. Reading level: Year 8. No medical jargon.
+"Write a warm parent-facing summary for [CHILD] after intake. Use the token [CHILD] wherever you refer to the child by name. Reading level: Year 8. No medical jargon.
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
 Example 1:
@@ -47,14 +47,14 @@ Care model: adult
 Summary tone: Carer-inclusive summary with pacing strategies.
 
 Intake:
-Child: Case B
+Child: [CHILD]
 Main concern: general developmental check
 
 Return JSON: {"html":"<p>...</p>"} with simple HTML paragraphs only. Include a line that the summary was drafted with AI assistance and reviewed by the clinician."
 `;
 
 exports[`few-shot prompt snapshots > prep_brief prompt — Case A 1`] = `
-"Child: Case A
+"Child: [CHILD]
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
 Example 1:
@@ -73,7 +73,7 @@ Care model: paediatric
 Prep focus: 8yo school SLA; bounded session block.
 
 Intake:
-Child: Case A
+Child: [CHILD]
 Main concern: Hard to understand, substitutes sounds
 Difficulties: Speech sounds
 
@@ -81,7 +81,7 @@ Return JSON: {"probeAreas":["..."]} with 4-6 specific prep probes for the first 
 `;
 
 exports[`few-shot prompt snapshots > prep_brief prompt — Case B 1`] = `
-"Child: Case B
+"Child: [CHILD]
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
 Example 1:
@@ -100,14 +100,14 @@ Care model: adult
 Prep focus: 34yo AOS post-TBI; review error consistency.
 
 Intake:
-Child: Case B
+Child: [CHILD]
 Main concern: general developmental check
 
 Return JSON: {"probeAreas":["..."]} with 4-6 specific prep probes for the first consult."
 `;
 
 exports[`few-shot prompt snapshots > session_plan prompt — Case A 1`] = `
-"Child: Case A
+"Child: [CHILD]
 Triage outcome: short_block
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
@@ -130,7 +130,7 @@ Triage: strategy_only
 Plan focus: Screening and strategy programme within SLA cap.
 
 Intake:
-Child: Case A
+Child: [CHILD]
 Main concern: Hard to understand, substitutes sounds
 Difficulties: Speech sounds
 
@@ -138,7 +138,7 @@ Return JSON: {"sections":{"goals":[],"activities":[],"homePractice":[],"material
 `;
 
 exports[`few-shot prompt snapshots > session_plan prompt — Case B 1`] = `
-"Child: Case B
+"Child: [CHILD]
 Triage outcome: short_block
 
 Reference examples (similar cases, for tone and focus only — do not copy details):
@@ -161,7 +161,7 @@ Triage: full_assessment
 Plan focus: Apraxia assessment and motor programming trials.
 
 Intake:
-Child: Case B
+Child: [CHILD]
 Main concern: general developmental check
 
 Return JSON: {"sections":{"goals":[],"activities":[],"homePractice":[],"materials":[]}} for a first SLT session plan."

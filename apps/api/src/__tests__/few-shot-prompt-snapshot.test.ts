@@ -51,18 +51,20 @@ const env = {
 } as unknown as Env;
 
 // Two representative cases: a speech-sounds case (specialty match) and an
-// uncategorised case (general `all` fallback).
+// uncategorised case (general `all` fallback). The intakeContext mirrors what
+// buildIntakeContextForLlm now produces post-DEV-53 — the child is referred to
+// by the [CHILD] placeholder, never a real name.
 const speechSoundsCase = {
   childDisplayName: "Case A",
   intakeContext:
-    "Child: Case A\nMain concern: Hard to understand, substitutes sounds\nDifficulties: Speech sounds",
+    "Child: [CHILD]\nMain concern: Hard to understand, substitutes sounds\nDifficulties: Speech sounds",
   mainConcern: "Hard to understand, substitutes sounds",
   difficulties: ["Speech sounds"],
 };
 
 const fallbackCase = {
   childDisplayName: "Case B",
-  intakeContext: "Child: Case B\nMain concern: general developmental check",
+  intakeContext: "Child: [CHILD]\nMain concern: general developmental check",
   mainConcern: "general developmental check",
   difficulties: [] as string[],
 };
