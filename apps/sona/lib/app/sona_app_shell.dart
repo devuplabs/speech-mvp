@@ -119,6 +119,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
   bool _busy = false;
   String? _status;
   String? _parentSummaryHtml;
+
+  /// True once the clinician has published the parent summary for the active
+  /// case in this session (Stage 8 · DEV-50). Drives the editor's published
+  /// affordance + the carryover hand-off.
+  bool _summaryPublished = false;
   bool _hasResumableDraft = false;
   List<Map<String, dynamic>> _availabilityRules = [];
   bool _needsAvailabilityConfirm = true;
@@ -1023,7 +1028,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Submit intake');
   }
 
-  Future<void> _publishSummary(String outcome, String reason) async {
+  /// Triage → summary editor (Stage 8 · DEV-50).
+  ///
+  /// Records the clinician's triage decision then opens the parent-summary
+  /// EDITOR — we no longer auto-publish here. The clinician shapes tone/reading
+  /// level + edits the body before publishing the reviewed copy themselves.
+  Future<void> _openSummaryEditor(String outcome, String reason) async {
     final id = _state.caseId;
     if (id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1039,13 +1049,37 @@ class _SonaAppShellState extends State<SonaAppShell> {
         outcome: outcome,
         reason: reason.isEmpty ? null : reason,
       );
-      await _api.publishParentSummary(id);
+      setState(() {
+        _parentSummaryHtml = null;
+        _summaryPublished = false;
+        _route = SonaRoute.clinicianSummaryPreview;
+        _status = 'Triage recorded — review and publish the family summary';
+      });
+    }, label: 'Record triage');
+  }
+
+  /// Publish the clinician's final, edited parent-summary body (Stage 8).
+  ///
+  /// Sends the reviewed `htmlBody` to the existing publish contract so the
+  /// family sees exactly what was approved; the API transitions the case to
+  /// `summary_sent` and notifies the family (DEV-9). On success we load the
+  /// stored HTML back and mark the summary published.
+  Future<void> _publishSummaryBody(String htmlBody) async {
+    final id = _state.caseId;
+    if (id == null) return;
+    await _run(() async {
+      await _api.publishParentSummary(id, htmlBody: htmlBody);
       final html = await _api.fetchParentSummaryHtml(id);
       setState(() {
         _parentSummaryHtml = html;
-        _route = SonaRoute.clinicianSummaryPreview;
+        _summaryPublished = true;
         _status = 'Summary published to portal';
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Summary published — the family has been notified.')),
+        );
+      }
     }, label: 'Publish summary');
   }
 
@@ -1505,11 +1539,15 @@ class _SonaAppShellState extends State<SonaAppShell> {
           busy: _busy,
           onBackPrep: () => _go(SonaRoute.clinicianPrep),
           onPublishSummary: (outcome, reason) =>
-              unawaited(_publishSummary(outcome, reason)),
+              unawaited(_openSummaryEditor(outcome, reason)),
         ),
       SonaRoute.clinicianSummaryPreview => ClinicianParentSummaryScreen(
           caseDetail: _state.caseDetail,
           summaryHtml: _parentSummaryHtml,
+          busy: _busy,
+          published: _summaryPublished,
+          onPublish: (htmlBody) =>
+              _publishSummaryBody(htmlBody),
           onBackClinician: () => _go(SonaRoute.clinicianTriage),
           onOpenCarryover: () => unawaited(_openClinicianCarryover()),
         ),

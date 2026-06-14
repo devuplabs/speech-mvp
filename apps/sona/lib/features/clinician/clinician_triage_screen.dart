@@ -56,8 +56,9 @@ class ClinicianTriageScreen extends StatefulWidget {
   final Map<String, dynamic>? caseDetail;
 
   /// Fired with the clinician-chosen outcome + rationale when the clinician
-  /// publishes the parent summary. The host wires this through
-  /// `recordTriage(outcome:, reason:)`.
+  /// records triage and moves on to review the parent summary. The host wires
+  /// this through `recordTriage(outcome:, reason:)` then opens the summary
+  /// editor (DEV-50).
   final void Function(String outcome, String reason) onPublishSummary;
   final VoidCallback onBackPrep;
   final bool busy;
@@ -167,9 +168,9 @@ class _ClinicianTriageScreenState extends State<ClinicianTriageScreen> {
                               style: TextStyle(fontWeight: FontWeight.w600)),
                           SizedBox(height: 8),
                           Text(
-                            'Record the triage decision, then publish a '
-                            'parent-friendly summary to the secure portal. '
-                            'No clinical detail in email.',
+                            'Record the triage decision, then review and '
+                            'publish a parent-friendly summary to the secure '
+                            'portal. No clinical detail in email.',
                             style: TextStyle(
                                 fontSize: 13,
                                 color: SonaColors.textSecondary,
@@ -183,7 +184,7 @@ class _ClinicianTriageScreenState extends State<ClinicianTriageScreen> {
                       onPressed:
                           (widget.busy || !_canPublish) ? null : _publish,
                       child: Text(
-                          widget.busy ? 'Publishing…' : 'Publish parent summary'),
+                          widget.busy ? 'Recording…' : 'Review parent summary →'),
                     ),
                     if (_outcome == null)
                       const Padding(
