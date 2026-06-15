@@ -65,6 +65,42 @@ export async function findActiveRegistration(
   return rows[0] ?? null;
 }
 
+/**
+ * Parse a `dd / mm / yyyy` intake date into an ISO `YYYY-MM-DD` calendar date for
+ * the `cases.child_dob` column (FHIR `Patient.birthDate`). Returns `undefined`
+ * for anything that does not match the strict intake pattern rather than
+ * guessing a date. Pure; no time zone applied (a birth date is a plain date).
+ */
+export function parseIntakeDateToIso(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const m = /^(0[1-9]|[12][0-9]|3[01])\s*\/\s*(0[1-9]|1[0-2])\s*\/\s*((?:19|20)\d{2})$/.exec(
+    value.trim(),
+  );
+  if (!m) return undefined;
+  const [, dd, mm, yyyy] = m;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Split a single free-text full name into structured given/family parts for a
+ * FHIR `HumanName`. Conservative: the last whitespace-separated token is the
+ * family name and everything before it is the given name(s). A single token is
+ * treated as a given name only (family left absent). Returns `undefined` parts
+ * for empty input — the mapper then emits no name rather than a fabricated one.
+ */
+export function splitFullName(value: string | undefined): {
+  given?: string;
+  family?: string;
+} {
+  const trimmed = value?.trim();
+  if (!trimmed) return {};
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return { given: parts[0] };
+  const family = parts[parts.length - 1];
+  const given = parts.slice(0, -1).join(" ");
+  return { given, family };
+}
+
 export async function registerPatient(
   db: Db,
   body: RegisterPatientBody,
@@ -72,6 +108,9 @@ export async function registerPatient(
 ) {
   const childDisplayName = body.childFirstName.trim();
   const parentEmail = body.parentEmail.trim().toLowerCase();
+  const childName = splitFullName(body.childFirstName);
+  const parentName = splitFullName(body.parentName);
+  const childDob = parseIntakeDateToIso(body.dateOfBirth);
 
   const existing = await findActiveRegistration(
     db,
@@ -105,6 +144,17 @@ export async function registerPatient(
       parentEmail,
       parentPhone: body.parentPhone?.trim() || undefined,
       childDisplayName,
+      // Structured demographics for the FHIR export (DEV-27, ADR-006 §5 P0).
+      childGivenName: childName.given,
+      childFamilyName: childName.family,
+      childDob,
+      parentGivenName: parentName.given,
+      parentFamilyName: parentName.family,
+      // The registration form does not yet collect a coded relationship; default
+      // to the most common case (a parent) rather than leaving it absent, since
+      // the contact registering a child is overwhelmingly a parent. A dedicated
+      // relationship picker is a follow-up (ADR-006 §5 P1 fidelity).
+      parentRelationship: "parent",
       referralSource: body.referralSource,
       status: "intake_pending",
     })

@@ -2,6 +2,33 @@ import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { cases, intakeSubmissions } from "../db/schema.js";
 import type { IntakeAnswers } from "../schemas/intake.js";
+import { parseIntakeDateToIso, splitFullName } from "./register-patient.js";
+
+/**
+ * Derive the structured FHIR demographics (ADR-006 §5 P0) from intake answers so
+ * a parent-submitted form populates `cases` for the export. Only returns fields
+ * that are actually present — absent fields stay absent (the mapper never
+ * guesses). The parent contact prefers the mother's name, then the father's.
+ */
+export function deriveDemographicsFromAnswers(answers: IntakeAnswers): {
+  childGivenName?: string;
+  childFamilyName?: string;
+  childDob?: string;
+  parentGivenName?: string;
+  parentFamilyName?: string;
+} {
+  const child = splitFullName(answers.childName);
+  const parentSource = answers.motherName ?? answers.fatherName ?? answers.completedBy;
+  const parent = splitFullName(parentSource);
+  const result: ReturnType<typeof deriveDemographicsFromAnswers> = {};
+  if (child.given) result.childGivenName = child.given;
+  if (child.family) result.childFamilyName = child.family;
+  const dob = parseIntakeDateToIso(answers.dateOfBirth);
+  if (dob) result.childDob = dob;
+  if (parent.given) result.parentGivenName = parent.given;
+  if (parent.family) result.parentFamilyName = parent.family;
+  return result;
+}
 
 export async function upsertIntakeDraft(
   db: Db,

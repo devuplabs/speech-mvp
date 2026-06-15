@@ -176,6 +176,7 @@ jobs:
             tests/full-journey-api.spec.ts \
             tests/dsar-erasure-api.spec.ts \
             tests/audit-log-api.spec.ts \
+            tests/fhir-export-api.spec.ts \
             tests/personas-parity.spec.ts
         working-directory: e2e
 
