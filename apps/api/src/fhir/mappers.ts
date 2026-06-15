@@ -16,6 +16,8 @@
  *  - Absent structured demographics are emitted as absent, never guessed.
  */
 
+import { createHash } from "node:crypto";
+
 import {
   CARRYOVER_CATEGORY_DISPLAY,
   PROGRESS_RATING_DISPLAY,
@@ -112,6 +114,50 @@ export interface CaseAggregate {
   }[];
 }
 
+// ── Deterministic resource ids (RFC 4122 UUID v5) ──────────────────────────
+//
+// FHIR requires that when a Bundle entry `fullUrl` is `urn:uuid:X`, X is a valid
+// lowercase UUID, and that `Resource.id` matches `[A-Za-z0-9\-\.]{1,64}`. We
+// previously derived ids by concatenating the case UUID with a suffix (and
+// sometimes a second row UUID), which produced non-UUID strings that could also
+// exceed the 64-char id limit. Instead we mint a valid, deterministic UUID v5
+// per resource: stable across runs (the golden Bundle stays byte-stable) and
+// unique per resource. Centralising derivation in `resourceId` guarantees a
+// resource's id and every reference that points at it always agree.
+
+/** Fixed Sona namespace UUID for all v5 derivations (RFC 4122 §4.3). */
+const SONA_NS = "6f7a1d2e-3b4c-5d6e-7f80-91a2b3c4d5e6";
+
+/** RFC 4122 UUID v5 (SHA-1, namespace + name) — dependency-free (node:crypto). */
+function uuidv5(name: string, namespace: string): string {
+  const nsBytes = Buffer.from(namespace.replace(/-/g, ""), "hex");
+  const hash = createHash("sha1")
+    .update(nsBytes)
+    .update(Buffer.from(name, "utf8"))
+    .digest();
+  const bytes = hash.subarray(0, 16);
+  // Set version (5) and the RFC 4122 variant.
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+}
+
+/**
+ * The single source of truth for a resource's id. Both the resource's `id`/
+ * `fullUrl` and every inter-resource reference that targets it derive from this,
+ * so they always resolve within the Bundle. `discriminator` is the backing row
+ * id (aiDraft id, triage id, progress id, …) or a stable singleton label.
+ */
+const resourceId = (caseId: string, kind: string, discriminator: string) =>
+  uuidv5(`${caseId}:${kind}:${discriminator}`, SONA_NS);
+
 // ── Reference helpers ──────────────────────────────────────────────────────
 
 const urn = (id: string) => `urn:uuid:${id}`;
@@ -120,9 +166,6 @@ const ref = (resourceType: string, id: string) => ({
   type: resourceType,
 });
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : undefined);
-
-/** Stable deterministic child ids so the Bundle is reproducible per case. */
-const childId = (caseId: string, suffix: string) => `${caseId}-${suffix}`;
 
 function buildHumanName(
   given: string | null | undefined,
@@ -175,7 +218,7 @@ export function toRelatedPerson(agg: CaseAggregate): RelatedPerson {
   const c = agg.case;
   const rp: RelatedPerson = {
     resourceType: "RelatedPerson",
-    id: childId(c.id, "parent"),
+    id: resourceId(c.id, "RelatedPerson", "parent"),
     meta: { profile: [UK_CORE.RelatedPerson] },
     patient: ref("Patient", c.id),
   };
@@ -211,7 +254,7 @@ export function toEpisodeOfCare(agg: CaseAggregate): EpisodeOfCare {
   const c = agg.case;
   return {
     resourceType: "EpisodeOfCare",
-    id: childId(c.id, "episode"),
+    id: resourceId(c.id, "EpisodeOfCare", "episode"),
     status: episodeStatus(c.status),
     patient: ref("Patient", c.id),
     managingOrganization: ref("Organization", agg.tenant.id),
@@ -223,7 +266,7 @@ export function toServiceRequest(agg: CaseAggregate): ServiceRequest {
   const c = agg.case;
   const sr: ServiceRequest = {
     resourceType: "ServiceRequest",
-    id: childId(c.id, "referral"),
+    id: resourceId(c.id, "ServiceRequest", "referral"),
     meta: { profile: [UK_CORE.ServiceRequest] },
     status: c.status === "intake_pending" ? "draft" : "active",
     intent: "order",
@@ -251,7 +294,7 @@ export function toConsultEvent(
   if (c.consultAt.getTime() > now.getTime()) {
     const appt: Appointment = {
       resourceType: "Appointment",
-      id: childId(c.id, "consult"),
+      id: resourceId(c.id, "Appointment", "consult"),
       meta: { profile: [UK_CORE.Appointment] },
       status: "booked",
       start: iso(c.consultAt),
@@ -261,7 +304,7 @@ export function toConsultEvent(
   }
   const enc: Encounter = {
     resourceType: "Encounter",
-    id: childId(c.id, "consult"),
+    id: resourceId(c.id, "Encounter", "consult"),
     meta: { profile: [UK_CORE.Encounter] },
     status: "finished",
     class: { system: SYSTEM.encounterClass, code: "AMB", display: "ambulatory" },
@@ -295,11 +338,11 @@ export function toQuestionnaireResponse(
     }));
   return {
     resourceType: "QuestionnaireResponse",
-    id: childId(c.id, "intake"),
+    id: resourceId(c.id, "QuestionnaireResponse", "intake"),
     meta: { profile: [UK_CORE.QuestionnaireResponse] },
     status: intake.locked || intake.submittedAt ? "completed" : "in-progress",
     subject: ref("Patient", c.id),
-    source: ref("RelatedPerson", childId(c.id, "parent")),
+    source: ref("RelatedPerson", resourceId(c.id, "RelatedPerson", "parent")),
     authored: iso(intake.submittedAt),
     item: items,
   };
@@ -310,7 +353,7 @@ export function toConsent(agg: CaseAggregate): Consent | null {
   const c = agg.case;
   return {
     resourceType: "Consent",
-    id: childId(c.id, "consent"),
+    id: resourceId(c.id, "Consent", "consent"),
     meta: { profile: [UK_CORE.Consent] },
     status: "active",
     scope: {
@@ -332,10 +375,10 @@ export function toConsent(agg: CaseAggregate): Consent | null {
 /** Triage → Task (ADR-006 §3 recommendation; base R4 Task). */
 export function toTriageTasks(agg: CaseAggregate): Task[] {
   const c = agg.case;
-  return agg.triage.map((t, i) => {
+  return agg.triage.map((t) => {
     const task: Task = {
       resourceType: "Task",
-      id: childId(c.id, `triage-${i}`),
+      id: resourceId(c.id, "Task", t.id),
       status: "completed",
       intent: "order",
       code: {
@@ -346,7 +389,7 @@ export function toTriageTasks(agg: CaseAggregate): Task[] {
         coding: [{ system: SONA_CODESYSTEM.triageOutcome, code: t.outcome }],
       },
       for: ref("Patient", c.id),
-      focus: ref("ServiceRequest", childId(c.id, "referral")),
+      focus: ref("ServiceRequest", resourceId(c.id, "ServiceRequest", "referral")),
       authoredOn: iso(t.recordedAt),
     };
     if (t.reason) task.note = [{ text: t.reason }];
@@ -373,7 +416,7 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
     if (d.kind === "session_plan") {
       const plan: CarePlan = {
         resourceType: "CarePlan",
-        id: childId(c.id, `careplan-${d.id}`),
+        id: resourceId(c.id, "CarePlan", d.id),
         meta: { profile: [UK_CORE.CarePlan] },
         status: "active",
         intent: "plan",
@@ -385,7 +428,7 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
     }
 
     if (d.kind === "parent_summary") {
-      const docId = childId(c.id, `doc-${d.id}`);
+      const docId = resourceId(c.id, "DocumentReference", d.id);
       const doc: DocumentReference = {
         resourceType: "DocumentReference",
         id: docId,
@@ -407,10 +450,10 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
       };
       const comm: Communication = {
         resourceType: "Communication",
-        id: childId(c.id, `comm-${d.id}`),
+        id: resourceId(c.id, "Communication", d.id),
         status: "completed",
         subject: ref("Patient", c.id),
-        recipient: [ref("RelatedPerson", childId(c.id, "parent"))],
+        recipient: [ref("RelatedPerson", resourceId(c.id, "RelatedPerson", "parent"))],
         sent: iso(d.reviewedAt),
         payload: [{ contentReference: ref("DocumentReference", docId) }],
       };
@@ -419,7 +462,7 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
     }
 
     if (d.kind === "clinical_report") {
-      const docId = childId(c.id, `doc-${d.id}`);
+      const docId = resourceId(c.id, "DocumentReference", d.id);
       const doc: DocumentReference = {
         resourceType: "DocumentReference",
         id: docId,
@@ -442,7 +485,7 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
       };
       const comp: Composition = {
         resourceType: "Composition",
-        id: childId(c.id, `comp-${d.id}`),
+        id: resourceId(c.id, "Composition", d.id),
         meta: { profile: [UK_CORE.Composition] },
         status: "final",
         type: {
@@ -482,7 +525,7 @@ export function toCarryoverCarePlan(agg: CaseAggregate): CarePlan | null {
   const c = agg.case;
   return {
     resourceType: "CarePlan",
-    id: childId(c.id, "carryover-plan"),
+    id: resourceId(c.id, "CarePlan", "carryover-plan"),
     meta: { profile: [UK_CORE.CarePlan] },
     status: "active",
     intent: "plan",
@@ -510,13 +553,15 @@ export function toCarryoverCarePlan(agg: CaseAggregate): CarePlan | null {
 /** Progress entries → Observation (ADR-006 §3 recommendation; base R4). */
 export function toProgressObservations(agg: CaseAggregate): Observation[] {
   const c = agg.case;
-  return agg.progress.map((p, i) => {
+  return agg.progress.map((p) => {
     const performerId =
-      p.author === "parent" ? childId(c.id, "parent") : agg.tenant.id;
+      p.author === "parent"
+        ? resourceId(c.id, "RelatedPerson", "parent")
+        : agg.tenant.id;
     const performerType = p.author === "parent" ? "RelatedPerson" : "Organization";
     const obs: Observation = {
       resourceType: "Observation",
-      id: childId(c.id, `progress-${i}`),
+      id: resourceId(c.id, "Observation", p.id),
       status: "final",
       code: {
         coding: [{ system: SONA_CODESYSTEM.progressRating, code: "home-practice-progress" }],
