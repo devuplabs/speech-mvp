@@ -20,6 +20,16 @@ export async function runMigrations(connectionString: string): Promise<void> {
   const pool = new pg.Pool({ connectionString });
   const client = await pool.connect();
   try {
+    // Serialise concurrent migration runners with a session-level advisory lock.
+    // Two real scenarios race: parallel DB-backed test files (vitest runs files
+    // concurrently) and multiple Cloud Run instances booting with
+    // RUN_MIGRATIONS_ON_START. Without this, two runners both pass the
+    // schema_migrations skip-check and then both execute the same migration
+    // (e.g. a bare CREATE TYPE), colliding on pg_type's unique index. The lock
+    // makes the loser wait; it then sees the migration recorded and skips it.
+    // The key is an arbitrary fixed constant shared by all Sona API instances.
+    await client.query("SELECT pg_advisory_lock($1)", [4927001]);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         id text PRIMARY KEY,
@@ -54,6 +64,14 @@ export async function runMigrations(connectionString: string): Promise<void> {
       }
     }
   } finally {
+    // Release the advisory lock before returning the connection to the pool.
+    // Best-effort: if the session already errored/closed, the lock is dropped
+    // automatically when the backend ends.
+    try {
+      await client.query("SELECT pg_advisory_unlock($1)", [4927001]);
+    } catch {
+      // ignore — connection may already be closing; lock auto-releases.
+    }
     client.release();
     await pool.end();
   }
