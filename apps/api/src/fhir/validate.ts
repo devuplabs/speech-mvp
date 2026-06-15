@@ -1,23 +1,30 @@
 /**
- * Lightweight structural FHIR R4 validator for the export (DEV-27 CI gate).
+ * Lightweight structural FHIR R4 validator for the export (DEV-27).
  *
- * ── Approach & trade-off (ADR-006 / DEV-27 acceptance) ──────────────────────
- * The official HL7 Java validator gives full UK Core *profile* validation but
- * needs a JRE + the multi-hundred-MB UK Core package downloaded in CI — heavy,
- * slow, and network-dependent for a GitHub Actions smoke job. We instead run a
- * dependency-free **structural / base-R4 conformance** check in-process:
+ * ── Role: fast pre-check, NOT the authoritative gate ────────────────────────
+ * The **authoritative** FHIR/UK Core conformance gate is the official HL7 FHIR
+ * validator (`org.hl7.fhir.validator` / `validator_cli.jar`) run against the
+ * pinned UK Core R4 IG (`fhir.r4.ukcore.stu2#2.0.2`, FHIR 4.0.1) over the
+ * committed golden Bundle — see the `fhir-conformance` job in
+ * `.github/workflows/ci.yml`. That job validates each resource against the
+ * profile in its `meta.profile` (full UK Core StructureDefinition conformance:
+ * cardinalities, slices, bindings, invariants) and **fails the build on any
+ * error**. That is the real "UK Core conformant" claim.
+ *
+ * This in-process validator is a **cheap, dependency-free pre-check** that runs
+ * inside plain `npm test` (no JRE, no package download) so contributors get fast
+ * local/PR feedback before the heavier Java job runs. It checks the structural
+ * essentials:
  *  - the Bundle is a `collection` with well-formed entries and `urn:uuid:` refs,
  *  - each resource has the required base-R4 elements for its type,
  *  - required-binding codes use the expected fixed values,
  *  - every internal reference resolves to a bundled resource,
  *  - declared `meta.profile`s are the pinned UK Core canonical URLs.
  *
- * What this does NOT do: validate against the full UK Core StructureDefinitions
- * (cardinality slices, value-set membership, invariants). That is the explicit
- * trade-off — full profile validation vs a fast, hermetic structural gate. The
- * gate still **fails when the output stops conforming** structurally, which is
- * the regression we care about for an emit-only layer. Upgrading to the Java
- * validator later is additive (run it over the same golden fixtures).
+ * It deliberately does NOT replace full profile validation (it cannot check
+ * value-set membership or every UK Core invariant) — that is the official
+ * validator's job. Passing here is necessary but not sufficient; the official
+ * validator is the gate.
  *
  * Returns `errors` (must be 0 to pass) and `warnings` (tolerated, documented).
  */

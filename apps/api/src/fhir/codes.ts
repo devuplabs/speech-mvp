@@ -2,12 +2,16 @@
  * UK Core profile URLs, terminology systems and Sona-local CodeSystems for the
  * FHIR export (DEV-27 / ADR-006).
  *
- * Conformance baseline: **UK Core STU2, package `UK.Core.r4.v2@2.0.2`** (per
- * ADR-006 §"Standards baseline"). Profile canonical URLs are
- * `https://fhir.hl7.org.uk/StructureDefinition/UKCore-*`. Where ADR-006 §4
- * records that no UK Core profile exists for a resource in STU2 (Task,
- * EpisodeOfCare, general Observation, Communication) we emit **base FHIR R4**
- * and assert no profile, which is honest and standard practice.
+ * Conformance baseline: **UK Core STU2 `2.0.2`** (per ADR-006 §"Standards
+ * baseline"). The canonical, resolvable FHIR package id is
+ * **`fhir.r4.ukcore.stu2#2.0.2`** — this is what the official HL7 validator
+ * loads (`-ig fhir.r4.ukcore.stu2#2.0.2 -version 4.0.1`) in the `fhir-conformance`
+ * CI job, and it resolves the
+ * `https://fhir.hl7.org.uk/StructureDefinition/UKCore-*` profile canonicals
+ * below. Where ADR-006 §4 records that no UK Core profile exists for a resource
+ * in STU2 (Task, EpisodeOfCare, general Observation, Communication) we emit
+ * **base FHIR R4** and assert no profile, which is honest and standard practice
+ * (the validator then checks those resources against base R4).
  *
  * Where a SNOMED concept is not confidently known we use a **Sona-local
  * CodeSystem** with a stable URI rather than mis-coding to an approximate SNOMED
@@ -15,8 +19,11 @@
  * local code with the verified SNOMED concept later is a serializer change.
  */
 
-/** Pinned UK Core package version (informational; emit-only). */
-export const UK_CORE_PACKAGE = "UK.Core.r4.v2@2.0.2";
+/**
+ * Pinned UK Core package — the canonical FHIR package id + version the official
+ * validator loads as `-ig`. Keep in sync with the `fhir-conformance` CI job.
+ */
+export const UK_CORE_PACKAGE = "fhir.r4.ukcore.stu2#2.0.2";
 
 /** UK Core StructureDefinition canonical URLs (STU2). */
 export const UK_CORE = {

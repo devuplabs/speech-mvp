@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   JurisdictionError,
@@ -5,121 +7,28 @@ import {
   validateBundle,
   type CaseAggregate,
 } from "../fhir/index.js";
+import { GOLDEN_NOW, goldenCase } from "../fhir/__fixtures__/golden-case.js";
 
 /**
  * FHIR R4 / UK Core export unit + golden-fixture conformance tests (DEV-27).
  *
- * These run under the plain `npm test` (no DB) so the conformance gate is in the
- * default CI `api` job. The validator (`validateBundle`) is the regression net:
- * the "errors=0" assertion FAILS the moment the export stops conforming
- * structurally to base R4 / the pinned UK Core profiles (see validate.ts for the
- * structural-vs-full-profile trade-off).
+ * Two-tier conformance gate:
+ *  - This fast in-process `validateBundle` runs under plain `npm test` (no DB,
+ *    no JRE) as a cheap pre-check / regression net for the default CI `api` job.
+ *  - The **authoritative** gate is the official HL7 FHIR validator run against
+ *    the pinned UK Core R4 IG in the `fhir-conformance` CI job, validating the
+ *    committed golden Bundle (`fhir/__fixtures__/golden-bundle.json`). See
+ *    `validate.ts` for the split.
+ *
+ * The golden case lives in `fhir/__fixtures__/golden-case.ts` so the unit tests
+ * and the committed golden Bundle are generated from the *same* deterministic
+ * input.
  */
 
-const NOW = new Date("2026-06-15T10:00:00.000Z");
+const NOW = GOLDEN_NOW;
 
 /** A fully-populated UK case — every mappable resource is present. */
-function fullyPopulatedCase(): CaseAggregate {
-  return {
-    tenant: {
-      id: "11111111-1111-1111-1111-111111111111",
-      displayName: "Bright Voices SLT",
-      location: "Manchester, UK",
-      jurisdiction: "uk",
-    },
-    case: {
-      id: "22222222-2222-2222-2222-222222222222",
-      tenantId: "11111111-1111-1111-1111-111111111111",
-      status: "carryover",
-      parentEmail: "parent@example.com",
-      parentPhone: "+447700900000",
-      childDisplayName: "Ada Lovelace",
-      childGivenName: "Ada",
-      childFamilyName: "Lovelace",
-      childDob: "2019-12-10",
-      parentGivenName: "Mary",
-      parentFamilyName: "Lovelace",
-      parentRelationship: "mother",
-      referralSource: "gp",
-      // Past consult -> Encounter.
-      consultAt: new Date("2026-05-01T09:00:00.000Z"),
-      createdAt: new Date("2026-04-01T09:00:00.000Z"),
-      updatedAt: new Date("2026-06-01T09:00:00.000Z"),
-    },
-    intake: {
-      id: "33333333-3333-3333-3333-333333333333",
-      answers: { mainConcern: "Speech sounds", photoConsent: "yes", version: 1 },
-      consentVersion: "mvp-v1",
-      locked: true,
-      submittedAt: new Date("2026-04-05T09:00:00.000Z"),
-    },
-    triage: [
-      {
-        id: "44444444-4444-4444-4444-444444444444",
-        outcome: "strategy_only",
-        reason: "Mild; strategies sufficient.",
-        recordedAt: new Date("2026-04-10T09:00:00.000Z"),
-      },
-    ],
-    drafts: [
-      {
-        id: "55555555-5555-5555-5555-555555555555",
-        kind: "prep_brief",
-        content: { brief: "working notes" },
-        reviewedAt: new Date("2026-04-09T09:00:00.000Z"),
-        createdAt: new Date("2026-04-08T09:00:00.000Z"),
-      },
-      {
-        id: "66666666-6666-6666-6666-666666666666",
-        kind: "session_plan",
-        content: { plan: "x" },
-        reviewedAt: new Date("2026-04-11T09:00:00.000Z"),
-        createdAt: new Date("2026-04-10T09:00:00.000Z"),
-      },
-      {
-        id: "77777777-7777-7777-7777-777777777777",
-        kind: "parent_summary",
-        content: { html: "<p>summary</p>" },
-        reviewedAt: new Date("2026-04-12T09:00:00.000Z"),
-        createdAt: new Date("2026-04-11T09:00:00.000Z"),
-      },
-      {
-        id: "88888888-8888-8888-8888-888888888888",
-        kind: "clinical_report",
-        content: { sections: [] },
-        reviewedAt: new Date("2026-04-13T09:00:00.000Z"),
-        createdAt: new Date("2026-04-12T09:00:00.000Z"),
-      },
-      {
-        // Unreviewed -> MUST be excluded.
-        id: "99999999-9999-9999-9999-999999999999",
-        kind: "clinical_report",
-        content: {},
-        reviewedAt: null,
-        createdAt: new Date("2026-04-14T09:00:00.000Z"),
-      },
-    ],
-    carryover: [
-      {
-        id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-        title: "Daily sound practice",
-        description: "5 minutes a day",
-        url: "https://example.com/r",
-        category: "home_practice",
-        createdAt: new Date("2026-06-01T09:00:00.000Z"),
-      },
-    ],
-    progress: [
-      {
-        id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-        author: "parent",
-        note: "We tried it.",
-        rating: "going_well",
-        createdAt: new Date("2026-06-05T09:00:00.000Z"),
-      },
-    ],
-  };
-}
+const fullyPopulatedCase = (): CaseAggregate => goldenCase();
 
 describe("toBundle — fully populated case", () => {
   it("emits a valid UK Core collection Bundle (errors=0)", () => {
@@ -128,6 +37,22 @@ describe("toBundle — fully populated case", () => {
     expect(result.errors, JSON.stringify(result.errors, null, 2)).toEqual([]);
     // Tolerated warnings are documented; none are expected for the golden case.
     expect(result.warnings).toEqual([]);
+  });
+
+  it("committed golden Bundle is up to date with toBundle (no drift)", () => {
+    // The official HL7 validator (fhir-conformance CI job) validates the
+    // committed golden-bundle.json. It MUST equal the current mapper output,
+    // otherwise CI would validate a stale artifact. Regenerate with:
+    //   npx tsx scripts/gen-golden-bundle.mts
+    const goldenPath = fileURLToPath(
+      new URL("../fhir/__fixtures__/golden-bundle.json", import.meta.url),
+    );
+    const committed = JSON.parse(readFileSync(goldenPath, "utf8"));
+    const fresh = toBundle(goldenCase(), GOLDEN_NOW);
+    expect(
+      committed,
+      "golden-bundle.json is stale — run `npx tsx scripts/gen-golden-bundle.mts` and commit",
+    ).toEqual(fresh);
   });
 
   it("includes one resource of each mapped type", () => {

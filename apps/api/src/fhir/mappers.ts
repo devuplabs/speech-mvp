@@ -454,7 +454,20 @@ export function toDraftResources(agg: CaseAggregate): FhirResource[] {
         title: "Clinical report",
         author: [ref("Organization", agg.tenant.id)],
         attester: [{ mode: "professional", time: iso(d.reviewedAt) }],
-        section: [{ title: "Report", code: { text: "Clinical report" } }],
+        // R4 invariant cmp-1: a section must have at least one of text/entry/
+        // section. The rendered body lives in the linked DocumentReference; here
+        // we carry a minimal generated narrative so the Composition section is
+        // self-valid (the PDF is the authoritative artefact).
+        section: [
+          {
+            title: "Report",
+            code: { text: "Clinical report" },
+            text: {
+              status: "generated",
+              div: '<div xmlns="http://www.w3.org/1999/xhtml">Clinical report — see attached document.</div>',
+            },
+          },
+        ],
       };
       out.push(doc, comp);
       continue;

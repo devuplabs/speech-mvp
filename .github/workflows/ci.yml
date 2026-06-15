@@ -28,6 +28,129 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  fhir-conformance:
+    # ── Authoritative FHIR/UK Core conformance gate (DEV-27 / ADR-006) ─────────
+    # Runs the OFFICIAL HL7 FHIR validator (org.hl7.fhir.validator / validator_cli)
+    # against the committed golden Bundle, with the pinned UK Core R4 IG loaded.
+    # This is the real compliance claim: resources that declare a UKCore profile
+    # in `meta.profile` are validated against that profile; the base-R4 resources
+    # (Task, EpisodeOfCare, general Observation, Communication — see ADR-006 §4)
+    # are validated against base FHIR R4. The fast in-process validator in
+    # `apps/api/src/fhir/validate.ts` is only a quick unit-test pre-check; THIS
+    # job is the gate.
+    #
+    # Pinned for reproducibility:
+    #   - validator_cli.jar     : 6.6.5 (HL7 hapifhir/org.hl7.fhir.core release)
+    #   - FHIR core             : -version 4.0.1
+    #   - UK Core IG package id  : fhir.r4.ukcore.stu2#2.0.2  (STU2, per ADR-006;
+    #     this is the canonical FHIR package id that resolves the
+    #     https://fhir.hl7.org.uk/StructureDefinition/UKCore-* canonicals pinned
+    #     in apps/api/src/fhir/codes.ts).
+    #
+    # Gate: the build FAILS on any validator issue of severity `error` or `fatal`
+    # (errors must be 0). `warning`/`information` issues are allowed but surfaced
+    # in the step log and the uploaded OperationOutcome artifact.
+    name: FHIR UK Core conformance (official HL7 validator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VALIDATOR_VERSION: "6.6.5"
+      UKCORE_IG: "fhir.r4.ukcore.stu2#2.0.2"
+      FHIR_VERSION: "4.0.1"
+      GOLDEN_BUNDLE: apps/api/src/fhir/__fixtures__/golden-bundle.json
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Regenerate the golden Bundle from the deterministic golden case and fail
+      # if it drifts from what is committed — so the validated artifact is always
+      # exactly the mapper's current output (no stale fixture passing the gate).
+      - name: Install API deps
+        run: npm ci
+        working-directory: apps/api
+      - name: Verify golden Bundle is up to date
+        run: |
+          npx tsx scripts/gen-golden-bundle.mts
+          if ! git diff --quiet -- src/fhir/__fixtures__/golden-bundle.json; then
+            echo "::error::golden-bundle.json is stale. Run 'npx tsx scripts/gen-golden-bundle.mts' in apps/api and commit."
+            git --no-pager diff -- src/fhir/__fixtures__/golden-bundle.json
+            exit 1
+          fi
+        working-directory: apps/api
+
+      # Cache the validator jar and the resolved FHIR package cache (core + UK
+      # Core IG) so repeat runs don't re-download ~160MB jar + packages.
+      - name: Cache validator jar
+        id: cache-validator
+        uses: actions/cache@v4
+        with:
+          path: ~/validator_cli.jar
+          key: fhir-validator-${{ env.VALIDATOR_VERSION }}
+      - name: Download official HL7 validator
+        if: steps.cache-validator.outputs.cache-hit != 'true'
+        run: |
+          curl -fL -o ~/validator_cli.jar \
+            "https://github.com/hapifhir/org.hl7.fhir.core/releases/download/${VALIDATOR_VERSION}/validator_cli.jar"
+      - name: Cache FHIR package cache (core + UK Core IG)
+        uses: actions/cache@v4
+        with:
+          path: ~/.fhir/packages
+          key: fhir-pkgcache-${{ env.FHIR_VERSION }}-${{ env.UKCORE_IG }}-${{ env.VALIDATOR_VERSION }}
+
+      - name: Validate golden Bundle against UK Core R4
+        run: |
+          set -o pipefail
+          echo "Validating $GOLDEN_BUNDLE"
+          echo "  validator   = $VALIDATOR_VERSION"
+          echo "  FHIR core   = $FHIR_VERSION"
+          echo "  UK Core IG  = $UKCORE_IG"
+          # -ig loads the pinned UK Core package (pulls core 4.0.1 + the IG into
+          #    ~/.fhir/packages). Resources are validated against the profiles in
+          #    their meta.profile; base-R4 resources against base R4.
+          # -output writes a machine-readable OperationOutcome we gate on.
+          java -jar ~/validator_cli.jar "$GOLDEN_BUNDLE" \
+            -version "$FHIR_VERSION" \
+            -ig "$UKCORE_IG" \
+            -output /tmp/fhir-validation-outcome.json \
+            | tee /tmp/fhir-validation.log
+        # Note: do not rely on the CLI exit code alone — we gate explicitly on the
+        # OperationOutcome severities below so the rule (errors=0) is unambiguous.
+        continue-on-error: true
+
+      - name: Gate on zero errors (errors=0)
+        run: |
+          OUT=/tmp/fhir-validation-outcome.json
+          if [ ! -f "$OUT" ]; then
+            echo "::error::validator produced no OperationOutcome — see log above"
+            exit 1
+          fi
+          ERRORS=$(node -e "const o=require('$OUT');const i=(o.issue||[]).filter(x=>x.severity==='error'||x.severity==='fatal');console.log(i.length);for(const x of i)console.error('ERROR',(x.location||x.expression||['?']).join(','),x.diagnostics||(x.details&&x.details.text))")
+          WARN=$(node -e "const o=require('$OUT');console.log((o.issue||[]).filter(x=>x.severity==='warning').length)")
+          INFO=$(node -e "const o=require('$OUT');console.log((o.issue||[]).filter(x=>x.severity==='information').length)")
+          echo "Validator issues — errors=$ERRORS warnings=$WARN information=$INFO"
+          if [ "$ERRORS" != "0" ]; then
+            echo "::error::FHIR UK Core conformance failed: $ERRORS error(s). errors must be 0."
+            exit 1
+          fi
+          echo "FHIR UK Core conformance OK (errors=0; warnings/information are tolerated)."
+      - name: Upload validation OperationOutcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fhir-validation-outcome
+          path: |
+            /tmp/fhir-validation-outcome.json
+            /tmp/fhir-validation.log
+          if-no-files-found: ignore
+
   npm-audit:
     name: npm audit (high/critical)
     runs-on: ubuntu-latest
