@@ -1,4 +1,5 @@
 import {
+  date,
   jsonb,
   pgEnum,
   pgTable,
@@ -61,6 +62,21 @@ export const progressRatingEnum = pgEnum("progress_rating", [
 ]);
 
 /**
+ * Relationship of the parent/carer contact to the child (DEV-27, ADR-006 §5 P0).
+ * Maps to `RelatedPerson.relationship` (UK Core PersonRelationshipType /
+ * HL7 RoleCode value set). Captured so the FHIR export can state *who* the
+ * contact is to the child rather than fabricating it.
+ */
+export const parentRelationshipEnum = pgEnum("parent_relationship", [
+  "parent",
+  "mother",
+  "father",
+  "guardian",
+  "carer",
+  "other",
+]);
+
+/**
  * A tenant is a **practice** (Feature 1). `displayName` is the practice name.
  * Multiple clinicians (see `users`) belong to one tenant and share patient
  * access (cases are tenant-scoped, never siloed per clinician).
@@ -116,6 +132,21 @@ export const cases = pgTable("cases", {
   parentEmail: varchar("parent_email", { length: 320 }),
   parentPhone: varchar("parent_phone", { length: 64 }),
   childDisplayName: varchar("child_display_name", { length: 128 }),
+  /**
+   * Structured child name (DEV-27, ADR-006 §5 P0). `childDisplayName` is kept as
+   * a derived/legacy convenience string, but a single display string cannot be
+   * safely split into a FHIR `HumanName`; the export reads given/family from
+   * these columns and only falls back to display when they are absent.
+   */
+  childGivenName: varchar("child_given_name", { length: 128 }),
+  childFamilyName: varchar("child_family_name", { length: 128 }),
+  /** Child date of birth (DEV-27, ADR-006 §5 P0) → `Patient.birthDate`. */
+  childDob: date("child_dob"),
+  /** Structured parent/carer name (DEV-27, ADR-006 §5 P0) → `RelatedPerson.name`. */
+  parentGivenName: varchar("parent_given_name", { length: 128 }),
+  parentFamilyName: varchar("parent_family_name", { length: 128 }),
+  /** Parent/carer relationship to the child (DEV-27, ADR-006 §5 P0). */
+  parentRelationship: parentRelationshipEnum("parent_relationship"),
   referralSource: varchar("referral_source", { length: 32 }),
   consultAt: timestamp("consult_at", { withTimezone: true }),
   /**

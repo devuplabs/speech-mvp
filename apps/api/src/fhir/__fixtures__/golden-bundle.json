@@ -1,0 +1,538 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "timestamp": "2026-06-15T10:00:00.000Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:11111111-1111-1111-1111-111111111111",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "11111111-1111-1111-1111-111111111111",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Organization"
+          ]
+        },
+        "name": "Bright Voices SLT",
+        "address": [
+          {
+            "text": "Manchester, UK"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:22222222-2222-2222-2222-222222222222",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "22222222-2222-2222-2222-222222222222",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Patient"
+          ],
+          "lastUpdated": "2026-06-01T09:00:00.000Z"
+        },
+        "managingOrganization": {
+          "reference": "urn:uuid:11111111-1111-1111-1111-111111111111",
+          "type": "Organization"
+        },
+        "name": [
+          {
+            "use": "official",
+            "given": [
+              "Ada"
+            ],
+            "family": "Lovelace"
+          }
+        ],
+        "birthDate": "2019-12-10"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a8f90d28-a00a-5f7d-9e47-6dbbaf823237",
+      "resource": {
+        "resourceType": "RelatedPerson",
+        "id": "a8f90d28-a00a-5f7d-9e47-6dbbaf823237",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-RelatedPerson"
+          ]
+        },
+        "patient": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "relationship": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "MTH",
+                "display": "mother"
+              }
+            ]
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "given": [
+              "Mary"
+            ],
+            "family": "Lovelace"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "email",
+            "value": "parent@example.com"
+          },
+          {
+            "system": "phone",
+            "value": "+447700900000"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2fdbf697-c0cd-5c75-901e-7e636b661969",
+      "resource": {
+        "resourceType": "EpisodeOfCare",
+        "id": "2fdbf697-c0cd-5c75-901e-7e636b661969",
+        "status": "active",
+        "patient": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "managingOrganization": {
+          "reference": "urn:uuid:11111111-1111-1111-1111-111111111111",
+          "type": "Organization"
+        },
+        "period": {
+          "start": "2026-04-01T09:00:00.000Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d01107c9-42aa-52cb-9647-6c0dce6b3508",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "d01107c9-42aa-52cb-9647-6c0dce6b3508",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-ServiceRequest"
+          ]
+        },
+        "status": "active",
+        "intent": "order",
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "authoredOn": "2026-04-01T09:00:00.000Z",
+        "reasonCode": [
+          {
+            "text": "Referral source: gp"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:74d9b821-4fed-5e47-aeb9-d75edc331667",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "74d9b821-4fed-5e47-aeb9-d75edc331667",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Encounter"
+          ]
+        },
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "period": {
+          "start": "2026-05-01T09:00:00.000Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e6794f4c-0318-55fc-af1e-147485d42e4f",
+      "resource": {
+        "resourceType": "QuestionnaireResponse",
+        "id": "e6794f4c-0318-55fc-af1e-147485d42e4f",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-QuestionnaireResponse"
+          ]
+        },
+        "status": "completed",
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "source": {
+          "reference": "urn:uuid:a8f90d28-a00a-5f7d-9e47-6dbbaf823237",
+          "type": "RelatedPerson"
+        },
+        "authored": "2026-04-05T09:00:00.000Z",
+        "item": [
+          {
+            "linkId": "mainConcern",
+            "answer": [
+              {
+                "valueString": "Speech sounds"
+              }
+            ]
+          },
+          {
+            "linkId": "photoConsent",
+            "answer": [
+              {
+                "valueString": "yes"
+              }
+            ]
+          },
+          {
+            "linkId": "version",
+            "answer": [
+              {
+                "valueString": "1"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6626b53d-96f5-53b5-9b7b-9dc79f4afb19",
+      "resource": {
+        "resourceType": "Consent",
+        "id": "6626b53d-96f5-53b5-9b7b-9dc79f4afb19",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Consent"
+          ]
+        },
+        "status": "active",
+        "scope": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/consentscope",
+              "code": "patient-privacy",
+              "display": "Privacy Consent"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                "code": "IDSCL",
+                "display": "information disclosure"
+              }
+            ]
+          }
+        ],
+        "patient": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "dateTime": "2026-04-05T09:00:00.000Z",
+        "policy": [
+          {
+            "uri": "urn:sona:consent:mvp-v1"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e46d1994-4b16-59d5-a38b-addd31a16a36",
+      "resource": {
+        "resourceType": "Task",
+        "id": "e46d1994-4b16-59d5-a38b-addd31a16a36",
+        "status": "completed",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "https://sona.health/fhir/CodeSystem/triage-outcome",
+              "code": "strategy_only"
+            }
+          ],
+          "text": "strategy_only"
+        },
+        "businessStatus": {
+          "coding": [
+            {
+              "system": "https://sona.health/fhir/CodeSystem/triage-outcome",
+              "code": "strategy_only"
+            }
+          ]
+        },
+        "for": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "focus": {
+          "reference": "urn:uuid:d01107c9-42aa-52cb-9647-6c0dce6b3508",
+          "type": "ServiceRequest"
+        },
+        "authoredOn": "2026-04-10T09:00:00.000Z",
+        "note": [
+          {
+            "text": "Mild; strategies sufficient."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2f36a9ab-2806-582d-aac5-28287110748f",
+      "resource": {
+        "resourceType": "CarePlan",
+        "id": "2f36a9ab-2806-582d-aac5-28287110748f",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-CarePlan"
+          ]
+        },
+        "status": "active",
+        "intent": "plan",
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "created": "2026-04-10T09:00:00.000Z"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:bbf67fb1-8c4b-5733-875a-de32f2acf2d8",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "bbf67fb1-8c4b-5733-875a-de32f2acf2d8",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-DocumentReference"
+          ]
+        },
+        "status": "current",
+        "type": {
+          "text": "Parent summary"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "date": "2026-04-12T09:00:00.000Z",
+        "description": "Parent summary (portal artefact)",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/html",
+              "title": "Parent summary",
+              "creation": "2026-04-11T09:00:00.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:587017b2-2e05-5b03-97d8-51f1ea009030",
+      "resource": {
+        "resourceType": "Communication",
+        "id": "587017b2-2e05-5b03-97d8-51f1ea009030",
+        "status": "completed",
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "recipient": [
+          {
+            "reference": "urn:uuid:a8f90d28-a00a-5f7d-9e47-6dbbaf823237",
+            "type": "RelatedPerson"
+          }
+        ],
+        "sent": "2026-04-12T09:00:00.000Z",
+        "payload": [
+          {
+            "contentReference": {
+              "reference": "urn:uuid:bbf67fb1-8c4b-5733-875a-de32f2acf2d8",
+              "type": "DocumentReference"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e891799d-0fb6-5399-85bd-0a1216d7861d",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "e891799d-0fb6-5399-85bd-0a1216d7861d",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-DocumentReference"
+          ]
+        },
+        "status": "current",
+        "type": {
+          "text": "Clinical report"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "date": "2026-04-13T09:00:00.000Z",
+        "description": "Clinical report (PDF)",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "application/pdf",
+              "title": "Clinical report",
+              "url": "Binary/clinical-report-22222222-2222-2222-2222-222222222222",
+              "creation": "2026-04-12T09:00:00.000Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4099a0b1-e67b-5a1c-948e-e8e972da9e19",
+      "resource": {
+        "resourceType": "Composition",
+        "id": "4099a0b1-e67b-5a1c-948e-e8e972da9e19",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-Composition"
+          ]
+        },
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11488-4",
+              "display": "Consult note"
+            }
+          ],
+          "text": "Clinical report"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "date": "2026-04-13T09:00:00.000Z",
+        "title": "Clinical report",
+        "author": [
+          {
+            "reference": "urn:uuid:11111111-1111-1111-1111-111111111111",
+            "type": "Organization"
+          }
+        ],
+        "attester": [
+          {
+            "mode": "professional",
+            "time": "2026-04-13T09:00:00.000Z"
+          }
+        ],
+        "section": [
+          {
+            "title": "Report",
+            "code": {
+              "text": "Clinical report"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Clinical report — see attached document.</div>"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4a94141a-4fca-5acd-b940-a2771864d8e2",
+      "resource": {
+        "resourceType": "CarePlan",
+        "id": "4a94141a-4fca-5acd-b940-a2771864d8e2",
+        "meta": {
+          "profile": [
+            "https://fhir.hl7.org.uk/StructureDefinition/UKCore-CarePlan"
+          ]
+        },
+        "status": "active",
+        "intent": "plan",
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "created": "2026-06-01T09:00:00.000Z",
+        "activity": [
+          {
+            "detail": {
+              "status": "scheduled",
+              "code": {
+                "coding": [
+                  {
+                    "system": "https://sona.health/fhir/CodeSystem/carryover-category",
+                    "code": "home_practice",
+                    "display": "Home practice"
+                  }
+                ],
+                "text": "Daily sound practice"
+              },
+              "description": "5 minutes a day — https://example.com/r"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5d8c9f78-a72e-560e-aa59-bc1fc6d30fbe",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "5d8c9f78-a72e-560e-aa59-bc1fc6d30fbe",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "https://sona.health/fhir/CodeSystem/progress-rating",
+              "code": "home-practice-progress"
+            }
+          ],
+          "text": "Home-practice progress"
+        },
+        "subject": {
+          "reference": "urn:uuid:22222222-2222-2222-2222-222222222222",
+          "type": "Patient"
+        },
+        "effectiveDateTime": "2026-06-05T09:00:00.000Z",
+        "performer": [
+          {
+            "reference": "urn:uuid:a8f90d28-a00a-5f7d-9e47-6dbbaf823237",
+            "type": "RelatedPerson"
+          }
+        ],
+        "note": [
+          {
+            "text": "We tried it."
+          }
+        ],
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "https://sona.health/fhir/CodeSystem/progress-rating",
+              "code": "going_well",
+              "display": "Going well"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

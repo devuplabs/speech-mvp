@@ -37,8 +37,11 @@ string with no DOB, the Year-2 export *invents* clinical data — unacceptable.
 
 - **Base spec:** HL7 FHIR **R4 (4.0.1)** — UK Core is built on R4. ([HL7 FHIR R4 4.0.1](https://hl7.org/fhir/R4/))
 - **National profiles:** **NHS England FHIR UK Core**. The latest *published / balloted*
-  release at time of writing is the **STU2 sequence, package `UK.Core.r4.v2` version
-  `2.0.2`** (released 2025-02-24 per the NHS Digital staging repo). The **STU3 sequence**
+  release at time of writing is the **STU2 sequence, version `2.0.2`** (released
+  2025-02-24 per the NHS Digital staging repo). The canonical, resolvable FHIR
+  package id is **`fhir.r4.ukcore.stu2#2.0.2`** (Simplifier / packages.fhir.org);
+  this is the id the official HL7 validator loads in CI (DEV-27) and that
+  resolves the `UKCore-*` profile canonicals. The **STU3 sequence**
   is in active development (pre-release builds only) and is **not** yet a stable
   publication. ([FHIR UK Core — NHS England](https://digital.nhs.uk/services/fhir-uk-core),
   [NHS Digital UK Core releases (GitHub)](https://github.com/NHSDigital/FHIR-R4-UKCORE-STAGING-MAIN/releases),

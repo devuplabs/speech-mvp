@@ -12,7 +12,11 @@ import {
   triageRecords,
 } from "../db/schema.js";
 import { saveIntakeDraftBody, submitIntakeBody } from "../schemas/intake.js";
-import { submitIntake as submitIntakeRecord, upsertIntakeDraft } from "../services/intake.js";
+import {
+  deriveDemographicsFromAnswers,
+  submitIntake as submitIntakeRecord,
+  upsertIntakeDraft,
+} from "../services/intake.js";
 import {
   getPublishedParentSummary,
   publishParentSummary,
@@ -31,6 +35,7 @@ import {
 } from "../services/clinical-report.js";
 
 import { writeAudit, writeViewAudit } from "../services/audit.js";
+import { buildFhirExport } from "../services/fhir-export.js";
 import { purgeExpiredAuditRows } from "../services/audit-retention.js";
 import {
   buildCaseAuditExport,
@@ -341,12 +346,21 @@ export function createV1Routes(db: Db, env: Env) {
       },
     );
 
+    // Populate structured FHIR demographics (DEV-27, ADR-006 §5 P0) from the
+    // submitted answers without overwriting any already-set values (e.g. from
+    // clinician registration) with absent fields.
+    const demographics = deriveDemographicsFromAnswers(body.answers);
     const [updated] = await db
       .update(cases)
       .set({
         status: "intake_submitted",
         parentEmail: body.parentEmail ?? existing.parentEmail,
         childDisplayName: body.childDisplayName ?? existing.childDisplayName,
+        childGivenName: demographics.childGivenName ?? existing.childGivenName,
+        childFamilyName: demographics.childFamilyName ?? existing.childFamilyName,
+        childDob: demographics.childDob ?? existing.childDob,
+        parentGivenName: demographics.parentGivenName ?? existing.parentGivenName,
+        parentFamilyName: demographics.parentFamilyName ?? existing.parentFamilyName,
         updatedAt: new Date(),
       })
       .where(eq(cases.id, caseId))
@@ -599,6 +613,43 @@ export function createV1Routes(db: Db, env: Env) {
     });
   });
 
+
+  // ── FHIR R4 / UK Core export (DEV-27, ADR-006) ──────────────────────────
+  //
+  // Emit-only UK Core `collection` Bundle for one case (clinician/parent data
+  // portability — UK GDPR Art. 20; Year-2 integration seed). The mapping is
+  // pure (services/fhir-export → fhir/); tokens/internal-only fields are
+  // excluded per ADR-006 §3. The export is PHI disclosure, so it is audited
+  // (IDs/counts only — never Bundle content).
+  //
+  // Auth posture: same as the other case routes — unauthenticated-by-design in
+  // the MVP demo. TODO(DEV-31/auth): require an authenticated clinician/admin
+  // once the case API moves behind the token verifier.
+  app.get("/cases/:caseId/fhir", async (c) => {
+    const caseId = c.req.param("caseId");
+    const result = await buildFhirExport(db, caseId);
+    if (!result.ok) {
+      if (result.error === "not_found") return c.json({ error: "not_found" }, 404);
+      // Cross-jurisdiction export is refused (ADR-006 §4 — UK Core is UK-only).
+      return c.json(
+        { error: result.error, jurisdiction: result.jurisdiction },
+        422,
+      );
+    }
+
+    await writeAudit(db, {
+      tenantId: result.tenantId,
+      caseId,
+      actor: "clinician",
+      action: "fhir.exported",
+      metadata: { resourceCount: result.resourceCount },
+    });
+
+    return c.json(result.bundle, 200, {
+      "Content-Type": "application/fhir+json",
+      "Content-Disposition": `attachment; filename="fhir-bundle-${caseId}.json"`,
+    });
+  });
 
   // ── DSAR (UK GDPR Art. 15) + right-to-erasure (Art. 17) — DEV-24 ─────────
   //
