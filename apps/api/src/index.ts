@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ZodError } from "zod";
 import { AuthError, type AuthErrorCode } from "./auth/verifier.js";
-import { buildDatabaseUrl, loadEnv } from "./config.js";
+import { buildDatabaseUrl, isProdEnv, loadEnv } from "./config.js";
 import { resolveCorsOrigin } from "./cors.js";
 import { closeDb, getDb } from "./db/client.js";
 import { runMigrations } from "./db/migrate.js";
@@ -103,6 +103,17 @@ app.get("/ready", async (c) => {
 
 if (databaseUrl) {
   const db = getDb(databaseUrl);
+
+  // RUN_MIGRATIONS_ON_START policy (DEV-45): dev/CI rely on boot-time
+  // migrations, so the flag stays. In production migrations SHOULD run as an
+  // explicit, gated deploy step (so a rolling/parallel boot can't race schema
+  // changes) — see infra/docs/prod-env-matrix.md. Prod + flag set is allowed
+  // but flagged loudly so it is a conscious choice, not an accident.
+  if (isProdEnv(env) && env.RUN_MIGRATIONS_ON_START) {
+    logger.warn("run_migrations_on_start_enabled_in_prod", {
+      reason: "prefer_explicit_deploy_step",
+    });
+  }
 
   if (env.RUN_MIGRATIONS_ON_START) {
     await runMigrations(databaseUrl);
