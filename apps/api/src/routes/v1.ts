@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { Env } from "../config.js";
+import { demoRoutesEnabled, type Env } from "../config.js";
 import type { Db } from "../db/client.js";
 import { logger } from "../logger.js";
 import {
@@ -834,60 +834,71 @@ export function createV1Routes(db: Db, env: Env) {
     return c.body(ics, 200, { "Content-Type": "text/calendar; charset=utf-8" });
   });
 
-  const demoBootstrapBody = z
-    .object({
-      practice: z.enum(["demo", "e2e"]).default("demo"),
-    })
-    .optional();
+  // ── Demo / dev-maintenance endpoints (DEV-45) ───────────────────────────
+  //
+  // Prod safety: these are dev/test conveniences (stable demo tenant, canonical
+  // seed, E2E cleanup) and are NOT registered at all in production — in prod
+  // they are absent (404), never merely guarded (403), so there is provably no
+  // shortcut path for real use (Go-Live Compliance Gate). `demoRoutesEnabled`
+  // is the single pure gate (NODE_ENV dev/test and not a prod SONA_ENV). The
+  // older `isDevMaintenanceAllowed` per-handler guard is kept as defence in
+  // depth for the hosted-dev (-dev Cloud Run) case the route-level gate already
+  // covers.
+  if (demoRoutesEnabled(env)) {
+    const demoBootstrapBody = z
+      .object({
+        practice: z.enum(["demo", "e2e"]).default("demo"),
+      })
+      .optional();
 
-  /** Demo bootstrap: stable tenant per practice variant (demo vs automated E2E). */
-  app.post("/demo/bootstrap", async (c) => {
-    const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
-    const variant = (body?.practice ?? "demo") as PracticeVariant;
-    const displayName = practiceDisplayName(variant);
-    const [existing] = await db
-      .select()
-      .from(tenants)
-      .where(
-        and(eq(tenants.displayName, displayName), eq(tenants.jurisdiction, env.JURISDICTION)),
-      )
-      .limit(1);
-    if (existing) {
-      await ensureDefaultAvailability(db, existing.id);
-      return c.json(
-        { tenantId: existing.id, jurisdiction: existing.jurisdiction, practice: variant },
-        200,
-      );
-    }
-    const [row] = await db
-      .insert(tenants)
-      .values({ displayName, jurisdiction: env.JURISDICTION })
-      .returning();
-    return c.json({ tenantId: row.id, jurisdiction: row.jurisdiction, practice: variant }, 201);
-  });
+    /** Demo bootstrap: stable tenant per practice variant (demo vs automated E2E). */
+    app.post("/demo/bootstrap", async (c) => {
+      const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
+      const variant = (body?.practice ?? "demo") as PracticeVariant;
+      const displayName = practiceDisplayName(variant);
+      const [existing] = await db
+        .select()
+        .from(tenants)
+        .where(
+          and(eq(tenants.displayName, displayName), eq(tenants.jurisdiction, env.JURISDICTION)),
+        )
+        .limit(1);
+      if (existing) {
+        await ensureDefaultAvailability(db, existing.id);
+        return c.json(
+          { tenantId: existing.id, jurisdiction: existing.jurisdiction, practice: variant },
+          200,
+        );
+      }
+      const [row] = await db
+        .insert(tenants)
+        .values({ displayName, jurisdiction: env.JURISDICTION })
+        .returning();
+      return c.json({ tenantId: row.id, jurisdiction: row.jurisdiction, practice: variant }, 201);
+    });
 
-  /** Seed realistic canonical demo caseload (dev/stage only). */
-  app.post("/demo/seed-canonical", async (c) => {
-    if (!isDevMaintenanceAllowed(env)) {
-      return c.json({ error: "forbidden" }, 403);
-    }
-    const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
-    const variant = (body?.practice ?? "demo") as PracticeVariant;
-    const result = await seedCanonicalDemoPractice(db, env, variant);
-    await ensureDefaultAvailability(db, result.tenantId);
-    return c.json(result);
-  });
+    /** Seed realistic canonical demo caseload (dev/stage only). */
+    app.post("/demo/seed-canonical", async (c) => {
+      if (!isDevMaintenanceAllowed(env)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+      const body = demoBootstrapBody.parse((await c.req.json().catch(() => ({}))) as unknown);
+      const variant = (body?.practice ?? "demo") as PracticeVariant;
+      const result = await seedCanonicalDemoPractice(db, env, variant);
+      await ensureDefaultAvailability(db, result.tenantId);
+      return c.json(result);
+    });
 
-
-  /** Remove legacy E2E / ephemeral test cases (hosted dev only). */
-  app.post("/demo/cleanup-e2e-test-cases", async (c) => {
-    if (!isDevMaintenanceAllowed(env)) {
-      return c.json({ error: "forbidden" }, 403);
-    }
-    const dryRun = c.req.query("dryRun") === "true";
-    const result = await cleanupE2eTestCases(db, { dryRun });
-    return c.json(result);
-  });
+    /** Remove legacy E2E / ephemeral test cases (hosted dev only). */
+    app.post("/demo/cleanup-e2e-test-cases", async (c) => {
+      if (!isDevMaintenanceAllowed(env)) {
+        return c.json({ error: "forbidden" }, 403);
+      }
+      const dryRun = c.req.query("dryRun") === "true";
+      const result = await cleanupE2eTestCases(db, { dryRun });
+      return c.json(result);
+    });
+  }
 
   return app;
 }
