@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { demoRoutesEnabled, type Env } from "../config.js";
+import { demoRoutesEnabled, feedbackEnabled, type Env } from "../config.js";
 import type { Db } from "../db/client.js";
 import { logger } from "../logger.js";
 import {
@@ -45,6 +45,8 @@ import {
 } from "../services/dsar.js";
 import { enqueueLlmPrep } from "../services/tasks.js";
 import { registerPatientBody } from "../schemas/register-patient.js";
+import { submitFeedbackBody } from "../schemas/feedback.js";
+import { recordFeedback } from "../services/feedback.js";
 import {
   registerPatient,
   resolveIntakeLinkToken,
@@ -897,6 +899,26 @@ export function createV1Routes(db: Db, env: Env) {
       const dryRun = c.req.query("dryRun") === "true";
       const result = await cleanupE2eTestCases(db, { dryRun });
       return c.json(result);
+    });
+  }
+
+  // ── In-app tester feedback (DEV-55) ─────────────────────────────────────
+  //
+  // UAT "comment from this page". TEXT-ONLY (no screenshots/other capture) and
+  // PHI-safe by construction: route pattern + role + journey stage + build/env
+  // metadata + the tester's free-text comment — no names/DOB/answers/tokens.
+  // Available in every non-prod environment and ABSENT (404) in production,
+  // like the demo routes (DEV-45). `feedbackEnabled` is the single pure gate.
+  if (feedbackEnabled(env)) {
+    app.post("/feedback", async (c) => {
+      const body = submitFeedbackBody.parse(
+        (await c.req.json().catch(() => ({}))) as unknown,
+      );
+      // request id + user-agent come from headers, never the client body.
+      const requestId = c.req.header("x-request-id") ?? undefined;
+      const userAgent = c.req.header("user-agent")?.slice(0, 512) ?? undefined;
+      const result = await recordFeedback(db, { ...body, requestId, userAgent });
+      return c.json({ id: result.id }, 201);
     });
   }
 

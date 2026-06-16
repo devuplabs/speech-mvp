@@ -607,6 +607,43 @@ class SonaApiClient {
     _ensureOk(res, allowedStatuses: {204});
   }
 
+  /// In-app tester feedback (DEV-55). TEXT-ONLY — no screenshots. The server
+  /// adds request id + user-agent from headers; the body is PHI-safe by
+  /// construction (route name, role, journey stage, build/env metadata, comment).
+  /// Best-effort: the caller treats any failure as "try again" and never blocks.
+  Future<void> submitFeedback({
+    required String type,
+    required String comment,
+    String? severity,
+    String? route,
+    String? role,
+    String? journeyStage,
+    String? tenantId,
+    String? buildSha,
+    String? appEnv,
+    String? viewport,
+    String? locale,
+  }) async {
+    final res = await _client.post(
+      _base.replace(path: '/v1/feedback'),
+      headers: {'Content-Type': 'application/json'},
+      body: _encodeJson({
+        'type': type,
+        'comment': comment,
+        'severity': severity,
+        'route': route,
+        'role': role,
+        'journeyStage': journeyStage,
+        'tenantId': tenantId,
+        'buildSha': buildSha,
+        'appEnv': appEnv,
+        'viewport': viewport,
+        'locale': locale,
+      }),
+    );
+    _ensureOk(res, allowedStatuses: {200, 201});
+  }
+
   void _ensureOk(
     http.Response res, {
     int? expected,

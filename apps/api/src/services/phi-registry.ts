@@ -9,6 +9,7 @@ import {
   casePortalLinks,
   cases,
   clinicianAvailability,
+  feedback,
   intakeSubmissions,
   progressEntries,
   tenants,
@@ -108,6 +109,15 @@ export const PHI_REGISTRY: readonly PhiRegistryEntry[] = [
     tableName: "clinician_availability",
     classification: "practice_excluded",
     table: clinicianAvailability,
+  },
+  {
+    // Tester feedback (DEV-55) — operational data, not a family's case data, and
+    // PHI-free by design (no caseId; route/role/stage + free-text comment only).
+    // Excluded from a per-case DSAR and untouched by case erasure.
+    key: "feedback",
+    tableName: "feedback",
+    classification: "practice_excluded",
+    table: feedback,
   },
 
   // ── Case-scoped subject data (exported in full; erased) ─────────────────

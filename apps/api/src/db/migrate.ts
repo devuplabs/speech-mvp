@@ -14,6 +14,7 @@ const MIGRATION_IDS = ["0000_init", "0001_register_patient", "0002_booking", "00
   "0007_journey_statuses", "0008_legal_hold",
   "0009_audit_append_only",
   "0010_fhir_demographics",
+  "0011_feedback",
 ] as const;
 
 export async function runMigrations(connectionString: string): Promise<void> {
