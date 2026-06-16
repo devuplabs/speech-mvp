@@ -24,6 +24,8 @@ import 'package:sona/features/clinician/clinician_prep_screen.dart';
 import 'package:sona/features/clinician/clinician_shell.dart';
 import 'package:sona/features/clinician/clinician_today_screen.dart';
 import 'package:sona/features/clinician/clinician_triage_screen.dart';
+import 'package:sona/features/feedback/feedback_overlay.dart';
+import 'package:sona/features/feedback/feedback_page_context.dart';
 import 'package:sona/features/parent/intake/parent_intake_step_screen.dart';
 import 'package:sona/features/parent/parent_portal_screen.dart';
 import 'package:sona/features/parent/parent_review_screen.dart';
@@ -1234,9 +1236,65 @@ class _SonaAppShellState extends State<SonaAppShell> {
     }, label: 'Load dashboard');
   }
 
+  /// PHI-safe page context for the in-app tester feedback widget (DEV-55):
+  /// a route *name*, a role and a journey stage — never names, answers, or
+  /// tokens. Recomputed on every build so it always reflects the visible page.
+  FeedbackPageContext _feedbackContext() {
+    final String role;
+    switch (_route) {
+      case SonaRoute.adminHome:
+        role = 'admin';
+      case SonaRoute.parentWelcome:
+      case SonaRoute.parentIntake:
+      case SonaRoute.parentReview:
+      case SonaRoute.parentSummary:
+      case SonaRoute.parentPortal:
+        role = 'family';
+      case SonaRoute.launcher:
+      case SonaRoute.signIn:
+      case SonaRoute.setPassword:
+      case SonaRoute.onboarding:
+        role = 'anonymous';
+      default:
+        role = 'clinician';
+    }
+    final String stage;
+    switch (_route) {
+      case SonaRoute.parentWelcome:
+      case SonaRoute.parentIntake:
+      case SonaRoute.parentReview:
+        stage = 'intake';
+      case SonaRoute.clinicianIntakeForms:
+      case SonaRoute.clinicianIntakeReview:
+        stage = 'intake_review';
+      case SonaRoute.clinicianPrep:
+        stage = 'consult_prep';
+      case SonaRoute.clinicianTriage:
+        stage = 'triage';
+      case SonaRoute.clinicianSummaryPreview:
+      case SonaRoute.parentSummary:
+        stage = 'family_summary';
+      case SonaRoute.clinicianCarryover:
+      case SonaRoute.parentPortal:
+        stage = 'carryover';
+      default:
+        stage = 'general';
+    }
+    return FeedbackPageContext(
+      routeName: _route.name,
+      role: role,
+      journeyStage: stage,
+      tenantId: _state.tenantId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // Keep the PHI-safe feedback context current (DEV-55). No-op overhead when
+    // the feedback widget is disabled (the default in non-UAT builds).
+    feedbackPageContext.set(_feedbackContext());
+    return FeedbackOverlay(
+      child: Scaffold(
       backgroundColor: SonaColors.background,
       body: switch (_route) {
         SonaRoute.launcher => _launcher(),
@@ -1378,6 +1436,7 @@ class _SonaAppShellState extends State<SonaAppShell> {
                 ),
               ),
             ),
+      ),
     );
   }
 

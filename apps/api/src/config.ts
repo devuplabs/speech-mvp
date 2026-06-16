@@ -113,6 +113,20 @@ export function demoRoutesEnabled(env: Pick<Env, "NODE_ENV" | "SONA_ENV">): bool
   return env.NODE_ENV === "development" || env.NODE_ENV === "test";
 }
 
+/**
+ * Whether the in-app tester feedback endpoint (POST /v1/feedback, DEV-55) may
+ * be registered. Available in every NON-production environment — local, CI/test
+ * and hosted dev/staging (where SONA_ENV marks the stack non-prod) — so testers
+ * can submit feedback during UAT, and ABSENT (404) in production. Testers do not
+ * exist in prod, and the surface must follow the same "absent in prod" guarantee
+ * as the demo routes (DEV-45). Broader than demoRoutesEnabled on purpose: that
+ * gate is local/CI only, this one also covers a hosted dev/staging UAT stack.
+ * Pure function.
+ */
+export function feedbackEnabled(env: Pick<Env, "NODE_ENV" | "SONA_ENV">): boolean {
+  return !isProdEnv(env);
+}
+
 /** Thrown by validateConfig when prod config is missing/contradictory. */
 export class ConfigValidationError extends Error {
   readonly issues: string[];

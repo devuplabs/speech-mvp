@@ -277,3 +277,30 @@ export const auditLog = pgTable("audit_log", {
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * In-app tester feedback (DEV-55) — "comment from this page" during UAT.
+ *
+ * TEXT-ONLY and PHI-safe by construction: only the route *pattern* (never a
+ * concrete URL/token), role, journey stage, build/env metadata, and the
+ * tester's free-text comment. `tenantId` is intentionally NOT a foreign key —
+ * a stale/unknown tenant id must never fail a submission, and feedback is not
+ * tenant-owned data. There is deliberately no PHI column here.
+ */
+export const feedback = pgTable("feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id"),
+  role: varchar("role", { length: 32 }),
+  route: varchar("route", { length: 128 }),
+  journeyStage: varchar("journey_stage", { length: 64 }),
+  feedbackType: varchar("feedback_type", { length: 32 }).notNull(),
+  severity: varchar("severity", { length: 32 }),
+  comment: text("comment").notNull(),
+  buildSha: varchar("build_sha", { length: 64 }),
+  appEnv: varchar("app_env", { length: 32 }),
+  viewport: varchar("viewport", { length: 32 }),
+  locale: varchar("locale", { length: 35 }),
+  userAgent: varchar("user_agent", { length: 512 }),
+  requestId: varchar("request_id", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
