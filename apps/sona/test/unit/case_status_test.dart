@@ -2,6 +2,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sona/utils/case_status.dart';
 
 void main() {
+  group('clinicianCaseLoadSummary (DEV-76)', () {
+    test('footer reconciles active vs awaiting-intake cases', () {
+      final statuses = <String?>[
+        'intake_pending', 'intake_pending', // awaiting (hidden)
+        'prep_ready', 'triaged', 'triaged', // active
+        'summary_sent', 'carryover', // active
+      ];
+      // 5 active shown on the dashboard, 2 awaiting parent intake.
+      expect(clinicianCaseLoadSummary(statuses), '5 active · 2 awaiting intake');
+    });
+
+    test('drops the breakdown when nothing is awaiting intake', () {
+      expect(clinicianCaseLoadSummary(['prep_ready', 'triaged']), '2 case(s) loaded');
+    });
+
+    test('active count matches showCaseOnTodayDashboard', () {
+      final statuses = <String?>['intake_pending', 'prep_ready', null];
+      final active = statuses.where(showCaseOnTodayDashboard).length;
+      expect(clinicianCaseLoadSummary(statuses), '$active active · 2 awaiting intake');
+    });
+  });
+
   group('prepLabelFromCaseStatus', () {
     test('labels the consult-booked stage (DEV-10)', () {
       expect(prepLabelFromCaseStatus('consult_booked'), 'Consult booked');

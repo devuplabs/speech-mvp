@@ -18,11 +18,12 @@ class ClinicianTodayScreen extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final bool showAvailabilityBanner;
 
-  List<Map<String, dynamic>> get _allCases => state.clinicianCases;
-
   List<Map<String, dynamic>> get _upNextCases {
     final now = DateTime.now();
-    final withConsult = _allCases
+    // Derive from the same dashboard set the tiles/list use so "Up next" can't
+    // disagree with the visible counts (DEV-76). Cases awaiting intake have no
+    // consultAt and were excluded anyway; this keeps the source explicit.
+    final withConsult = _dashboardCases
         .where((c) {
           final at = c['consultAt'] as String?;
           if (at == null) return false;

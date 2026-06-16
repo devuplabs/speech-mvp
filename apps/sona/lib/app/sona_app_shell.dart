@@ -797,7 +797,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
           }
         }
       }
-      _status = '${rows.length} case(s) loaded';
+      // Reconcile the footer with what the dashboard actually shows: active
+      // cases vs those still awaiting parent intake (DEV-76).
+      _status = clinicianCaseLoadSummary(
+        rows.map((r) => r['status'] as String?),
+      );
     });
   }
 
