@@ -19,6 +19,16 @@ describe("parseIntakeDateToIso (DEV-27 FHIR demographics)", () => {
     expect(parseIntakeDateToIso("2019-03-15")).toBeUndefined();
     expect(parseIntakeDateToIso("32 / 01 / 2019")).toBeUndefined();
   });
+  it("rejects calendar-impossible dates the format regex would otherwise pass (DEV-72)", () => {
+    expect(parseIntakeDateToIso("31/02/2025")).toBeUndefined();
+    expect(parseIntakeDateToIso("30/02/2025")).toBeUndefined();
+    expect(parseIntakeDateToIso("31/04/2025")).toBeUndefined();
+    // 2019 is not a leap year, so 29 Feb does not exist.
+    expect(parseIntakeDateToIso("29/02/2019")).toBeUndefined();
+  });
+  it("accepts a valid leap day", () => {
+    expect(parseIntakeDateToIso("29/02/2020")).toBe("2020-02-29");
+  });
 });
 
 describe("splitFullName (DEV-27 FHIR HumanName)", () => {
