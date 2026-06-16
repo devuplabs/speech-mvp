@@ -3,6 +3,26 @@ import 'package:sona/utils/intake_validation.dart';
 import 'fixtures/valid_intake_fixture.dart';
 
 void main() {
+  // ---- DEV-77: step 5 "Yes" detail fields must be required ----
+
+  test('step 5 requires earInfections details when answered "yes"', () {
+    final d = buildValidIntakeFixture()
+      ..earInfections = 'yes'
+      ..earInfectionsDetails = '';
+    expect(d.validateStep(5)?.fieldKey, 'earInfectionsDetails');
+    d.earInfectionsDetails = 'Recurrent infections, grommets fitted';
+    expect(d.validateStep(5), isNull);
+  });
+
+  test('step 5 requires entInvolvement details when answered "yes"', () {
+    final d = buildValidIntakeFixture()
+      ..entInvolvement = 'yes'
+      ..entInvolvementDetails = '';
+    expect(d.validateStep(5)?.fieldKey, 'entInvolvementDetails');
+    d.entInvolvementDetails = 'Seen by ENT for glue ear';
+    expect(d.validateStep(5), isNull);
+  });
+
   // ---- computeAgeAtReferral unit tests ----
 
   test('computeAgeAtReferral returns correct years and months', () {
