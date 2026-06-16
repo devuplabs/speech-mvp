@@ -40,7 +40,6 @@ const OUT_DIR = join(API_ROOT, "src", "llm", "few-shot");
 const DATA_DIR = join(OUT_DIR, "data");
 
 if (!existsSync(SRC)) {
-  // eslint-disable-next-line no-console -- build-time script, not app runtime
   console.error(`few-shot source not found: ${SRC}`);
   process.exit(1);
 }
@@ -172,7 +171,6 @@ writeFileSync(
   ) + "\n",
 );
 
-// eslint-disable-next-line no-console -- build-time script, not app runtime
 console.log(
   `Synced ${total} few-shot records across ${orderedSpecialties.length} buckets from ${SRC}`,
 );

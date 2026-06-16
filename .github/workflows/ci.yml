@@ -28,6 +28,32 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            e2e/package-lock.json
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: apps/api
+      - name: Lint API
+        run: npm run lint
+        working-directory: apps/api
+      - name: Install e2e dependencies
+        run: npm ci
+        working-directory: e2e
+      - name: Lint e2e
+        run: npm run lint
+        working-directory: e2e
+
   fhir-conformance:
     # ── Authoritative FHIR/UK Core conformance gate (DEV-27 / ADR-006) ─────────
     # Runs the OFFICIAL HL7 FHIR validator (org.hl7.fhir.validator / validator_cli)

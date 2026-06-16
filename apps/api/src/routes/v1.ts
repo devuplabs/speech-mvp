@@ -52,7 +52,6 @@ import {
   resolveIntakeLinkToken,
 } from "../services/register-patient.js";
 import {
-  availabilityRuleSchema,
   bookConsultBody,
   putAvailabilityRulesBody,
 } from "../schemas/booking.js";
