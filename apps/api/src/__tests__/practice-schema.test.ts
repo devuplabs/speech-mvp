@@ -53,6 +53,12 @@ describe("inviteClinicianBody", () => {
   it("rejects an invalid email", () => {
     expect(inviteClinicianBody.safeParse({ email: "nope" }).success).toBe(false);
   });
+  it("rejects a blank-after-trim fullName (DEV-83)", () => {
+    expect(
+      inviteClinicianBody.safeParse({ email: "james@whitfieldspeech.co.uk", fullName: "   " })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe("importCliniciansBody", () => {

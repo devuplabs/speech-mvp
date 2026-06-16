@@ -34,7 +34,8 @@ export type UpdatePracticeConfigBody = z.infer<typeof updatePracticeConfigBody>;
 /** Invite clinician — screen 04. */
 export const inviteClinicianBody = z.object({
   email: z.string().trim().email().max(320),
-  fullName: z.string().trim().max(255).optional(),
+  // Optional, but reject blank-after-trim so "   " is not stored as "" (DEV-83).
+  fullName: z.string().trim().min(1).max(255).optional(),
   role: seatRoleSchema.default("clinician"),
 });
 export type InviteClinicianBody = z.infer<typeof inviteClinicianBody>;

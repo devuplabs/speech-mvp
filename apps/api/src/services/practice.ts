@@ -1,4 +1,5 @@
 import { and, eq, ne } from "drizzle-orm";
+import { z } from "zod";
 import type { Env } from "../config.js";
 import { canAddSeat } from "../auth/rbac.js";
 import type { VerifiedIdentity } from "../auth/types.js";
@@ -46,10 +47,29 @@ export async function createPractice(
       .from(tenants)
       .where(eq(tenants.id, existing.tenantId))
       .limit(1);
+    // The seat's tenant FK guarantees this row exists; guard so we never return
+    // an undefined tenant (which would violate the return type and flow through
+    // to the route response) on a corrupted/orphaned seat (DEV-83).
+    if (!tenant) {
+      throw new Error(
+        `createPractice: no tenant ${existing.tenantId} for existing seat ${existing.id}`,
+      );
+    }
     return { tenant, admin: existing, idempotent: true };
   }
 
-  const email = (identity.email ?? body.adminEmail ?? "").trim().toLowerCase();
+  // The Firebase token email is preferred, with the optional body fallback.
+  // Validate the resolved value is a real, non-empty address before insert: an
+  // empty string passes the NOT NULL column but later collides on the
+  // (tenantId, email) unique index for a second emailless admin (DEV-83). A
+  // ZodError here is mapped to a 400 by the global handler.
+  const email = z
+    .string()
+    .trim()
+    .email()
+    .max(320)
+    .parse(identity.email ?? body.adminEmail ?? "")
+    .toLowerCase();
 
   const [tenant] = await db
     .insert(tenants)
