@@ -16,7 +16,7 @@ type User = typeof users.$inferSelect;
  * to the original link if no code can be extracted.
  */
 export function buildInviteAcceptUrl(webBaseUrl: string, firebaseLink: string): string {
-  let code: string | null = null;
+  let code: string | null;
   try {
     code = new URL(firebaseLink).searchParams.get("oobCode");
   } catch {

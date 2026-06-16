@@ -84,7 +84,9 @@ export async function submitIntake(
   caseId: string,
   answers: IntakeAnswers,
   consentVersion?: string,
-  meta?: { parentEmail?: string; childDisplayName?: string },
+  // Accepted for call-site symmetry with saveIntakeDraft; PHI is registered on
+  // the draft path, so it is intentionally unused here.
+  _meta?: { parentEmail?: string; childDisplayName?: string },
 ) {
   const [existing] = await db
     .select()

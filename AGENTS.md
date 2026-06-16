@@ -57,6 +57,7 @@ Commands (from `apps/api`):
 ```bash
 npm run dev         # tsx watch — does NOT auto-load .env; export vars in shell
 npm run typecheck   # tsc --noEmit
+npm run lint        # eslint (typescript-eslint recommended)
 npm test            # vitest run
 npm run db:generate # drizzle-kit generate (after schema.ts edits)
 ```
@@ -135,6 +136,7 @@ sleeps. See `e2e/README.md`.
 
 Runs on every PR and on pushes to `main`. **All jobs must stay green to merge:**
 - **api** — typecheck + Vitest (Node 22)
+- **lint** — ESLint over `apps/api` and `e2e` (TypeScript static analysis)
 - **flutter** — analyze (`--no-fatal-infos`) + `flutter test` (Flutter 3.44.0 pinned)
 - **fhir-conformance** — official HL7 validator vs UK Core STU2 golden Bundle, zero-errors gate
 - **npm-audit** — high/critical runtime-dep audit for `apps/api` and `e2e`
@@ -235,6 +237,7 @@ Keep these green: a PR that breaks any job should not merge. Cloud Build (`infra
 ### Lint, typecheck & tests
 
 - **API typecheck**: `cd apps/api && npx tsc --noEmit`
+- **TS lint (ESLint)**: `cd apps/api && npm run lint` (and `cd e2e && npm run lint`)
 - **Flutter analyze**: `cd apps/sona && flutter analyze` (info-level lint hints are expected, not errors)
 - **Flutter unit/widget tests**: `cd apps/sona && flutter test` (includes full 8-step intake flow widget test)
 - **E2E tests (Playwright)**: `cd e2e && SONA_API_URL=http://localhost:8081 SONA_WEB_URL=http://localhost:8080 npx playwright test`

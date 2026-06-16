@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "lint": "eslint .",
     "test": "playwright test",
     "test:api": "playwright test tests/api-bootstrap.spec.ts tests/intake-api-full.spec.ts tests/questionnaire-api.spec.ts tests/clinical-report-api.spec.ts",
     "test:ui": "playwright test tests/parent-intake-smoke.spec.ts tests/parent-intake-full.spec.ts",
@@ -12,6 +13,10 @@
     "report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.52.0",
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "typescript-eslint": "^8.61.1"
   }
 }
