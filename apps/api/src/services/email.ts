@@ -54,7 +54,7 @@ export function renderClinicianInviteEmail(input: ClinicianInviteEmailInput): {
         Set your password to access your dashboard.
       </p>
       <p style="margin:24px 0">
-        <a href="${input.actionLink}"
+        <a href="${escapeHtml(input.actionLink)}"
            style="background:#2D6A6E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;display:inline-block">
           Set your password
         </a>
@@ -96,7 +96,7 @@ export function renderFamilySummaryReadyEmail(input: FamilySummaryEmailInput): {
         and next steps with your family. Open your private family portal to read it.
       </p>
       <p style="margin:24px 0">
-        <a href="${input.portalUrl}"
+        <a href="${escapeHtml(input.portalUrl)}"
            style="background:#2D6A6E;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;display:inline-block">
           Open your family portal
         </a>

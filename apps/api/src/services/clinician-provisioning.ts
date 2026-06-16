@@ -120,7 +120,10 @@ export async function dispatchClinicianInvite(
     tenantId: user.tenantId,
     actor: "system",
     action: "clinician.invite_dispatched",
-    metadata: { email: user.email, emailSent: email.ok },
+    // Log only the non-identifying outcome, never the recipient address —
+    // consistent with the family-summary path's no-log-recipient convention
+    // (email.ts) and avoiding staff PII in the audit trail (DEV-86).
+    metadata: { emailSent: email.ok },
   });
 
   return {
