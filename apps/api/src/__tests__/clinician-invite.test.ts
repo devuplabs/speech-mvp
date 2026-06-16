@@ -32,6 +32,17 @@ describe("renderClinicianInviteEmail", () => {
     expect(htmlBody).toContain("&lt;script&gt;");
     expect(htmlBody).toContain("an admin");
   });
+
+  it("escapes the href attribute value so a quote can't break out of it (DEV-86)", () => {
+    const { htmlBody } = renderClinicianInviteEmail({
+      to: "x@y.com",
+      practiceName: "Whitfield",
+      actionLink: 'https://evil.example/"><img src=x onerror=alert(1)>',
+      role: "clinician",
+    });
+    expect(htmlBody).not.toContain('"><img');
+    expect(htmlBody).toContain("&quot;&gt;&lt;img");
+  });
 });
 
 describe("buildInviteAcceptUrl", () => {

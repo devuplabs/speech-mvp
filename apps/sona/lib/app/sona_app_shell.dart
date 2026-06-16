@@ -165,6 +165,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
   Future<void> _signOut() async {
     await widget.authController?.signOut();
     _state.tenantId = null;
+    // Clear all in-memory PHI so the next user on this device (parent intake or
+    // clinician caseload) never sees the previous user's data (DEV-73).
+    _state.caseId = null;
+    _state.caseDetail = null;
+    _state.clinicianCases = [];
+    _state.resetIntake();
     setState(() => _route = SonaRoute.launcher);
   }
 
@@ -483,10 +489,12 @@ class _SonaAppShellState extends State<SonaAppShell> {
         final lastCase = await _draftStorage.loadLastCaseId();
         _state.caseId = lastCase;
       } else {
+        // Fresh intake: clear any prior child's PHI/form state before loading a
+        // (possibly empty) server draft, so a new intake never pre-fills with
+        // the previous family's data (DEV-73). resetIntake() also resets
+        // caseId-independent form fields (step/substep/consent/validation).
         _state.caseId = null;
-        _state.formStep = 1;
-        _state.formSubstep = 0;
-        _state.returnToReviewAfterEdit = false;
+        _state.resetIntake();
       }
       await _ensureValidParentCase();
       await _loadParentDraft();
@@ -756,6 +764,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
       _state.caseDetail = detail;
       _status = 'Case: $status';
       _state.prepStatus = prepLabelFromCaseStatus(status);
+      // Start from a clean intake before hydrating this case so switching to a
+      // case without submitted answers never surfaces the previously viewed
+      // case's PHI in screens that read state.intake (DEV-73, criterion 4).
+      _state.resetIntake();
       final name = caseMap?['childDisplayName'] as String?;
       if (name != null && name.isNotEmpty) {
         _state.intake.childName = name;
@@ -785,7 +797,11 @@ class _SonaAppShellState extends State<SonaAppShell> {
           }
         }
       }
-      _status = '${rows.length} case(s) loaded';
+      // Reconcile the footer with what the dashboard actually shows: active
+      // cases vs those still awaiting parent intake (DEV-76).
+      _status = clinicianCaseLoadSummary(
+        rows.map((r) => r['status'] as String?),
+      );
     });
   }
 
@@ -1013,10 +1029,10 @@ class _SonaAppShellState extends State<SonaAppShell> {
       setState(() => _hasResumableDraft = false);
       setState(() {
         _state.caseId = null;
-        _state.formStep = 1;
-        _state.consentGuardian = false;
-        _state.consentPrivacy = false;
-        _state.consentAccurate = false;
+        // Clear the submitted intake PHI (and consent/form flags) so returning
+        // to the welcome screen and starting again does not pre-fill stale data
+        // from the case just submitted (DEV-73).
+        _state.resetIntake();
         _status = 'Intake submitted';
         _route = SonaRoute.parentWelcome;
       });

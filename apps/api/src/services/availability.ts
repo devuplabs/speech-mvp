@@ -70,6 +70,10 @@ export function computeSlotsFromRules(
       const parts = getZonedParts(start, rule.timezone || DEFAULT_TZ);
       if (parts.weekday !== rule.weekday) continue;
       if (
+        // `<=` admits a slot that ends exactly at endMinuteLocal, so an
+        // end-of-day window (endMinuteLocal = 1440 = midnight) is not truncated
+        // by a slot-width; a slot ending past midnight is correctly excluded
+        // (DEV-79).
         parts.minuteOfDay >= rule.startMinuteLocal &&
         parts.minuteOfDay + durationMinutes <= rule.endMinuteLocal
       ) {

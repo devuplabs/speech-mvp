@@ -26,6 +26,25 @@ bool showCaseOnTodayDashboard(String? status) {
   return status != 'intake_pending';
 }
 
+/// Footer summary for the clinician Today dashboard. It must reconcile with the
+/// visible content: the tiles + list show only dashboard ("active") cases, while
+/// the rest are awaiting parent intake and are intentionally hidden. Reporting
+/// the raw total made the footer ("19 case(s) loaded") unexplainable against the
+/// 5 visible cases (DEV-76).
+String clinicianCaseLoadSummary(Iterable<String?> statuses) {
+  var active = 0;
+  var awaiting = 0;
+  for (final status in statuses) {
+    if (showCaseOnTodayDashboard(status)) {
+      active++;
+    } else {
+      awaiting++;
+    }
+  }
+  if (awaiting == 0) return '$active case(s) loaded';
+  return '$active active · $awaiting awaiting intake';
+}
+
 /// True when a parent summary has been published for this case. Once the case
 /// advances into carryover the summary is still published, so both statuses
 /// count (DEV-10).

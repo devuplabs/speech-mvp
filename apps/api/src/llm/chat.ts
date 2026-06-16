@@ -55,9 +55,16 @@ export async function chatCompletion(
     return { ok: false, reason: `LLM HTTP ${res.status}` };
   }
 
-  const data = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
+  let data: { choices?: { message?: { content?: string } }[] };
+  try {
+    data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+  } catch {
+    // Malformed/non-JSON 200 body: fail closed (return, don't throw) to honour
+    // the { ok } contract. Never log the body — it can echo the prompt (PHI).
+    return { ok: false, reason: "invalid LLM response" };
+  }
   const content = data.choices?.[0]?.message?.content;
   if (!content) return { ok: false, reason: "empty LLM response" };
   return { ok: true, content };

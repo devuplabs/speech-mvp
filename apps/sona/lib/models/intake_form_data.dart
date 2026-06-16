@@ -469,7 +469,13 @@ class IntakeFormData {
           return err('Please describe when the hearing test was done and the outcome', 'hearingTestedDetails');
         }
         if (!req(earInfections)) return err('Please answer whether your child has had ear infections', 'earInfections');
+        if (earInfections == 'yes' && !req(earInfectionsDetails)) {
+          return err('Please briefly describe the ear infections', 'earInfectionsDetails');
+        }
         if (!req(entInvolvement)) return err('Please answer whether your child has had ENT involvement', 'entInvolvement');
+        if (entInvolvement == 'yes' && !req(entInvolvementDetails)) {
+          return err('Please briefly describe the ENT involvement', 'entInvolvementDetails');
+        }
         if (!req(visionTested)) return err('Please answer whether your child\u2019s eyes have been tested', 'visionTested');
         if (visionTested == 'yes' && !req(visionTestedDetails)) {
           return err('Please add the date and outcome of the vision test', 'visionTestedDetails');

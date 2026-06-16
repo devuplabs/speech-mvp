@@ -205,7 +205,17 @@ export function parseAgeYears(dob: string, now: Date = new Date()): number | nul
 
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const birth = new Date(Date.UTC(year, month - 1, day));
-  if (Number.isNaN(birth.getTime())) return null;
+  // Date.UTC silently rolls impossible dates over (Feb 31 → 2 Mar) rather than
+  // producing NaN, which would yield a subtly wrong clinical age in LLM prompts.
+  // Verify the constructed date round-trips to the inputs (same lenient-date
+  // class as parseIntakeDateToIso / DEV-72; DEV-85).
+  if (
+    birth.getUTCFullYear() !== year ||
+    birth.getUTCMonth() !== month - 1 ||
+    birth.getUTCDate() !== day
+  ) {
+    return null;
+  }
 
   let age = now.getUTCFullYear() - year;
   const beforeBirthdayThisYear =

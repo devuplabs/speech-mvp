@@ -78,6 +78,22 @@ export function parseIntakeDateToIso(value: string | undefined): string | undefi
   );
   if (!m) return undefined;
   const [, dd, mm, yyyy] = m;
+  // The regex only checks the shape (e.g. it accepts 31/02). Confirm the day
+  // actually exists in that month/year — including leap years — by building a
+  // UTC date and checking it round-trips, so impossible dates (31/02, 30/02,
+  // 31/04, 29/02 in a common year) return undefined instead of a malformed ISO
+  // string that would corrupt cases.child_dob / FHIR export / age derivation.
+  const year = Number(yyyy);
+  const month = Number(mm);
+  const day = Number(dd);
+  const dt = new Date(Date.UTC(year, month - 1, day));
+  if (
+    dt.getUTCFullYear() !== year ||
+    dt.getUTCMonth() !== month - 1 ||
+    dt.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
   return `${yyyy}-${mm}-${dd}`;
 }
 
