@@ -371,7 +371,13 @@ async function deleteCaseRows(
  * block the delete. The accountability record survives as a tenant-scoped,
  * case-detached, PHI-free trail.
  */
-const AUDIT_METADATA_SAFE_KEYS = new Set([
+/**
+ * Audit metadata keys retained (not scrubbed) on Art. 17 erasure. Each must be
+ * PHI-free: the goal is a scrubbed-but-operationally-complete trail. New keys
+ * written by services are caught by audit-metadata-keys.test.ts, which forces a
+ * deliberate retain/drop classification (DEV-80).
+ */
+export const AUDIT_METADATA_SAFE_KEYS = new Set([
   "outcome",
   "status",
   "statusFrom",
@@ -387,6 +393,14 @@ const AUDIT_METADATA_SAFE_KEYS = new Set([
   "expiresAt",
   "tokenFingerprint",
   "phase",
+  // Non-PHI operational context other services attach to case-scoped events;
+  // previously dropped on erasure, leaving e.g. consult.booked without its
+  // timing/referral context (DEV-80).
+  "start",
+  "durationMinutes",
+  "referralSource",
+  "sendIntakeLink",
+  "templateId",
 ]);
 
 async function scrubCaseAuditMetadata(db: Db, caseId: string): Promise<number> {
