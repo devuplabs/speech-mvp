@@ -152,6 +152,32 @@ class SonaAppState extends ChangeNotifier {
     return json;
   }
 
+  /// Fully clears the parent-intake PHI (`intake`) and every per-intake form /
+  /// consent / validation flag, returning the object to a pristine state.
+  ///
+  /// Must be called at each transition where one user/case's intake must not
+  /// bleed into the next on a shared device: sign-out, starting a fresh
+  /// (non-resume) intake, and after a successful submit (DEV-73). Reuses
+  /// [_copyIntake] with a blank [IntakeFormData] so all PHI fields are reset in
+  /// one place even as new fields are added.
+  void resetIntake() {
+    _copyIntake(IntakeFormData());
+    formStep = 1;
+    formSubstep = 0;
+    returnToReviewAfterEdit = false;
+    lastSavedAt = null;
+    lastLocalSavedAt = null;
+    draftDirty = false;
+    consentGuardian = false;
+    consentPrivacy = false;
+    consentAccurate = false;
+    pendingValidationFieldKey = null;
+    pendingValidationMessage = null;
+    intakeLocked = false;
+    intakeLinkExpired = false;
+    notifyListeners();
+  }
+
   void resetForDemo() {
     tenantId = null;
     caseId = null;
@@ -169,10 +195,8 @@ class SonaAppState extends ChangeNotifier {
     prepStatus = 'Ready';
     clinicianCases = [];
     caseDetail = null;
-    intake
-      ..email = ''
-      ..childName = ''
-      ..difficulties.clear();
+    // Clear all intake PHI, not just a few fields (DEV-73).
+    _copyIntake(IntakeFormData());
     notifyListeners();
   }
 }
