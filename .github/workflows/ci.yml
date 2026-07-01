@@ -78,7 +78,9 @@ jobs:
     # in the step log and the uploaded OperationOutcome artifact.
     name: FHIR UK Core conformance (official HL7 validator)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Headroom for one bounded re-validation when the public terminology server
+    # (tx.fhir.org) times out transiently — see the validate/gate steps below.
+    timeout-minutes: 30
     env:
       VALIDATOR_VERSION: "6.6.5"
       UKCORE_IG: "fhir.r4.ukcore.stu2#2.0.2"
@@ -142,31 +144,61 @@ jobs:
           #    ~/.fhir/packages). Resources are validated against the profiles in
           #    their meta.profile; base-R4 resources against base R4.
           # -output writes a machine-readable OperationOutcome we gate on.
-          java -jar ~/validator_cli.jar "$GOLDEN_BUNDLE" \
-            -version "$FHIR_VERSION" \
-            -ig "$UKCORE_IG" \
-            -output /tmp/fhir-validation-outcome.json \
-            | tee /tmp/fhir-validation.log
+          #
+          # The validator resolves code/value-set membership against the public
+          # terminology server (tx.fhir.org). That server is occasionally slow or
+          # unreachable, and the validator then reports the network failure as an
+          # `error` issue — infrastructure flakiness, not a conformance defect.
+          # Re-validate up to $ATTEMPTS times, but ONLY when the sole remaining
+          # errors are terminology-server transport failures; deterministic
+          # conformance errors break out immediately (no wasted retries).
+          ATTEMPTS=3
+          for i in $(seq 1 "$ATTEMPTS"); do
+            echo "── validation attempt $i/$ATTEMPTS ─────────────────────────"
+            java -jar ~/validator_cli.jar "$GOLDEN_BUNDLE" \
+              -version "$FHIR_VERSION" \
+              -ig "$UKCORE_IG" \
+              -output /tmp/fhir-validation-outcome.json \
+              | tee /tmp/fhir-validation.log || true
+            if [ ! -f /tmp/fhir-validation-outcome.json ]; then
+              echo "::warning::validator produced no OperationOutcome on attempt $i; retrying after backoff…"
+              sleep 15; continue
+            fi
+            LINE=$(node .github/scripts/fhir-classify-outcome.mjs /tmp/fhir-validation-outcome.json)
+            echo "$LINE"; eval "$LINE"
+            if [ "$genuine" != "0" ]; then
+              echo "Deterministic conformance error(s) present — not retrying."; break
+            fi
+            if [ "$transport" = "0" ]; then
+              echo "Clean validation (no terminology-server transport failures)."; break
+            fi
+            echo "::warning::$transport terminology-server transport timeout(s) on attempt $i (tx.fhir.org); retrying after backoff…"
+            sleep 20
+          done
         # Note: do not rely on the CLI exit code alone — we gate explicitly on the
         # OperationOutcome severities below so the rule (errors=0) is unambiguous.
         continue-on-error: true
 
-      - name: Gate on zero errors (errors=0)
+      - name: Gate on zero conformance errors (terminology-transport timeouts are non-gating)
         run: |
           OUT=/tmp/fhir-validation-outcome.json
           if [ ! -f "$OUT" ]; then
             echo "::error::validator produced no OperationOutcome — see log above"
             exit 1
           fi
-          ERRORS=$(node -e "const o=require('$OUT');const i=(o.issue||[]).filter(x=>x.severity==='error'||x.severity==='fatal');console.log(i.length);for(const x of i)console.error('ERROR',(x.location||x.expression||['?']).join(','),x.diagnostics||(x.details&&x.details.text))")
-          WARN=$(node -e "const o=require('$OUT');console.log((o.issue||[]).filter(x=>x.severity==='warning').length)")
-          INFO=$(node -e "const o=require('$OUT');console.log((o.issue||[]).filter(x=>x.severity==='information').length)")
-          echo "Validator issues — errors=$ERRORS warnings=$WARN information=$INFO"
-          if [ "$ERRORS" != "0" ]; then
-            echo "::error::FHIR UK Core conformance failed: $ERRORS error(s). errors must be 0."
+          # Split error/fatal issues into genuine conformance errors vs
+          # terminology-server transport failures (tx.fhir.org timeouts / network
+          # errors). We gate on the former; the latter are surfaced as warnings.
+          LINE=$(node .github/scripts/fhir-classify-outcome.mjs "$OUT"); eval "$LINE"
+          echo "Validator issues — conformance-errors=$genuine tx-transport=$transport warnings=$warning information=$information"
+          if [ "$genuine" != "0" ]; then
+            echo "::error::FHIR UK Core conformance failed: $genuine conformance error(s). errors must be 0."
             exit 1
           fi
-          echo "FHIR UK Core conformance OK (errors=0; warnings/information are tolerated)."
+          if [ "$transport" != "0" ]; then
+            echo "::warning::$transport terminology-server transport timeout(s) (tx.fhir.org) were treated as NON-gating infrastructure flakiness — not conformance errors. See the uploaded OperationOutcome artifact."
+          fi
+          echo "FHIR UK Core conformance OK (conformance errors=0; terminology-server transport timeouts and warnings/information tolerated)."
       - name: Upload validation OperationOutcome
         if: always()
         uses: actions/upload-artifact@v7
