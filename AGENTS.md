@@ -175,6 +175,14 @@ merge to `main` runs apply (human-approved in GCP Console); `apps/api/**` and
   audit log is append-only. Keep clinical artifacts in the authenticated app / GCS.
 - **Prod gate:** keep demo routes out of prod and the config validation strict
   (see API section).
+- **Licensed instruments (do not host norm tables):** assessment instruments (CELF,
+  PLS, GFTA, BPVS, WAB-R, …) are publisher IP. Never host, embed, ship, or compute from a
+  licensed raw→scaled→percentile **conversion/norm table**, and never build an "auto-score"
+  feature that derives a scaled score/percentile from a raw score. The clinician scores
+  **manually** off the publisher's own tables; Sona captures and tabulates the value she
+  produced (provenance = clinician, never computed). Model each instrument with a
+  `licensed / self-scored` flag — free/criterion tools (Communication Matrix, DAGG-3, CAPE-V)
+  are exempt. See `docs/research/assessment-forms-teardown.md §1` and DEV-100.
 - **Prompt parity:** changes to `apps/api/src/llm/generate-drafts.ts` /
   `intake-context.ts` can break the `speech-ml` eval harness golden snapshots —
   update both together.
