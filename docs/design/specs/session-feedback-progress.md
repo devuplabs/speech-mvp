@@ -140,6 +140,27 @@ because the clinician *edits a draft* instead of *composing prose*.
 
 ---
 
+## 4a. Session workspace — open with context (DEV-122 addition, 02 Jul)
+
+Founder review: session N must open **in the context of sessions 1…N-1** — on paper she flips
+back a page; digitised, the system must do the flipping. When the clinician opens a session
+(Figma **D112-07**), before capture starts she sees:
+
+- **Last session recap** — the previous **signed** note's summary, with its **"Next steps"
+  auto-carried in** as this session's starting plan (auto-carried, clearly labelled, editable).
+- **Target trend** — each block target with its `progressState` arc across the sessions so far
+  (met / improving / emerging chips), so drift is visible before the session, not at block end.
+- **Since last session** — home-practice tick-offs (and what was left untouched), any family
+  note from the portal, anything flagged by the school view.
+- **Start session capture →** — drops straight into the ~5-minute loop (§4).
+
+A compact **"Previously — session N-1"** strip also appears on the case overview (Figma
+D114-01) linking here. Data: everything above is already captured (signed SessionFeedback,
+`targetAreas[].progressState`, HomeworkAssignment tick state, portal notes) — this is a read
+composition, no new entities.
+
+---
+
 ## 5. End-of-block progress report (auto-composed)
 
 Template **2.5 Therapy Block Summary** — the 5/10 end-of-block report — is **auto-composed

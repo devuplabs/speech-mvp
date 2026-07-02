@@ -108,6 +108,27 @@ directly by schools.
 
 ---
 
+## 1a. Adding a resource (DEV-122 addition, 02 Jul)
+
+The "+ Add resource" flow (Figma **D113-07**) — add once to the library, assign to any case
+afterwards:
+
+1. **Pick a category** (the category drives the gates):
+   - **My file** (PDF / images / audio) → upload + **licence attestation** where the material is
+     purchased/copyright (per §4); the clinician's own worksheets need no attestation.
+   - **Purchase link** → URL + provider + price; stored as **link-out only** (the provider is
+     paid directly; nothing re-hosted).
+   - **Custom video** → upload/record once, reuse forever; **consent gate** (the clinician
+     appears in frame), plus the parent media-consent check at assignment time; delivered
+     watermarked, view-only, expiring (§3).
+   - **External link** → YouTube/site URL + preview.
+2. **Tag it (segment-neutral):** target area · age band · specialty — tags are data (extended
+   per segment pack), so the same hub serves paediatric and adult segments.
+3. **Save to library.** Assignment (with the Home / School / Referrer audience split) stays a
+   separate step (§2, Figma D113-02).
+
+---
+
 ## 2. Assigning resources & homework; tick-off & engagement
 
 ### 2.1 The `HomeworkAssignment` entity
