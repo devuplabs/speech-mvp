@@ -198,6 +198,40 @@ and her headings.
   **PDF**, rendered server-side (not client-side, per architecture sketch), preserving her heading
   hierarchy, the score tables, and the HCPC/DRAFT stamps. Export events are audited.
 
+### 3.1 Writing surface — decision (DEV-121, 02 Jul)
+
+**Question raised in founder review:** is this a text editor? How are spelling/grammar handled —
+can we embed Word or Google Docs, which already do this? What do EHRs do?
+
+**What the medical domain actually does.** EHRs — Epic (SmartText/NoteWriter), Cerner/Oracle
+Health (Dynamic Documentation), and the UK GP systems (EMIS Web, SystmOne) — use **built-in
+structured editors** with templates and smart-phrases, typically paired with medical dictation
+(Dragon Medical One). None embed a consumer word processor; clinical documents are drafted
+in-system and **exported** (PDF/Word) at the end. That pattern exists for the same reasons it
+applies to Sona:
+
+1. **Structure.** Our sections aren't free text — `bound` fields, locked `score_table` cells
+   rendered from the verified record, `ai_drafted` regions with regenerate/diff. A generic word
+   processor can't represent any of that; embedding one would forfeit the engine's core value.
+2. **PHI boundary.** Embedding Google Docs or Word puts report content (child clinical data)
+   into another processor's surface — a new subprocessor, DPIA change, residency and audit
+   questions — for capabilities we can obtain in-app.
+
+**Decision — v1 writing surface:**
+- **In-app sectioned rich-text editor** (Flutter: `super_editor` / `flutter_quill` class
+  component; final component choice at build time).
+- **Spelling:** native platform/browser **UK-English spellcheck** in all editable regions, plus a
+  **clinical dictionary allowlist** so SLT terms (dysphonia, phonology, EHCP, hypernasality…)
+  aren't flagged. Dictionary is data (extends per segment pack).
+- **Grammar/style:** an on-demand **"Polish" action** per section — a grammar/clarity pass through
+  the **existing Gemini-on-Vertex path** (already a contracted processor; no new third party, no
+  Grammarly-class plugin). Polish returns a **diff the clinician reviews** before it lands; it is
+  another AI-drafted change, never auto-applied. Data-minimisation rules (§6) apply unchanged.
+- **Word stays the off-ramp, not the surface:** `.docx` export is first-class (above). If a
+  clinician prefers final polish in Word, she exports after sign-off. A docx **re-import
+  round-trip is explicitly out of v1** (roadmap candidate; requires re-anchoring edits to
+  sections).
+
 ---
 
 ## 4. Personalisation without impersonality (the style profile)
