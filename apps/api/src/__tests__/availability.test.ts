@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeSlotsFromRules, getZonedParts } from "../services/availability.js";
+import { computeSlotsFromRules, dropAlreadyStartedSlots, getZonedParts } from "../services/availability.js";
 
 describe("getZonedParts", () => {
   it("maps Monday in Europe/London", () => {
@@ -30,5 +30,41 @@ describe("computeSlotsFromRules", () => {
     const booked = computeSlotsFromRules(rules, from, to, [new Date(first.start)]);
     const same = booked.find((s) => s.start === first.start);
     expect(same?.available).toBe(false);
+  });
+});
+
+describe("dropAlreadyStartedSlots", () => {
+  const rules = [
+    {
+      weekday: 2,
+      startMinuteLocal: 9 * 60,
+      endMinuteLocal: 17 * 60,
+      timezone: "Europe/London",
+      active: true,
+    },
+  ];
+
+  it("never offers the at-'now' slot the booking schema would reject", () => {
+    // Grid anchored at `from` ⇒ first slot starts exactly at `from`. When the
+    // caller anchors at "now" inside an open window, that slot is already in
+    // the past by the time a booking POST lands (the Thursday-evening flake).
+    const from = new Date("2026-05-26T10:00:00.000Z"); // Tuesday, in-window
+    const to = new Date("2026-05-26T16:00:00.000Z");
+    const slots = computeSlotsFromRules(rules, from, to, []);
+    expect(slots[0]!.start).toBe(from.toISOString());
+
+    const offered = dropAlreadyStartedSlots(slots, from.getTime());
+    expect(offered.length).toBe(slots.length - 1);
+    expect(offered[0]!.start).not.toBe(from.toISOString());
+    for (const s of offered) {
+      expect(Date.parse(s.start)).toBeGreaterThan(from.getTime());
+    }
+  });
+
+  it("is a no-op without a cutoff (bookConsult re-validation path)", () => {
+    const from = new Date("2026-05-26T10:00:00.000Z");
+    const to = new Date("2026-05-26T16:00:00.000Z");
+    const slots = computeSlotsFromRules(rules, from, to, []);
+    expect(dropAlreadyStartedSlots(slots, undefined)).toEqual(slots);
   });
 });
