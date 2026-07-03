@@ -794,7 +794,11 @@ export function createV1Routes(db: Db, env: Env) {
       c.req.query("to") ??
       new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
     await ensureDefaultAvailability(db, tenantId);
-    const slots = await getAvailabilitySlots(db, tenantId, from, to);
+    // Never offer a slot that has already started: booking rejects past starts
+    // (bookConsultBody, DEV-79), and the slot grid is anchored at `from` — so
+    // without this cutoff the first slot returned starts at exactly "now" and
+    // any attempt to book it 400s.
+    const slots = await getAvailabilitySlots(db, tenantId, from, to, undefined, Date.now());
     return c.json({ slots });
   });
 
