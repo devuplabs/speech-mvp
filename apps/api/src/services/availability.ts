@@ -145,6 +145,16 @@ export async function getAvailabilitySlots(
   fromIso: string,
   toIso: string,
   excludeCaseId?: string,
+  // When set, slots whose start is not strictly after this instant are dropped.
+  // The listing route passes Date.now() so we never OFFER a slot the booking
+  // schema (bookConsultBody: "start must be in the future", DEV-79) is
+  // guaranteed to reject — the slot grid is anchored at `from`, so without this
+  // the first slot returned starts at exactly the caller's "now" and is already
+  // in the past by the time the booking request arrives. bookConsult's internal
+  // re-validation deliberately does NOT pass it (zod already guarantees a
+  // future start; filtering on a later wall-clock here would race a
+  // last-instant booking into a spurious `outside_window`).
+  minStartMs?: number,
 ) {
   const from = new Date(fromIso);
   const to = new Date(toIso);
@@ -173,7 +183,22 @@ export async function getAvailabilitySlots(
     .map((b) => b.consultAt)
     .filter((d): d is Date => d != null);
 
-  return computeSlotsFromRules(rules, from, to, bookedStarts);
+  const slots = computeSlotsFromRules(rules, from, to, bookedStarts);
+  return dropAlreadyStartedSlots(slots, minStartMs);
+}
+
+/**
+ * Drops slots whose start is not strictly in the future of `minStartMs`.
+ * Pure, so the listing contract ("never offer a slot booking would reject as
+ * past", DEV-79) is unit-testable without a DB. No-op when minStartMs is
+ * undefined (bookConsult's re-validation path).
+ */
+export function dropAlreadyStartedSlots(
+  slots: ConsultSlot[],
+  minStartMs?: number,
+): ConsultSlot[] {
+  if (minStartMs === undefined) return slots;
+  return slots.filter((s) => Date.parse(s.start) > minStartMs);
 }
 
 export function slotIsAvailable(

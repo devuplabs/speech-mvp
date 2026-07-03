@@ -30,7 +30,7 @@ const issues = Array.isArray(outcome.issue) ? outcome.issue : [];
 // server), never a real finding about the validated resource. Deliberately
 // narrow so genuine conformance errors are never masked.
 const TRANSPORT =
-  /SocketTimeoutException|java\.net\.[A-Za-z]*Exception|Unable to connect to (the )?terminology server|Error (from|communicating with) (the )?(terminology )?server|terminology server[^.]*(unavailable|timed out|timeout)|tx\.fhir\.org/i;
+  /SocketTimeoutException|java\.net\.[A-Za-z]*Exception|Unable to connect to (the )?terminology server|Error (from|communicating with) (the )?(terminology )?server|terminology server[^.]*(unavailable|timed out|timeout)|tx\.fhir\.org|System URI could not be determined for the code|which could not be found, and the server returned error|took too long to process/i;
 
 const textOf = (x) => `${x.diagnostics || ''} ${(x.details && x.details.text) || ''}`.trim();
 const locOf = (x) => (x.location || x.expression || ['?']).join(',');
