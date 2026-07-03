@@ -1,21 +1,44 @@
 # Extraction Review & Correction — "Capture-Once Verify" UX
 
-**Linear:** DEV-104 · **Status:** Draft → In Review · **Date:** 2026-07-01
+**Linear:** DEV-104 (v0.1) · DEV-120 (v0.2 revision) · **Status:** Revised → In Review · **Date:** 2026-07-02
 **Data:** structure only — **no PII, no publisher content**. UK English throughout.
 
-Design spec (no code) for the screen where the clinician **verifies and corrects**
-the data Gemini extracted from an uploaded assessment form, before it feeds any
+Design spec (no code) for the screen where the clinician **reviews the exceptions**
+in the data Gemini extracted from an uploaded assessment form, before it feeds any
 report. This is where "capture once, no re-keying" and clinician-in-the-loop trust
 are delivered, and where we stay on the right side of instrument licensing.
+
+> ## v0.2 revision — review by exception, not by field (DEV-120)
+> Founder review (02 Jul): a per-field confirmation queue ("38 of 54 confirmed")
+> risks **adding** admin, not removing it — on paper the clinician has a full view
+> of the case; digitising must not turn that into 54 checkbox chores. v0.2 changes
+> the model:
+> 1. **Default-accept.** High-confidence extractions are **auto-accepted** on
+>    arrival. The clinician is never asked to confirm them field-by-field.
+> 2. **Only exceptions need her** — low-confidence, abstained, and conflicting
+>    values. The headline is *"5 need your eyes — everything else matched the
+>    page,"* never a fraction of the total.
+> 3. **Document-shaped skim.** She can read the extracted form side-by-side with
+>    the source **like paper**, whole pages at a time, with exceptions highlighted
+>    inline — one "This page looks right" action per page, never per field.
+> 4. **Verify-on-use.** Only values **bound into a report** must be
+>    clinician-confirmed — and that check happens once, at report **signing**
+>    (DEV-105 pre-flight), not as a standing queue. Everything else remains
+>    `auto-accepted` in the record and never blocks her.
+> 5. **Time target: a clean scan reviews in under 2 minutes.**
+> The audit trail, licensing affordances, and abstain-don't-invent behaviour are
+> unchanged from v0.1.
 
 ---
 
 ## 0. What this screen is (and is not)
 
-**Is:** a review-and-correct surface. The model has already extracted structured
-fields with per-field confidence (DEV-102). The clinician confirms each value,
-edits what's wrong, and fills what the model abstained on. Every confirmed value
-becomes a `CapturedValue` with value-level provenance (DEV-101), append-only.
+**Is:** an exception-review surface. The model has already extracted structured
+fields with per-field confidence (DEV-102). High-confidence values are
+**auto-accepted**; the clinician reviews only the **flagged** ones (low-confidence,
+abstained, conflicts), edits what's wrong, and fills what the model abstained on.
+Every value — auto-accepted or clinician-touched — becomes a `CapturedValue` with
+value-level provenance and status (DEV-101), append-only.
 
 **Is not:** a scoring tool. Sona **never** derives a scaled score or percentile
 from a raw score, and never hosts a norm/conversion table (AGENTS.md Guardrails;
@@ -25,10 +48,14 @@ Provenance for those fields is always `clinician`, never `computed`.
 
 ### Anchor principles carried in from the brief
 
-- **AI drafts; the clinician decides.** Nothing here is a final clinical record
-  until the clinician confirms it. Everything is labelled **DRAFT** until then.
-- **No re-keying.** The model does the transcription; the clinician does the
-  judgement. We remove the typing, not the clinical decision.
+- **AI drafts; the clinician decides.** The clinician decides the *exceptions*
+  and anything a report will rely on — not every transcribed digit. The record is
+  labelled **DRAFT** until she finishes the exception review.
+- **No re-keying — and no re-checking either.** The model does the transcription;
+  the clinician does the judgement. Burnout reduction is the goal: review must
+  cost minutes, never become a second job.
+- **Review by exception.** Auto-accept what matched; surface what didn't;
+  re-check report-bound values once, at signing (verify-on-use).
 - **Licensing bright line.** Raw score = transcribed-and-confirmed. Scaled score /
   percentile = **clinician-entered** ("self-scored"). The UI makes that visible.
 - **PHI safety.** All content stays in the authenticated app; nothing leaves for
@@ -44,8 +71,8 @@ A two-pane workspace, desktop/laptop-first (clinician workspace is web,
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Review header:  ‹ file name ›  ·  Instrument: CELF-5 UK (self-scored) │
-│                  DRAFT · 6 of 24 confirmed · 3 need checking           │
-│                  [ Re-run extraction ]  [ Save draft ]  [ Confirm all ]│
+│                  DRAFT · 3 need your eyes · 21 auto-accepted           │
+│                  [ Re-run extraction ] [ Skim pages ] [ Finish review ]│
 ├───────────────────────────────┬──────────────────────────────────────┤
 │  SOURCE PANE (left)           │  FIELDS PANE (right)                   │
 │                               │                                        │
@@ -74,20 +101,29 @@ and the field row stay in sync. This is what makes keyboard review fast (§4).
 Each field shows a confidence state derived from the model's per-field confidence
 (DEV-102). Three visible tiers, colour + icon + text (never colour alone — a11y):
 
-| Tier | Meaning | Treatment | Must check? |
+| Tier | Meaning | Treatment | Clinician touch? |
 |---|---|---|---|
-| **High** | Model confident | Neutral row, subtle tick | No (spot-check only) |
-| **Low** | Model unsure | Warning-tinted row, "Check this" flag | **Yes — mandatory** |
+| **High** | Model confident | **Auto-accepted** on arrival — quiet "Auto-accepted ✓" chip; editable any time | **No** — spot-check only (page skim) |
+| **Low** | Model unsure | Warning-tinted row, "Check this" flag | **Yes — flagged** |
 | **Abstained** | Model declined to invent a value | Empty field, "Model left this blank" | **Yes — clinician fills** |
+| **Conflict** | Same field read twice, values differ | Both values shown | **Yes — clinician picks** |
 
-Mandatory-check fields (Low + Abstained) cannot be swept into a bulk accept (§4);
-they must be individually confirmed or edited. A running counter in the header
-("3 need checking") drives the **Jump to next uncertain** control.
+Only flagged fields (Low + Abstained + Conflict) queue for the clinician. A
+running counter in the header ("3 need your eyes") drives the **Jump to next
+flagged** control. Auto-accepted values are never queued — but every one remains
+one click from an edit, and the **page skim** (below) makes spot-checking feel
+like reading the paper form, not processing a list.
 
-**Jump-to-next-uncertain.** A persistent control (button + keyboard `n`) advances
-focus to the next Low/Abstained field in reading order, scrolling both panes.
-When none remain, it reads "All uncertain fields reviewed" and the header's
-"needs checking" count hits zero — the pre-condition for **Confirm all**.
+**Jump-to-next-flagged.** A persistent control (button + keyboard `n`) advances
+focus to the next flagged field in reading order, scrolling both panes. When none
+remain, it reads "Nothing left to check" — the pre-condition for **Finish review**.
+
+**Page skim (document-shaped review).** A `Skim pages` mode lays the extracted
+values over/beside each source page **in the form's own layout**, whole page at a
+time — the closest thing to reading the paper. Flags stand out inline; one
+**"This page looks right"** action per page records a page-level clinician review
+event (audit §4) without touching individual values. Skim is optional — flags
+alone are sufficient to finish.
 
 ---
 
@@ -162,14 +198,21 @@ hold, but there is no scaled/percentile column to gate.
 
 ## 3. Bulk actions, keyboard flow, saves, re-run, and gaps
 
-### 3.1 Bulk accept
-- **Accept all high-confidence** — one action confirms every **High** field in a
-  group (or the whole form), skipping Low/Abstained (which stay mandatory).
-- **Accept group** — confirm all *already-reviewed* fields in a section.
-- **Confirm all** — enabled only when zero mandatory-check fields remain; this is
-  the gate that lifts the DRAFT label (§4). A confirmation dialog restates that
-  scaled scores / percentiles are being recorded as clinician-entered values.
-- Bulk accept never touches an empty (abstained) field and never fabricates a
+### 3.1 Acceptance model (replaces v0.1 bulk accept)
+- **Auto-accept on arrival** — every **High** field lands as `auto-accepted`; no
+  clinician action exists or is needed for these. (The v0.1 "Accept all
+  high-confidence" button is gone — it *was* the burden.)
+- **"This page looks right"** — the only bulk affordance: a per-page skim action
+  recording a page-level review event. Optional.
+- **Finish review** — enabled when zero **flagged** fields remain (auto-accepted
+  fields do not gate it). Lifts the DRAFT label (§4). The dialog restates the
+  self-scored rule and that everything stays editable in the record.
+- **Verify-on-use (the real gate).** When a report is generated and **signed**
+  (DEV-105), its pre-flight lists the values that report binds (score table, key
+  background facts). Any of those still `auto-accepted` get a one-time
+  **"confirm what the report uses"** check — typically a handful — and flip to
+  `confirmed`. Nothing outside a report's bindings ever demands confirmation.
+- Nothing ever touches an empty (abstained) field and nothing fabricates a
   value — consistent with abstain-don't-invent (DEV-102).
 
 ### 3.2 Keyboard-friendly (laptop, no mouse required)
@@ -177,7 +220,8 @@ hold, but there is no scaled/percentile column to gate.
 | Key | Action |
 |---|---|
 | `Tab` / `Shift+Tab` | Next / previous field |
-| `n` / `p` | **Next / previous uncertain** field (skips High) |
+| `n` / `p` | **Next / previous flagged** field (skips auto-accepted) |
+| `s` | Toggle **page skim** mode |
 | `Enter` | Edit focused field / commit edit |
 | `Esc` | Cancel edit, restore model-proposed value |
 | `a` | Accept (confirm) focused field |
@@ -226,8 +270,12 @@ append-only; AGENTS.md audit rule):
 
 - **Model-proposed value** + the model run id + the field confidence — retained
   even after the clinician edits, so "what the model said" is always recoverable.
-- **Clinician action** per field: `confirmed` (accepted as-is), `edited` (with
+- **Status/action** per field: `auto-accepted` (High on arrival — records the
+  model run id + confidence), `confirmed` (clinician accepted — individually, via
+  a page-skim event, or at a report's verify-on-use check), `edited` (with
   before/after), `filled` (abstained → value), `illegible`, `n/a`, or `restored`.
+  Page-skim "looks right" is recorded as a page-level review event, not a
+  per-field mutation.
 - **Provenance** on the resulting `CapturedValue`: `clinician` for anything the
   clinician entered or confirmed; scaled score / percentile are **always**
   `clinician`, **never** `computed`. No field on this screen is ever `computed`.
@@ -237,13 +285,18 @@ The audit is not shown as a wall of history, but each field exposes a small
 **"history"** disclosure (model value → your change → when) for transparency, and
 the full trail is queryable for the record.
 
-### 4.2 DRAFT labelling until confirmed
-- The whole extraction is **DRAFT** from upload until **Confirm all** succeeds.
-- Field-level status chips: `Needs check`, `Proposed`, `Edited`, `Confirmed`.
-- A DRAFT extraction **cannot feed a report** (DEV-105 reads confirmed values
-  only). The report engine consumes `CapturedValue`s with provenance intact.
-- Confirming does not "sign" a report — it marks captured data as
-  clinician-verified. Report sign-off is a separate downstream gate.
+### 4.2 DRAFT labelling & verify-on-use
+- The extraction is **DRAFT** from upload until **Finish review** (zero flagged
+  fields). Auto-accepted values never hold the DRAFT open.
+- Field-level status chips: `Needs check`, `Auto-accepted ✓`, `Edited`,
+  `Confirmed`.
+- A reviewed record **can feed report drafting** immediately. The hard gate is at
+  **signing**: DEV-105's pre-flight requires every value the report **binds**
+  (score-table cells, key background facts) to be `confirmed` — auto-accepted
+  bindings surface there as a one-time "confirm what the report uses" list.
+  Values a report doesn't use are never forced to `confirmed`.
+- Finishing review does not "sign" a report — sign-off remains the downstream
+  clinical gate.
 
 ---
 
@@ -259,7 +312,7 @@ The licensing bright line is made visible, not buried in policy:
   own tables. Sona does not calculate scaled scores or percentiles."*
 - **No compute affordance:** the absence of any calculate/lookup button is
   deliberate and stated in a one-line helper under the score table.
-- **Confirm-all dialog** restates it once: *"Scaled scores and percentiles are
+- **Finish-review dialog** restates it once: *"Scaled scores and percentiles are
   recorded as values you derived and entered (provenance: clinician). Sona stored
   them; it did not compute them."*
 - Provenance is stored as data (DEV-101), so this holds even if the UI copy
@@ -305,18 +358,20 @@ markers; semantic warning `#F59E0B` for "needs check"; radii 8/10/12/16.
 | R6 | **Inline edit — verbatim / qualitative** | Long-text editing | Multi-line editor, trial/row association, no-autocorrect note |
 | R7 | **Score table — view** | Table rendering | Columns per §2.4; "self-scored" markers on scaled/%ile; no calculate button |
 | R8 | **Score table — editing scaled/%ile** | Licensing-critical edit | Number inputs, "self-scored" tooltip, helper line, add/remove row |
-| R9 | **Jump-to-next-uncertain in motion** | Keyboard flow | Focus advancing, counter decrementing, "all reviewed" end state |
-| R10 | **Bulk accept** | Accept-all-high / accept-group | Selection summary, what's skipped (Low/Abstained) |
-| R11 | **Re-run extraction — diff banner** | Non-destructive re-run | "confirmed values kept" banner, updated-field markers |
+| R9 | **Jump-to-next-flagged in motion** | Keyboard flow | Focus advancing, counter decrementing, "nothing left to check" end state |
+| R10 | **Page skim ("like paper")** | Document-shaped spot-check | Whole-page overlay in the form's layout, inline flags, "This page looks right" per-page action |
+| R11 | **Re-run extraction — diff banner** | Non-destructive re-run | "clinician-touched values kept" banner, updated-field markers |
 | R12 | **Illegible / N/A marking** | Gap handling | Mark-illegible, mark-N/A, re-scan prompt |
 | R13 | **Field history disclosure** | Audit transparency | model value → change → actor → timestamp |
-| R14 | **Confirm-all dialog** | DRAFT → confirmed gate | Restated self-scored/provenance copy, confirm/cancel |
-| R15 | **Confirmed state** | Post-confirmation | DRAFT lifted, "ready for report" state, return to record |
+| R14 | **Finish-review dialog** | DRAFT → reviewed gate | "N flagged reviewed · everything else auto-accepted"; restated self-scored/provenance copy |
+| R15 | **Reviewed state** | Post-review | DRAFT lifted, "ready for report drafting" state, return to record |
 | R16 | **Keyboard help overlay** | Shortcut reference | `?` overlay listing §3.2 keys |
 | R17 | **Empty / error states** | Unreadable / empty extraction | Re-scan / re-upload guidance, no fabricated fields |
+| R18 | **Verify-on-use at signing** *(rendered with DEV-105)* | Report pre-flight | "Confirm what this report uses" — the report's bound, still-auto-accepted values as a one-time checklist |
 
 **Suggested happy path for the prototype:**
-`R0 → R1 → (n) R3 → R5 → (n) R4 → R6 → R7 → R8 → R9 (all reviewed) → R14 → R15`.
+`R0 → R1 → (n) R3 → R5 → (n) R4 → R6 → R7 → R8 → R9 (nothing left) → R14 → R15`
+— target duration **under 2 minutes** for a clean scan.
 
 ---
 
