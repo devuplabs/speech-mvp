@@ -18,7 +18,7 @@ jobs:
       run:
         working-directory: apps/api
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -87,13 +87,13 @@ jobs:
       FHIR_VERSION: "4.0.1"
       GOLDEN_BUNDLE: apps/api/src/fhir/__fixtures__/golden-bundle.json
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: apps/api/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
@@ -118,7 +118,7 @@ jobs:
       # Core IG) so repeat runs don't re-download ~160MB jar + packages.
       - name: Cache validator jar
         id: cache-validator
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/validator_cli.jar
           key: fhir-validator-${{ env.VALIDATOR_VERSION }}
@@ -128,7 +128,7 @@ jobs:
           curl -fL -o ~/validator_cli.jar \
             "https://github.com/hapifhir/org.hl7.fhir.core/releases/download/${VALIDATOR_VERSION}/validator_cli.jar"
       - name: Cache FHIR package cache (core + UK Core IG)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.fhir/packages
           key: fhir-pkgcache-${{ env.FHIR_VERSION }}-${{ env.UKCORE_IG }}-${{ env.VALIDATOR_VERSION }}
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -240,7 +240,7 @@ jobs:
       run:
         working-directory: apps/sona
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.44.0
@@ -274,7 +274,7 @@ jobs:
       SONA_API_URL: http://localhost:8081
       SONA_WEB_URL: http://localhost:8080
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
