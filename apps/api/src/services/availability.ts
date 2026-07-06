@@ -5,6 +5,26 @@ import { cases, clinicianAvailability } from "../db/schema.js";
 const SLOT_STEP_MINUTES = 30;
 const DEFAULT_TZ = "Europe/London";
 
+/**
+ * Minimum gap the listing endpoint must leave between "now" and any slot it
+ * offers as available. `dropAlreadyStartedSlots` used to cut off at exactly
+ * "now" (DEV-79), which excludes only the single slot starting at the grid
+ * origin — the *next* grid slot (one `SLOT_STEP_MINUTES` later) was assumed
+ * to be a safe distance away. In practice a booking a client picks up from a
+ * listing response is not posted instantly, and `bookConsultBody`'s "start
+ * must be in the future" check (booking.ts) re-evaluates against wall-clock
+ * time when the booking POST is finally parsed — only reproducible when
+ * "now" falls inside a live availability window (Tue/Thu 09:00–20:00
+ * Europe/London), since on any other day the grid search jumps to the next
+ * matching weekday and lands days away, never close enough to race (the
+ * "Thursday-evening flake", DEV-79 follow-up). Requiring a full extra grid
+ * step of headroom — instead of trusting the very next one — pushes every
+ * offered slot at least `2 * SLOT_STEP_MINUTES` out, an unambiguous margin
+ * regardless of exactly how much of the single step DEV-79 left was actually
+ * being eaten into.
+ */
+export const MIN_BOOKING_LEAD_TIME_MS = 2 * SLOT_STEP_MINUTES * 60 * 1000;
+
 const WEEKDAY_MAP: Record<string, number> = {
   Mon: 1,
   Tue: 2,

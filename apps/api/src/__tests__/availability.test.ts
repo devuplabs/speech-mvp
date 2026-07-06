@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeSlotsFromRules, dropAlreadyStartedSlots, getZonedParts } from "../services/availability.js";
+import {
+  computeSlotsFromRules,
+  dropAlreadyStartedSlots,
+  getZonedParts,
+  MIN_BOOKING_LEAD_TIME_MS,
+} from "../services/availability.js";
 
 describe("getZonedParts", () => {
   it("maps Monday in Europe/London", () => {
@@ -66,5 +71,29 @@ describe("dropAlreadyStartedSlots", () => {
     const to = new Date("2026-05-26T16:00:00.000Z");
     const slots = computeSlotsFromRules(rules, from, to, []);
     expect(dropAlreadyStartedSlots(slots, undefined)).toEqual(slots);
+  });
+
+  it("drops slots inside the booking lead-time margin, not just the at-'now' one (the Thursday-evening flake)", () => {
+    // The grid's *second* slot (one SLOT_STEP_MINUTES out) used to be treated
+    // as a safe margin (DEV-79). A `minStartMs` that already includes the
+    // lead-time buffer (as the route now passes) must push past that slot
+    // too, since a real booking POST can arrive after enough of that margin
+    // has elapsed.
+    const from = new Date("2026-05-26T10:00:00.000Z"); // Tuesday, in-window
+    const to = new Date("2026-05-26T16:00:00.000Z");
+    const slots = computeSlotsFromRules(rules, from, to, []);
+
+    // Without the margin, the very next grid slot is offered.
+    const bareNowOffered = dropAlreadyStartedSlots(slots, from.getTime());
+    expect(bareNowOffered[0]!.start).toBe(slots[1]!.start);
+
+    // With the margin included in minStartMs (as the route does), that same
+    // slot is no longer far enough out and gets dropped too.
+    const withMargin = from.getTime() + MIN_BOOKING_LEAD_TIME_MS;
+    const offered = dropAlreadyStartedSlots(slots, withMargin);
+    expect(offered[0]!.start).not.toBe(slots[1]!.start);
+    for (const s of offered) {
+      expect(Date.parse(s.start) - from.getTime()).toBeGreaterThan(MIN_BOOKING_LEAD_TIME_MS);
+    }
   });
 });
