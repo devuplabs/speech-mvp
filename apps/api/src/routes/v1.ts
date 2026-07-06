@@ -60,6 +60,7 @@ import {
   getAvailabilitySlots,
   listAvailabilityRules,
   replaceAvailabilityRules,
+  MIN_BOOKING_LEAD_TIME_MS,
 } from "../services/availability.js";
 import { bookConsult, buildConsultIcs } from "../services/consult-booking.js";
 import {
@@ -794,11 +795,21 @@ export function createV1Routes(db: Db, env: Env) {
       c.req.query("to") ??
       new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
     await ensureDefaultAvailability(db, tenantId);
-    // Never offer a slot that has already started: booking rejects past starts
-    // (bookConsultBody, DEV-79), and the slot grid is anchored at `from` — so
-    // without this cutoff the first slot returned starts at exactly "now" and
-    // any attempt to book it 400s.
-    const slots = await getAvailabilitySlots(db, tenantId, from, to, undefined, Date.now());
+    // Never offer a slot that starts too soon to safely book: booking rejects
+    // past starts (bookConsultBody, DEV-79), and the slot grid is anchored at
+    // `from` — a cutoff of exactly "now" only excludes the single slot at the
+    // grid origin, leaving the next slot (30 minutes later) offered as if it
+    // were a safe margin. Real request latency can eat into that margin
+    // (the "Thursday-evening flake" — only reproducible when "now" falls
+    // inside a live Tue/Thu 09:00–20:00 window), so require a real buffer.
+    const slots = await getAvailabilitySlots(
+      db,
+      tenantId,
+      from,
+      to,
+      undefined,
+      Date.now() + MIN_BOOKING_LEAD_TIME_MS,
+    );
     return c.json({ slots });
   });
 
