@@ -17,6 +17,73 @@ lang: en-GB
 - **Integration headline.** Adjacent integrations (calendar, video, e-sign, payments, and a "Sona for Cliniko" wedge) are the realistic Year-1 path. **NHS GP Connect is a Year-2+ programme**, not a Year-1 feature — it requires DSPT Standards Met, HSCN access, PDS compliance, a Clinical Safety Officer compliant with DCB0129/0160, SCAL evidence, and use-case approval. (NHS Digital, *GP Connect Access Record: Structured*, retrieved 2026-05-28.)
 - **Pricing recommendation.** Per-clinician monthly subscription with a free-trial-on-cases mechanic. **Start at £79 / clinician / month** including AI drafting on a usage cap, with a £39 "starter" tier for new graduates. Sits between Smilenotes (£5, no AI) and Heidi Clinician ($150 ≈ £120, scribe-only). Per-case is wrong for this market: 3–8 cases / week / clinician puts revenue too close to a single Cliniko seat to be defensible.
 - **What to do next week.** (1) Run the one-therapist-fit audit with a second SLT before any code lands. (2) Decide whether the next sprint is the intake template engine or the AI loop, and only one — both at once is the failure mode. (3) Price a DSPT readiness pass with a specialist consultancy. (4) Talk to ASLTIP about a member-benefit slot.
+- **⚠ Material change since this memo was written (added 2026-08-06).** **Ogma** — filed in section 3 below as a minor "kid-facing app" — is in fact the **closest direct competitor to Sona**, and in **June 2026 it was acquired by SaltRoad** (which raised a **£1.5M seed** to do it). The Ogma Assistant is live on iOS + Android, **England-hosted**, **accepted onto NHS G-Cloud 14**, and now sits behind SaltRoad's **1,000+ UK therapist marketplace**. It drafts notes, assessment reports, parent summaries and referrals *today*, while Sona's AI loop is still stub. It also owns a genuine data/tech moat — a phoneme-level ASR model trained on proprietary atypical-child-speech data — the "big invention" the founders worried Sona lacks. This **neutralises the UK-residency moat** and **wins the distribution fight this memo itself named as decisive**. Full analysis in the **2026-08-06 update** immediately below; the "SLT-specific AI entrants" table row and moat 4 are annotated accordingly. **Sona's surviving wedge is the pre-session new-case loop — intake, triage, consult prep — which Ogma does not occupy.**
+
+# Update — 2026-08-06: Ogma / SaltRoad is the closest competitor to date
+
+*Added after the founders surfaced [ogmatherapy.com](https://www.ogmatherapy.com). This section supersedes the "SLT-specific AI entrants" row in section 3 and revises moat 4. The May analysis under-rated Ogma by filing it as a "kid-facing app". It is not — it is the most direct competitor we have found, and since June 2026 it is owned by SaltRoad. All web facts below retrieved 2026-08-06.*
+
+## What Ogma actually is
+
+Two products behind one **data flywheel**:
+
+1. **The Ogma Assistant** — an AI documentation tool for SLTs. The therapist adds it to a teletherapy call or uploads a recording; it drafts clinical notes (**SOAP, ROCAIP**), **assessment reports, parent summaries, nursery summaries, and onward referrals**, exported as Word / PDF. Headline claims: report writing from ~3 hours to ~3 minutes, ~3 hours saved per child, **~600 hours/year per NHS therapist**, ~20% efficiency. Hosted encrypted **in England**, and **accepted onto NHS G-Cloud 14**.
+2. **The "Ogs"** — animated, kid-facing AI therapeutic agents delivering evidence-based intervention through naturalistic speech, powered by a **phoneme-level speech-recognition model trained on a proprietary dataset of atypical child speech**. The training corpus is *harvested by the Assistant*. That is the flywheel: the admin tool captures the speech data that trains the intervention model.
+
+Founded in the UK (Louise — PhD Developmental Cognitive Neuroscience, UCL Institute of Child Health, ex-founder of the resale platform dotte — plus a technical co-founder), backed by Founders Factory.
+
+## The acquisition changes the board
+
+In **June 2026, SaltRoad acquired Ogma**, funded by a **£1.5M seed** (Techstart Ventures lead; Ascension, ScaleX, and angels). SaltRoad is the two-sided marketplace from the section-3 landscape — it matches families to therapists and runs a network of **1,000+ UK SLTs**. The stated plan is to embed the Ogma Assistant across that network to raise the number of children each therapist can see.
+
+**This kills the "SaltRoad as a distribution channel for Sona" idea** raised in discussion: SaltRoad now owns a direct competitor. The combined entity spans **demand (marketplace) → session → documentation** — three of the nine lifecycle steps in section 1, end to end, with real distribution attached.
+
+## Sona vs Ogma — honest comparison
+
+<table class="competitors">
+<thead>
+<tr><th>Dimension</th><th>Sona</th><th>Ogma (now SaltRoad)</th><th>Who's ahead</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Core job</strong></td><td>The pre-session new-case loop: adaptive intake → consult prep → triage → first-session plan → parent summary</td><td>Session capture → AI documentation (notes, assessment reports, parent/nursery summaries, referrals) + kid-facing intervention (the Ogs)</td><td>Different jobs; they overlap on drafting &amp; summaries</td></tr>
+<tr><td><strong>Where it enters the case lifecycle</strong></td><td><strong>Before</strong> the session (enquiry → intake → triage → consult prep)</td><td><strong>At / after</strong> the session (record → document)</td><td>Sona owns the front of the funnel; Ogma owns the middle/back</td></tr>
+<tr><td><strong>Build status</strong></td><td>Intake form + case management live; the AI loop is stub today</td><td>Live and shipping — iOS + Android apps, G-Cloud 14 listed, published efficiency claims</td><td><strong>Ogma</strong></td></tr>
+<tr><td><strong>AI drafting surface</strong></td><td>Prep brief, session plan, parent summary (vision)</td><td>Notes (SOAP/ROCAIP), assessment reports, parent + nursery summaries, referrals (live)</td><td><strong>Ogma</strong> (broader &amp; shipped)</td></tr>
+<tr><td><strong>Data residency / trust</strong></td><td>UK-region, self-hosted Gemma, air-gapped, review-gated, append-only audit</td><td>Encrypted, England-hosted; clinician-in-the-loop</td><td>Parity — Ogma matched the headline claim</td></tr>
+<tr><td><strong>Proprietary tech moat</strong></td><td>None yet; domain ASR deferred to roadmap (<code>speech-train</code>, v0.4+)</td><td>Phoneme-level ASR on a proprietary atypical-child-speech corpus + Assistant→Ogs data flywheel</td><td><strong>Ogma</strong></td></tr>
+<tr><td><strong>Distribution</strong></td><td>Direct; planned ASLTIP slot + "Sona for Cliniko" (both unbuilt)</td><td>SaltRoad marketplace: 1,000+ UK SLTs + inbound family demand</td><td><strong>Ogma</strong> (decisive)</td></tr>
+<tr><td><strong>NHS readiness</strong></td><td>Year-2+ (DSPT / G-Cloud on the roadmap)</td><td>On G-Cloud 14 <em>now</em>; NHS-time-saving framing</td><td><strong>Ogma</strong></td></tr>
+<tr><td><strong>Target buyer</strong></td><td>Solo independent private SLT owning their own brand and client relationship</td><td>Therapists in / around a managed network; NHS efficiency</td><td>Different segments</td></tr>
+<tr><td><strong>Statutory / specialty structure</strong></td><td>EHCP-aware, four-outcome triage, specialty-keyed output schemas</td><td>Format templates (SOAP/ROCAIP); paediatric</td><td><strong>Sona</strong></td></tr>
+<tr><td><strong>Kid-facing intervention</strong></td><td>Explicit non-goal (principle: no child screen time)</td><td>Core to the product (the Ogs)</td><td>Divergent philosophies — not a scoreable axis</td></tr>
+</tbody>
+</table>
+
+## What this does to the moat analysis
+
+Ogma neutralises, matches, or leads on several things the May memo treated as Sona advantages:
+
+- **UK data residency (moat 4) is no longer a differentiator against the competitor that matters most.** Ogma is England-hosted and encrypted. Downgrade moat 4 from "medium-low, 12 months" to **price-of-entry — already matched**.
+- **"AI drafting for SLTs" is not whitespace.** Ogma is **live** while Sona's AI loop is stub. On the drafting surface itself — notes, reports, **parent summaries**, referrals — Ogma is ahead on both shipping and format breadth.
+- **Distribution — the factor this memo named as decisive — now favours Ogma.** Section 8's honest read said Sona is "bootstrappable but not venturable" without a distribution mechanic. SaltRoad *is* that mechanic, and Ogma has it.
+- **Ogma has the data/tech moat Sona lacks.** The atypical-child-speech ASR + Assistant-fed flywheel is exactly the "single big invention" the founders worried Sona doesn't have. Sona deferred ASR to roadmap; Ogma built it first and compounds it monthly.
+
+## Where Sona is still genuinely differentiated
+
+The survivable wedge is narrower than "AI admin for SLTs" — because Ogma owns that — but it is real:
+
+- **Ogma starts at the session; Sona starts before it.** The Assistant is fundamentally a session-capture-and-document tool (record → generate), like the scribes. It does **not** own the **pre-session new-case loop**: smart adaptive parent **intake**, the 20-minute **free-consult prep**, and the **triage decision** (strategy only / short block / full assessment / refer out). That front-of-funnel is Sona's actual wedge, and Ogma does not currently occupy it.
+- **Self-pay independent practice vs managed network.** Sona is built for the solo private practitioner who owns their own brand, intake form and client relationship (white-label, own question tree). SaltRoad+Ogma is oriented to a *managed therapist network* and NHS-efficiency framing. The independent who does **not** want to route their clients through a marketplace is Sona's customer, not Ogma's.
+- **Structured, statutory-framework-aware output.** EHCP-awareness, four-outcome triage and specialty-keyed schemas are structural, not format-templated (SOAP/ROCAIP).
+
+**Contested, no longer owned:** the parent-facing summary. Both draft it. Sona's tone-slider / reading-level / disclosure-footer treatment is more considered, but it is no longer a "nobody else does this" moment.
+
+## Implications — what to actually do
+
+1. **Re-sharpen the one-liner away from Ogma's.** Drop "speech &amp; language therapy, less admin" — that is now effectively Ogma's pitch. Lead with the pre-session loop: *"Sona gets the case ready before the first session — smart intake, triage, and a consult-ready brief — for independent SLTs who run their own practice."*
+2. **Treat intake → triage → consult-prep as the defensible core**, not the AI drafting. Ship that front-of-funnel end-to-end before the drafting loop, because the drafting loop is now a red-ocean fight against a live, funded, distribution-backed incumbent.
+3. **Decide the honest strategic posture** (open question 8 below): compete head-on on the independent-private-practice wedge; complement Ogma (write Sona's structured intake/triage into whatever the SLT documents with); or reconsider whether the AI-admin thesis is still investable now that SaltRoad+Ogma exists.
+4. **Watch the flywheel.** Ogma's data advantage compounds every month the Assistant runs. Any Sona ASR ambition (<code>speech-train</code>) is now a fast-follow against a moving target, not a greenfield.
 
 # Context
 
@@ -262,12 +329,20 @@ The alternatives below are what a paediatric private SLT in 2026 is already weig
 <td>Sona is the AI loop that sits on top of (or alongside) a tool like Smilenotes</td>
 </tr>
 <tr>
-<td><strong>SLT-specific AI entrants</strong> (Constant Therapy, Better Speech "Jessica", Ogma Therapy, IEP Copilot, SPRY)</td>
+<td><strong>Ogma Assistant</strong> (Ogma Therapy — acquired by SaltRoad, June 2026)</td>
+<td>Records / uploads a session → AI-drafts notes (SOAP/ROCAIP), assessment reports, parent &amp; nursery summaries, onward referrals; plus kid-facing "Ogs" intervention</td>
+<td>Not posted; on NHS G-Cloud 14</td>
+<td><strong>The closest direct competitor.</strong> Live (iOS+Android), England-hosted, SLT-specific drafting, backed by SaltRoad's 1,000+ therapist marketplace and a proprietary atypical-child-speech ASR flywheel</td>
+<td>Starts <em>at</em> the session (record → document); does not own pre-session intake, consult prep, or triage</td>
+<td>Sona owns the pre-session new-case loop Ogma does not — but Ogma matches Sona's UK-residency claim and beats it on shipping and distribution. <strong>See the 2026-08-06 update above.</strong></td>
+</tr>
+<tr>
+<td><strong>Other SLT-specific AI entrants</strong> (Constant Therapy, Better Speech "Jessica", IEP Copilot, SPRY)</td>
 <td>A grab-bag of client-facing apps, IEP drafters, and US PT/SLP rehab platforms</td>
 <td>Variable</td>
 <td>Some are UK-friendly; some are clinically rich</td>
 <td>Mostly client-facing kid-facing apps (Sona has an explicit principle against adding to children's screen time) or US-only EMR</td>
-<td>Sona is adult-facing tooling that helps the SLT help the family, not another kid-app</td>
+<td>Sona is adult-facing tooling that helps the SLT help the family, not another kid-app <em>(Ogma is now treated as its own row — it is not just a kid-app)</em></td>
 </tr>
 <tr>
 <td><strong>The status quo</strong> (ChatGPT + Cliniko + Word template + email)</td>
@@ -323,7 +398,7 @@ No single item below is a 5-year moat on its own. The strength is in the **stack
 <td><strong>UK-region data residency + self-hosted Gemma in a London Google Cloud region</strong></td>
 <td>Medium-low</td>
 <td>12 months</td>
-<td>A genuine differentiator vs ChatGPT and US-only Jane App. But — and this is the honest part — most clinicians cannot tell a self-hosted Gemma from a BAA-covered Vertex Gemini at the demo. Heidi already runs in-region and signs BAAs. <strong>The deployment posture is a feature for procurement, not a moat for the clinician.</strong> It buys NHS-ready <em>language</em> without buying NHS-ready <em>certification</em> (see the integration roadmap).</td>
+<td>A genuine differentiator vs ChatGPT and US-only Jane App. But — and this is the honest part — most clinicians cannot tell a self-hosted Gemma from a BAA-covered Vertex Gemini at the demo. Heidi already runs in-region and signs BAAs. <strong>The deployment posture is a feature for procurement, not a moat for the clinician.</strong> It buys NHS-ready <em>language</em> without buying NHS-ready <em>certification</em> (see the integration roadmap). <strong>Downgraded 2026-08-06:</strong> Ogma — the closest direct competitor — is also England-hosted and encrypted <em>and</em> already on NHS G-Cloud 14, so this is now <strong>parity, not a differentiator</strong>, against the competitor that matters most. Treat as price-of-entry. See the 2026-08-06 update.</td>
 </tr>
 <tr>
 <td>5</td>
@@ -656,6 +731,7 @@ In priority order; each blocks something downstream.
 5. **OEPR (Octopus EPR) — competitor, co-existent, or eventual partner?** OEPR is the most clinically aware UK SLT-specific competitor surfaced in this review. They market via ASLTIP. The interesting future is a Sona-on-OEPR integration, not a Sona-vs-OEPR fight. The founders need to decide whether to reach out now or later.
 6. **Multi-tenant clinic mode — explicit non-goal for 2026, or a Q4 2026 build?** The design-partner relationship will demand it once a second clinician joins the design-partner practice.
 7. **Persona expansion — agreed scope of three new personas (adult voice, AAC, feeding) before the next external pitch?** Without this, every non-paediatric meeting is uphill.
+8. **Ogma / SaltRoad — compete, complement, or rethink? (Added 2026-08-06.)** Ogma is the closest direct competitor: live, England-hosted, on NHS G-Cloud 14, backed by SaltRoad's 1,000+ therapist marketplace and a proprietary atypical-child-speech ASR flywheel. Three postures, and the founders must pick one before the pitch deck goes out: (a) **compete** by owning the pre-session new-case loop (intake → triage → consult prep) that Ogma does not touch, for independent SLTs who won't route clients through a marketplace; (b) **complement** — write Sona's structured intake/triage into whatever the SLT documents with, treating Ogma as a downstream target not a rival; (c) **rethink** whether the AI-admin thesis is still investable now that a funded, distributed incumbent exists. See the 2026-08-06 update for the full analysis.
 
 # Glossary
 
@@ -720,6 +796,9 @@ For readers new to UK private speech-and-language therapy. Skip if these are fam
 - **EPR / EHR** — Electronic Patient Record / Electronic Health Record. The category that holds clinical notes and records.
 - **OEPR** — Octopus EPR. A UK SLT-specific electronic patient record, marketed via ASLTIP.
 - **MyChart** — Epic Systems' patient portal. The reference design for delivering clinical content to patients via authenticated portal rather than email.
+- **Ogma / Ogma Assistant** — UK AI documentation tool for SLTs (notes, reports, parent summaries, referrals) plus kid-facing "Ogs" intervention agents; acquired by SaltRoad in June 2026. Sona's closest direct competitor — see the 2026-08-06 update.
+- **SaltRoad** — UK two-sided marketplace matching families to SLTs, with a network of 1,000+ therapists; acquirer of Ogma (June 2026).
+- **SOAP / ROCAIP** — standard clinical-note formats (Subjective-Objective-Assessment-Plan; and an SLT-oriented variant) that the Ogma Assistant generates.
 
 # Sources
 
@@ -754,6 +833,19 @@ For readers new to UK private speech-and-language therapy. Skip if these are fam
 - DSPT 2025/26 small-org guide — *dsptready.co.uk/blog/dspt-complete-guide*
 - Evalian DSPT 2025 guide — *evalian.co.uk/the-data-security-and-protection-toolkit-dspt*
 - Chatter Labs — adjacent SLT AI landscape — *chatter-labs.com/blog/slt-private-practice-setup-tips/ai-speech-therapy*
+
+## Web sources for the 2026-08-06 Ogma / SaltRoad update (URL + access date, all 2026-08-06)
+
+- Ogma Therapy — product site — *ogmatherapy.com*
+- Ogma Assistant — how it works (notes/reports/parent summaries; SOAP, ROCAIP, referrals; ~3hr→3min; England-hosted) — *ogmatherapy.com/post/how-does-the-ogma-assistant-work*
+- Ogma Assistant joins NHS G-Cloud 14 — *ogmatherapy.com/post/the-ogma-assistant-joins-nhs-g-cloud-14*
+- Ogma Assistant — G-Cloud 14 service definition — *assets.applytosupply.digitalmarketplace.service.gov.uk/g-cloud-14/documents/721948/...service-definition-document*
+- Ogma — why it exists / the Ogs / phoneme-level ASR on atypical child speech — *ogmatherapy.com/post/why-ogma-exists-revolutionising-speech-and-language-therapy-with-ai*
+- Founders Factory — launching Ogma (Ogs, proprietary dataset, founders) — *foundersfactory.com/articles/launching-ogma*
+- Ogma Therapy Ltd — DigitalHealth.London innovation directory — *digitalhealth.london/innovation-directory/profile/ogma-therapy-ltd*
+- Ogma apps (live, iOS + Android) — *apps.apple.com/app/ogma-therapy/id6740515626* and *play.google.com/store/apps/details?id=com.ogmatherapy*
+- SaltRoad raises £1.5M and acquires Ogma (June 2026; Techstart Ventures lead; Ascension, ScaleX, angels; 1,000+ therapists) — *tech.eu/2026/06/30/saltroad-raises-ps15m-and-acquires-ai-platform-ogma-to-scale-speech-therapy-for-children*
+- SaltRoad — earlier £575k pre-seed / marketplace model — *uktech.news/medtech/saltroad-speech-language-therapy-funding-20240705*
 
 # Engineering footnotes
 
